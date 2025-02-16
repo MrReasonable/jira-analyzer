@@ -11,6 +11,11 @@ import {
   ReferenceLine
 } from 'recharts';
 
+const formatNumber = (value) => {
+  if (value === undefined || value === null || isNaN(value)) return '0.0';
+  return value.toFixed(1);
+};
+
 const FlowEfficiencyChart = ({ data }) => {
   if (!data || !data.length) {
     return <div>No flow efficiency data available</div>;
@@ -40,7 +45,7 @@ const FlowEfficiencyChart = ({ data }) => {
       activeTime: item.active_time,
       waitTime: item.total_time - item.active_time,
       efficiency: item.efficiency,
-      cumulativePercentage: percentile.toFixed(1),
+      cumulativePercentage: formatNumber(percentile),
       percentileRegion: item.efficiency <= median ? 'within_50th' :
                        item.efficiency <= p85 ? '50th_to_85th' :
                        item.efficiency <= p95 ? '85th_to_95th' : 'above_95th'
@@ -52,9 +57,9 @@ const FlowEfficiencyChart = ({ data }) => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Flow Efficiency</h2>
         <div className="text-sm text-gray-600 space-x-4">
-          <span>50th percentile: {median.toFixed(1)}%</span>
-          <span>85th percentile: {p85.toFixed(1)}%</span>
-          <span>95th percentile: {p95.toFixed(1)}%</span>
+          <span>50th percentile: {formatNumber(median)}%</span>
+          <span>85th percentile: {formatNumber(p85)}%</span>
+          <span>95th percentile: {formatNumber(p95)}%</span>
         </div>
       </div>
       <div className="h-[400px]">
@@ -75,9 +80,9 @@ const FlowEfficiencyChart = ({ data }) => {
                   return (
                     <div className="bg-white p-2 border rounded shadow">
                       <p className="text-sm font-medium">{data.issueKey}</p>
-                      <p className="text-sm text-emerald-600">Active Time: {data.activeTime.toFixed(1)} days</p>
-                      <p className="text-sm text-red-600">Wait Time: {data.waitTime.toFixed(1)} days</p>
-                      <p className="text-sm font-medium">Efficiency: {data.efficiency.toFixed(1)}%</p>
+                      <p className="text-sm text-emerald-600">Active Time: {formatNumber(data.activeTime)} days</p>
+                      <p className="text-sm text-red-600">Wait Time: {formatNumber(data.waitTime)} days</p>
+                      <p className="text-sm font-medium">Efficiency: {formatNumber(data.efficiency)}%</p>
                       <p className="text-sm">{data.cumulativePercentage}% of items have lower efficiency</p>
                       <p className="text-sm text-gray-600">
                         {data.percentileRegion === 'within_50th' ? 'Below median (50th percentile)' :
@@ -152,15 +157,15 @@ const FlowEfficiencyChart = ({ data }) => {
         <div className="flex items-center gap-4">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
-            <span>50% of items have efficiency above {median.toFixed(1)}%</span>
+            <span>50% of items have efficiency above {formatNumber(median)}%</span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
-            <span>85% of items have efficiency above {p85.toFixed(1)}%</span>
+            <span>85% of items have efficiency above {formatNumber(p85)}%</span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
-            <span>95% of items have efficiency above {p95.toFixed(1)}%</span>
+            <span>95% of items have efficiency above {formatNumber(p95)}%</span>
           </div>
         </div>
         <p className="mt-2">Flow efficiency measures the ratio of active work time to total lead time.</p>

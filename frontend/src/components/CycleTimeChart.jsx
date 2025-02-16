@@ -19,10 +19,11 @@ const CycleTimeChart = ({ data }) => {
         median: 0,
         p85: 0,
         p95: 0,
+        p50_85_avg: 0,
         p85_95_avg: 0,
         p95_100_avg: 0
       };
-    const { median, p85, p95, p85_95_avg, p95_100_avg } = metrics;
+    const { median, p85, p95, p50_85_avg, p85_95_avg, p95_100_avg } = metrics;
     
     // Calculate the max based on our highest percentile average
     const max = p95_100_avg > 0 ? p95 + p95_100_avg : p95;
@@ -30,7 +31,7 @@ const CycleTimeChart = ({ data }) => {
     return {
       status,
       p50: median,
-      p85: p85 - median,
+      p85: p50_85_avg || (p85 - median), // Use average if available, fallback to difference
       p95: p85_95_avg || (p95 - p85), // Use average if available, fallback to difference
       p100: p95_100_avg || 0, // Use the 95-100th percentile average
       totalDays: max,
@@ -39,7 +40,8 @@ const CycleTimeChart = ({ data }) => {
   });
 
   const formatNumber = (value) => {
-    return typeof value === 'number' && !isNaN(value) ? value.toFixed(1) : '0.0';
+    if (value === undefined || value === null || isNaN(value)) return '0.0';
+    return value.toFixed(1);
   };
 
   const CustomTooltip = ({ active, payload, label }) => {

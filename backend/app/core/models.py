@@ -96,6 +96,7 @@ class AnalysisResult:
     status_distribution: Dict
     end_states: List[str]
     issues: List[Dict]
+    workflow: Dict[str, List[str]]  # Added workflow field
     cfd_data: Optional[CFDData] = None
     flow_efficiency_data: Optional[List[FlowEfficiencyData]] = None
     epic_data: Optional[List[EpicData]] = None

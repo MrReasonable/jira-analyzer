@@ -13,8 +13,8 @@ import {
 const LeadTimeChart = ({ data }) => {
   if (!data || !data.cycle_time_stats) return null;
 
-  const { median, p85, p95 } = data.cycle_time_stats;
-  const maxDays = Math.ceil(p95 * 1.1); // Add 10% padding
+  const { median = 0, p85 = 0, p95 = 0 } = data.cycle_time_stats;
+  const maxDays = Math.ceil((p95 || 0) * 1.1); // Add 10% padding
   
   // Create distribution data
   const distributionData = [];
@@ -137,21 +137,21 @@ const LeadTimeChart = ({ data }) => {
               <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
               <span>Lead Time (50th percentile)</span>
             </div>
-            <span>50% of items complete within {median.toFixed(1)} days</span>
+            <span>50% of items complete within {(median || 0).toFixed(1)} days</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
               <span>85th percentile</span>
             </div>
-            <span>85% of items complete within {p85.toFixed(1)} days</span>
+            <span>85% of items complete within {(p85 || 0).toFixed(1)} days</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
               <span>95th percentile</span>
             </div>
-            <span>95% of items complete within {p95.toFixed(1)} days</span>
+            <span>95% of items complete within {(p95 || 0).toFixed(1)} days</span>
           </div>
         </div>
       </div>
