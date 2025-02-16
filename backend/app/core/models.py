@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from datetime import datetime
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from flask_sqlalchemy import SQLAlchemy
 import json
@@ -44,6 +44,36 @@ class IssueData:
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     cycle_breakdown: Optional[List[CycleTimeBreakdown]] = None
+    time_spent: Optional[int] = None  # Time spent in seconds
+    original_estimate: Optional[int] = None  # Original estimate in seconds
+    epic_key: Optional[str] = None  # Epic link
+    parent_key: Optional[str] = None  # Parent issue key
+    subtask_keys: List[str] = field(default_factory=list)  # List of subtask keys
+
+@dataclass
+class EpicData:
+    """Represents epic analysis data"""
+    key: str
+    summary: str
+    children: List[str]  # List of child issue keys
+    start_time: Optional[datetime] = None  # First child enters in-progress
+    end_time: Optional[datetime] = None  # Last child enters done
+    lead_time: Optional[float] = None  # Total lead time in days
+
+@dataclass
+class CFDData:
+    """Represents Cumulative Flow Diagram data"""
+    dates: List[datetime]
+    status_counts: Dict[str, List[int]]  # Status -> list of counts per date
+    wip_counts: List[int]  # WIP count per date
+
+@dataclass
+class FlowEfficiencyData:
+    """Represents Flow Efficiency data"""
+    issue_key: str
+    total_time: float  # Total lead time in days
+    active_time: float  # Time spent actively working (from time tracking)
+    efficiency: float  # Percentage of active time vs total time
 
 @dataclass
 class JiraConfig:
@@ -52,8 +82,8 @@ class JiraConfig:
     username: str
     api_token: str
     workflow: Dict[str, List[str]]
-    start_states: List[str] = None
-    end_states: List[str] = None
+    start_states: List[str] = field(default_factory=list)
+    end_states: List[str] = field(default_factory=list)
 
 @dataclass
 class AnalysisResult:
@@ -64,7 +94,11 @@ class AnalysisResult:
     bottlenecks: List[Dict]
     cycle_time_stats: Dict
     status_distribution: Dict
+    end_states: List[str]
     issues: List[Dict]
+    cfd_data: Optional[CFDData] = None
+    flow_efficiency_data: Optional[List[FlowEfficiencyData]] = None
+    epic_data: Optional[List[EpicData]] = None
 
 @dataclass
 class TimeRange:
@@ -90,8 +124,8 @@ class TeamConfig(db.Model):
     start_states = db.Column(db.Text)  # JSON string
     end_states = db.Column(db.Text)  # JSON string
     default_jql = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict:
         """Convert to dictionary, parsing JSON fields"""

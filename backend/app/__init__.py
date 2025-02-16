@@ -4,6 +4,7 @@ from app.core.models import db
 from app.core.config import get_config
 from app.utils.logging import setup_logging
 from app.core.migrations import init_db, run_migrations
+from app.utils.json_encoder import NumpyJSONProvider
 import os
 
 def create_app(config_name=None):
@@ -11,8 +12,9 @@ def create_app(config_name=None):
     # Initialize Flask app
     app = Flask(__name__)
     
-    # Setup CORS
+    # Setup CORS and custom JSON provider
     CORS(app)
+    app.json = NumpyJSONProvider(app)
     
     # Load configuration
     config = get_config()
@@ -38,7 +40,7 @@ def create_app(config_name=None):
     
     app.register_blueprint(api, url_prefix='/api')
     app.register_blueprint(config_api, url_prefix='/api')
-    app.register_blueprint(workflow_api, url_prefix='/api')
+    app.register_blueprint(workflow_api, url_prefix='/api/workflow')
     
     # Setup logging
     setup_logging(

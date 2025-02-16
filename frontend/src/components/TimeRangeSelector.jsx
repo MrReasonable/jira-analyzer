@@ -2,11 +2,20 @@ import React, { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 
 const TimeRangeSelector = ({ onTimeRangeChange }) => {
-  const [selectedPreset, setSelectedPreset] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('quarter');
   const [customRange, setCustomRange] = useState({
     startDate: '',
     endDate: ''
   });
+
+  // Trigger initial time range change
+  React.useEffect(() => {
+    onTimeRangeChange({
+      timePreset: selectedPreset,
+      startDate: null,
+      endDate: null
+    });
+  }, [selectedPreset, onTimeRangeChange]); // Include dependencies
 
   const presets = [
     { value: 'two_weeks', label: 'Last 2 Weeks' },

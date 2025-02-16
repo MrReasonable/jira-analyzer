@@ -18,7 +18,11 @@ class JiraService:
         return JIRA(
             server=self.config.url,
             basic_auth=(self.config.username, self.config.api_token),
-            options={'verify': True}
+            options={
+                'verify': True,
+                'timeout': 30,  # 30 second timeout for requests
+                'max_retries': 3
+            }
         )
 
     def test_connection(self) -> bool:
@@ -105,33 +109,33 @@ class JiraService:
             raise
 
     def extract_workflow(self, project_key: str) -> WorkflowConfig:
-        """Extract workflow configuration from a Jira project"""
+        """Extract workflow configuration from a Jira project using the workflow API"""
         try:
-            # Get all statuses used in the project
-            jql = f"project = {project_key}"
+            # Get all statuses and transitions by analyzing existing issues
+            jql = f"project = {project_key} ORDER BY created DESC"
             issues = self.client.search_issues(jql, maxResults=100, expand='changelog')
             
-            # Track status transitions
-            transitions: Dict[str, Set[str]] = {}
-            statuses: Set[str] = set()
-            initial_statuses: Set[str] = set()
-            final_statuses: Set[str] = set()
+            # Track all statuses and transitions
+            all_statuses = set()
+            transitions = {}
+            initial_statuses = set()
+            final_statuses = set()
             
+            # Analyze issue histories to build workflow
             for issue in issues:
-                changelog = issue.changelog
                 current_status = issue.fields.status.name
-                statuses.add(current_status)
+                all_statuses.add(current_status)
                 
-                # Track transitions from changelog
+                # Get status history from changelog
                 previous_status = None
-                for history in changelog.histories:
+                for history in issue.changelog.histories:
                     for item in history.items:
                         if item.field == 'status':
                             from_status = item.fromString
                             to_status = item.toString
                             
-                            statuses.add(from_status)
-                            statuses.add(to_status)
+                            all_statuses.add(from_status)
+                            all_statuses.add(to_status)
                             
                             # Track first status as potential start
                             if previous_status is None:
@@ -149,33 +153,57 @@ class JiraService:
                     final_statuses.add(previous_status)
                 final_statuses.add(current_status)
             
-            # Convert sets to sorted lists for consistent ordering
-            status_list = sorted(list(statuses))
+            # Get additional workflow info from project configuration
+            project = self.client.project(project_key)
+            statuses = self.client._get_json(f'project/{project.id}/statuses')
             
-            # Build suggested flow based on transitions
+            # Add any statuses from project configuration that weren't in issues
+            for issue_type in statuses:
+                for status in issue_type['statuses']:
+                    status_name = status['name']
+                    all_statuses.add(status_name)
+                    
+                    # First status in configuration is typically initial
+                    if len(initial_statuses) == 0:
+                        initial_statuses.add(status_name)
+            
+            # Convert sets to sorted lists and normalize status names
+            status_list = sorted(list(all_statuses))
+            
+            # Normalize initial statuses to prevent duplicates with different casing
+            normalized_initial_statuses = {status.lower(): status for status in initial_statuses}
+            initial_statuses = set(normalized_initial_statuses.values())
+            
+            # Build suggested flow starting from initial statuses
             suggested_flow = []
             if initial_statuses:
-                current = sorted(list(initial_statuses))[0]  # Start with most common initial status
-                visited = set()
+                current = sorted(list(initial_statuses))[0]
+                visited = {current}
+                suggested_flow.append(current)
                 
-                while current not in visited and current in transitions:
-                    suggested_flow.append(current)
-                    visited.add(current)
-                    # Get most common next status
-                    next_statuses = transitions[current]
-                    if next_statuses:
-                        current = sorted(list(next_statuses))[0]
-                    else:
+                while current in transitions:
+                    next_states = transitions[current]
+                    if not next_states:
                         break
-                
-                # Add final status if not already included
-                if current not in visited:
+                    
+                    # Get next unvisited state
+                    next_state = None
+                    for state in sorted(next_states):
+                        if state not in visited:
+                            next_state = state
+                            break
+                    
+                    if next_state is None:
+                        break
+                    
+                    current = next_state
+                    visited.add(current)
                     suggested_flow.append(current)
             
             return WorkflowConfig(
                 all_statuses=status_list,
                 suggested_flow=suggested_flow,
-                initial_statuses=sorted(list(initial_statuses)),
+                initial_statuses=sorted(list(initial_statuses)),  # Using normalized and deduplicated initial_statuses
                 final_statuses=sorted(list(final_statuses)),
                 transitions={k: sorted(list(v)) for k, v in transitions.items()}
             )
@@ -187,11 +215,22 @@ class JiraService:
     def fetch_issues(self, jql_query: str, start_at: int = 0, max_results: int = 100) -> List[Dict]:
         """Fetch issues matching the query"""
         try:
+            fields = [
+                'summary',
+                'status',
+                'created',
+                'timeoriginalestimate',
+                'timespent',
+                'parent',
+                'subtasks',
+                'customfield_10014'  # Epic Link field (may need to adjust field ID)
+            ]
             return self.client.search_issues(
                 jql_query,
                 startAt=start_at,
                 maxResults=max_results,
-                expand='changelog'
+                expand='changelog',
+                fields=','.join(fields)
             )
         except Exception as e:
             logger.error(f"Error fetching issues: {str(e)}")

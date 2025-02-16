@@ -1,21 +1,54 @@
-import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import React, { useState, useRef } from 'react';
 import { GripVertical, X } from 'lucide-react';
 
-const WorkflowOrdering = ({ 
+const WorkflowOrdering = ({
   statuses, 
-  expectedPath, 
+  expectedPath,
+  startStates = [],
+  endStates = [], 
   onOrderChange,
-  onStatusesChange 
+  onStatusesChange,
+  onStateChange
 }) => {
-  const handleDragEnd = (result) => {
-    if (!result.destination) return;
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const dragNode = useRef(null);
 
+  const handleDragStart = (e, index) => {
+    dragNode.current = e.target;
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.target.classList.add('opacity-50');
+  };
+
+  const handleDragEnter = (e, index) => {
+    e.preventDefault();
+    if (index !== draggedIndex) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDragEnd = (e) => {
+    e.preventDefault();
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragNode.current?.classList.remove('opacity-50');
+  };
+
+  const handleDrop = (e, index) => {
+    e.preventDefault();
     const items = Array.from(expectedPath);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
+    const [reorderedItem] = items.splice(draggedIndex, 1);
+    items.splice(index, 0, reorderedItem);
     onOrderChange(items);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    dragNode.current?.classList.remove('opacity-50');
   };
 
   const removeStatus = (status) => {
@@ -53,87 +86,90 @@ const WorkflowOrdering = ({
           The cycle time will be calculated based on this order.
         </p>
 
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="workflow">
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-2"
-              >
-                {expectedPath.map((status, index) => (
-                  <Draggable key={status} draggableId={status} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className="flex items-center gap-2 p-3 bg-white rounded border group hover:border-blue-500"
-                      >
-                        <div {...provided.dragHandleProps} className="text-gray-400 hover:text-gray-600">
-                          <GripVertical className="h-5 w-5" />
-                        </div>
-                        <span className="flex-1">{status}</span>
-                        <button
-                          onClick={() => removeStatus(status)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+        <div className="space-y-2">
+          {expectedPath.map((status, index) => (
+            <div
+              key={status}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDrop={(e) => handleDrop(e, index)}
+              className={`flex items-center gap-2 p-3 bg-white rounded border group hover:border-blue-500 ${
+                dragOverIndex === index ? 'border-blue-500 border-2' : ''
+              }`}
+            >
+              <div className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing">
+                <GripVertical className="h-5 w-5" />
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-
-        {/* Start/End State Selection */}
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Start States</h4>
-            <div className="space-y-2">
-              {statuses.map(status => (
-                <label key={status} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={expectedPath.indexOf(status) === 0}
-                    onChange={() => {
-                      if (expectedPath.indexOf(status) !== 0) {
-                        const newPath = [status, ...expectedPath.filter(s => s !== status)];
-                        onOrderChange(newPath);
-                      }
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="text"
+                  value={status}
+                  onChange={(e) => {
+                    const newStatuses = statuses.map(s => s === status ? e.target.value : s);
+                    const newPath = expectedPath.map(s => s === status ? e.target.value : s);
+                    const newStartStates = startStates.map(s => s === status ? e.target.value : s);
+                    const newEndStates = endStates.map(s => s === status ? e.target.value : s);
+                    onStatusesChange(newStatuses, newPath);
+                    onStateChange(newStartStates, newEndStates);
+                  }}
+                  className="flex-1 bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-blue-500 rounded px-1"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const newStartStates = startStates.includes(status)
+                        ? startStates.filter(s => s !== status)
+                        : [...startStates, status];
+                      onStateChange(newStartStates, endStates.filter(s => s !== status));
                     }}
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm">{status}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">End States</h4>
-            <div className="space-y-2">
-              {statuses.map(status => (
-                <label key={status} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={expectedPath.indexOf(status) === expectedPath.length - 1}
-                    onChange={() => {
-                      if (expectedPath.indexOf(status) !== expectedPath.length - 1) {
-                        const newPath = [...expectedPath.filter(s => s !== status), status];
-                        onOrderChange(newPath);
-                      }
+                    className={`px-2 py-1 text-xs rounded ${
+                      startStates.includes(status)
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                    title="Mark as To-Do state"
+                  >
+                    To-Do
+                  </button>
+                  <button
+                    onClick={() => {
+                      const newEndStates = endStates.includes(status)
+                        ? endStates.filter(s => s !== status)
+                        : [...endStates, status];
+                      onStateChange(startStates.filter(s => s !== status), newEndStates);
                     }}
-                    className="rounded border-gray-300"
-                  />
-                  <span className="text-sm">{status}</span>
-                </label>
-              ))}
+                    className={`px-2 py-1 text-xs rounded ${
+                      endStates.includes(status)
+                        ? 'bg-green-500 text-white'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                    title="Mark as Done state"
+                  >
+                    Done
+                  </button>
+                  <button
+                    onClick={() => removeStatus(status)}
+                    className="p-1 text-red-500 hover:text-red-700"
+                    title="Remove status"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+
+        <div className="mt-4 text-sm text-gray-600">
+          <p>
+            <span className="font-medium">To-Do States:</span> States that indicate work hasn't started
+          </p>
+          <p>
+            <span className="font-medium">Done States:</span> States that indicate work is complete
+          </p>
         </div>
       </div>
     </div>

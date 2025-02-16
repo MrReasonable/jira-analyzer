@@ -15,7 +15,69 @@ const WorkflowExtractor = ({
   const [selectedStartStates, setSelectedStartStates] = useState([]);
   const [selectedEndStates, setSelectedEndStates] = useState([]);
 
-  // ... [Previous methods remain the same]
+  const fetchProjects = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/workflow/teams', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(connectionDetails),
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setProjects(data.data);
+      } else {
+        setError(data.message || 'Failed to fetch projects');
+      }
+    } catch (err) {
+      setError('Failed to fetch projects: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const extractWorkflow = async () => {
+    if (!selectedProject) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/workflow/extract-workflow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...connectionDetails,
+          projectKey: selectedProject.key
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setExtractedWorkflow(data.data);
+        // Pre-select initial and final statuses from Jira
+        setSelectedStartStates(data.data.initialStatuses);
+        setSelectedEndStates(data.data.finalStatuses);
+        // Notify parent about project selection
+        if (onProjectSelect) {
+          onProjectSelect(selectedProject);
+        }
+      } else {
+        setError(data.message || 'Failed to extract workflow');
+      }
+    } catch (err) {
+      setError('Failed to extract workflow: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStateSelection = (state, type) => {
     if (type === 'start') {
@@ -110,11 +172,21 @@ const WorkflowExtractor = ({
         {extractedWorkflow && (
           <div className="mt-6 space-y-6">
             {/* Suggested Flow */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">
-                Suggested Workflow
-              </h4>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium text-gray-700">
+                  Project Workflow
+                </h4>
+                {Object.keys(extractedWorkflow.transitions).length > 1 && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                    Multiple workflow paths available
+                  </span>
+                )}
+              </div>
               <div className="p-4 bg-gray-50 rounded flex items-center flex-wrap gap-2">
+                <div className="w-full text-sm text-gray-600 mb-2">
+                  This is a suggested workflow path based on your project's issue history:
+                </div>
                 {extractedWorkflow.suggestedFlow.map((status, index) => (
                   <span key={status} className="inline-flex items-center">
                     <span className="px-3 py-1 bg-white rounded border text-sm">
@@ -130,6 +202,9 @@ const WorkflowExtractor = ({
 
             {/* Start/End State Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="text-sm text-gray-600 mb-2 md:col-span-2">
+                Select the states that represent the start and end of your workflow. Multiple states can be selected to handle different workflow paths:
+              </div>
               {/* Start States */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
