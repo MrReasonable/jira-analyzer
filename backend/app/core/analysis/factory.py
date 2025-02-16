@@ -5,7 +5,8 @@ from app.core.analysis.components import (
     BottleneckAnalyzer,
     CFDAnalyzer,
     FlowEfficiencyAnalyzer,
-    WorkflowComplianceAnalyzer
+    WorkflowComplianceAnalyzer,
+    EpicAnalyzer
 )
 
 class AnalysisComponentFactory:
@@ -16,7 +17,8 @@ class AnalysisComponentFactory:
         "bottlenecks": BottleneckAnalyzer,
         "cfd": CFDAnalyzer,
         "flow_efficiency": FlowEfficiencyAnalyzer,
-        "workflow_compliance": WorkflowComplianceAnalyzer
+        "workflow_compliance": WorkflowComplianceAnalyzer,
+        "epics": EpicAnalyzer
     }
 
     @classmethod

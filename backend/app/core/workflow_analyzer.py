@@ -47,9 +47,10 @@ class WorkflowAnalyzer:
         if not transitions:
             # Handle items with no transitions - count time in current status if it's in workflow
             if current_status in self.expected_path:
-                now = datetime.now(timezone.utc)
-                # Assume the item has been in this status since creation
-                status_periods[current_status].append((now, now))
+                # For items with no transitions, we need their creation date
+                # This will be provided by the first transition's from_status timestamp
+                # or handled by the caller for completely new items
+                return status_periods
             return status_periods
 
         sorted_transitions = sorted(transitions, key=lambda x: x.timestamp)

@@ -16,20 +16,34 @@ class AnalysisService:
     
     def __init__(self):
         self.jira_service = None
+        self.last_request_data = None
 
     def initialize_from_request(self, data: Dict[str, Any]) -> None:
         """Initialize services from request data"""
+        self.last_request_data = data
         is_valid, error_message = validate_jira_config(data)
         if not is_valid:
             raise ValidationError(error_message)
+
+        # Get start and end states with defaults
+        start_states = data.get('startStates', [])
+        end_states = data.get('endStates', [])
+        
+        if not start_states and data.get('statuses'):
+            start_states = [data['statuses'][0]]
+        if not end_states and data.get('statuses'):
+            end_states = [data['statuses'][-1]]
 
         config = JiraConfig(
             url=data['jiraUrl'],
             username=data['username'],
             api_token=data['apiToken'],
-            workflow={'statuses': [], 'expected_path': []},
-            start_states=[],
-            end_states=[]
+            workflow={
+                'statuses': data.get('statuses', []),
+                'expected_path': data.get('expectedPath', [])
+            },
+            start_states=start_states,
+            end_states=end_states
         )
         
         self.jira_service = JiraService(config)
@@ -59,9 +73,14 @@ class AnalysisService:
 
     def analyze(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
         """Perform complete analysis workflow"""
-        self.initialize_from_request(data)
-        
+        self.last_request_data = data
         config, time_range, final_jql = self._create_analysis_config(data)
+        
+        # Initialize services with the complete config
+        self.jira_service = JiraService(config)
+        if not self.jira_service.test_connection():
+            raise JiraConnectionError()
+            
         result = self.perform_analysis(config, final_jql)
         
         if result.total_issues == 0:
@@ -121,6 +140,7 @@ class AnalysisService:
 
     def create_empty_result(self, time_range: TimeRange, jql: str, end_states: list) -> Dict[str, Any]:
         """Create an empty result structure when no issues are found"""
+        config = self._create_analysis_config(self.last_request_data)[0]
         return {
             'total_issues': 0,
             'cycle_time_stats': {
@@ -149,7 +169,8 @@ class AnalysisService:
             },
             'flow_efficiency_data': [],
             'epic_data': [],
-            'end_states': end_states
+            'end_states': end_states,
+            'expected_path': config.workflow['expected_path']
         }
 
     def format_analysis_result(self, result: AnalysisResult, jql: str, time_range: TimeRange) -> Dict[str, Any]:
@@ -161,6 +182,7 @@ class AnalysisService:
             'bottlenecks': result.bottlenecks,
             'cycle_time_stats': result.cycle_time_stats,
             'status_distribution': result.status_distribution,
+            'expected_path': result.workflow.get('expected_path', []) if hasattr(result, 'workflow') else [],
             'issues': result.issues,
             'jql': jql,
             'timeRange': {
@@ -174,10 +196,10 @@ class AnalysisService:
                 'wip_counts': result.cfd_data.wip_counts if result.cfd_data else []
             } if result.cfd_data else None,
             'flow_efficiency_data': [{
-                'issue_key': item.issue_key,
-                'total_time': item.total_time,
-                'active_time': item.active_time,
-                'efficiency': item.efficiency
+                'issue_key': item['issue_key'],
+                'total_time': item['total_time'],
+                'active_time': item['active_time'],
+                'efficiency': item['efficiency']
             } for item in result.flow_efficiency_data] if result.flow_efficiency_data else None,
             'epic_data': [{
                 'key': epic.key,

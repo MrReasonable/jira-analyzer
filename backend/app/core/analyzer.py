@@ -96,6 +96,7 @@ class CycleTimeAnalyzer:
             status_distribution=status_distribution,
             end_states=self.config.end_states,
             issues=issue_data,
+            workflow=self.config.workflow,  # Include the workflow configuration
             cfd_data=cfd_data,
             flow_efficiency_data=flow_efficiency_data,
             epic_data=results.get("epic_data", [])

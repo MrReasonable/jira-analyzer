@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 import numpy as np
 from app.core.analysis.base import BaseAnalysisComponent
-from app.core.models import IssueData, CFDData
+from app.core.models import IssueData, CFDData, EpicData
 from app.core.workflow_analyzer import WorkflowAnalyzer
 
 class FlowMetricsAnalyzer(BaseAnalysisComponent):
@@ -72,10 +72,26 @@ class BottleneckAnalyzer(BaseAnalysisComponent):
             if not times:
                 continue
 
+            # Sort times for percentile calculations
+            sorted_times = sorted(times)
+            median = float(np.median(sorted_times))
+            p85 = float(np.percentile(sorted_times, 85))
+            p95 = float(np.percentile(sorted_times, 95))
+            
+            # Calculate averages for each range
+            p50_85_times = [t for t in sorted_times if median < t <= p85]
+            p85_95_times = [t for t in sorted_times if p85 < t <= p95]
+            p95_100_times = [t for t in sorted_times if t > p95]
+            
             metrics = {
-                "mean": float(np.mean(times)),
-                "median": float(np.median(times)),
-                "std_dev": float(np.std(times))
+                "mean": float(np.mean(sorted_times)),
+                "median": median,
+                "p85": p85,
+                "p95": p95,
+                "std_dev": float(np.std(sorted_times)),
+                "p50_85_avg": float(np.mean(p50_85_times)) if p50_85_times else 0,
+                "p85_95_avg": float(np.mean(p85_95_times)) if p85_95_times else 0,
+                "p95_100_avg": float(np.mean(p95_100_times)) if p95_100_times else 0
             }
             
             bottleneck_score = (metrics["mean"] * metrics["std_dev"]) / metrics["median"] if metrics["median"] > 0 else 0
@@ -229,4 +245,52 @@ class WorkflowComplianceAnalyzer(BaseAnalysisComponent):
                 "compliance_rate": (compliant_count / len(issues) * 100) if issues else 0.0,
                 "non_compliant_paths": [d["actual_path"] for d in compliance_data if not d["compliant"]]
             }
+        }
+
+class EpicAnalyzer(BaseAnalysisComponent):
+    """Analyzes epic metrics and relationships"""
+    def _empty_result(self) -> Dict[str, Any]:
+        return {
+            "epic_data": []
+        }
+
+    def _perform_analysis(self, issues: List[IssueData]) -> Dict[str, Any]:
+        # Group issues by epic
+        epic_issues = {}
+        for issue in issues:
+            if issue.epic_key:
+                if issue.epic_key not in epic_issues:
+                    epic_issues[issue.epic_key] = []
+                epic_issues[issue.epic_key].append(issue)
+
+        # Calculate epic metrics
+        epic_data = []
+        for epic_key, epic_children in epic_issues.items():
+            # Find start and end times
+            start_times = [issue.created_date for issue in epic_children]
+            end_times = []
+            for issue in epic_children:
+                if issue.transitions:
+                    last_transition = max(issue.transitions, key=lambda t: t.timestamp)
+                    if last_transition.to_status in self.config["end_states"]:
+                        end_times.append(last_transition.timestamp)
+
+            if not start_times or not end_times:
+                continue
+
+            start_time = min(start_times)
+            end_time = max(end_times)
+            lead_time = (end_time - start_time).total_seconds() / 86400  # Convert to days
+
+            epic_data.append(EpicData(
+                key=epic_key,
+                summary=epic_children[0].summary if epic_children else "",
+                children=[issue.key for issue in epic_children],
+                start_time=start_time,
+                end_time=end_time,
+                lead_time=lead_time
+            ))
+
+        return {
+            "epic_data": epic_data
         }

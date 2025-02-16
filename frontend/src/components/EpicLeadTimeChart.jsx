@@ -10,6 +10,11 @@ import {
   ReferenceLine
 } from 'recharts';
 
+const formatNumber = (value) => {
+  if (value === undefined || value === null || isNaN(value)) return '0.0';
+  return value.toFixed(1);
+};
+
 const EpicLeadTimeChart = ({ data }) => {
   if (!data || !data.length) {
     return <div>No epic data available</div>;
@@ -43,7 +48,7 @@ const EpicLeadTimeChart = ({ data }) => {
       childCount: epic.children.length,
       startDate: epic.start_time ? new Date(epic.start_time).toLocaleDateString() : 'N/A',
       endDate: epic.end_time ? new Date(epic.end_time).toLocaleDateString() : 'N/A',
-      cumulativePercentage: percentile.toFixed(1),
+      cumulativePercentage: formatNumber(percentile),
       percentileRegion: epic.lead_time <= medianLeadTime ? 'within_50th' :
                        epic.lead_time <= p85LeadTime ? '50th_to_85th' :
                        epic.lead_time <= p95LeadTime ? '85th_to_95th' : 'above_95th'
@@ -55,9 +60,9 @@ const EpicLeadTimeChart = ({ data }) => {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Epic Lead Times</h2>
         <div className="text-sm text-gray-600 space-x-4">
-          <span>50th percentile: {medianLeadTime.toFixed(1)} days</span>
-          <span>85th percentile: {p85LeadTime.toFixed(1)} days</span>
-          <span>95th percentile: {p95LeadTime.toFixed(1)} days</span>
+          <span>50th percentile: {formatNumber(medianLeadTime)} days</span>
+          <span>85th percentile: {formatNumber(p85LeadTime)} days</span>
+          <span>95th percentile: {formatNumber(p95LeadTime)} days</span>
         </div>
       </div>
       <div className="h-[400px]">
@@ -79,7 +84,7 @@ const EpicLeadTimeChart = ({ data }) => {
                     <div className="bg-white p-2 border rounded shadow">
                       <p className="text-sm font-medium">{data.key}</p>
                       <p className="text-sm text-gray-600">{data.summary}</p>
-                      <p className="text-sm">Lead Time: {data.leadTime.toFixed(1)} days</p>
+                      <p className="text-sm">Lead Time: {formatNumber(data.leadTime)} days</p>
                       <p className="text-sm">{data.cumulativePercentage}% of epics completed within this time</p>
                       <p className="text-sm text-gray-600">
                         {data.percentileRegion === 'within_50th' ? 'Below median (50th percentile)' :
@@ -148,15 +153,15 @@ const EpicLeadTimeChart = ({ data }) => {
         <div className="flex items-center gap-4 mt-2">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
-            <span>50% of epics complete within {medianLeadTime.toFixed(1)} days</span>
+            <span>50% of epics complete within {formatNumber(medianLeadTime)} days</span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
-            <span>85% of epics complete within {p85LeadTime.toFixed(1)} days</span>
+            <span>85% of epics complete within {formatNumber(p85LeadTime)} days</span>
           </div>
           <div className="flex items-center">
             <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
-            <span>95% of epics complete within {p95LeadTime.toFixed(1)} days</span>
+            <span>95% of epics complete within {formatNumber(p95LeadTime)} days</span>
           </div>
         </div>
       </div>

@@ -1,4 +1,7 @@
-export const formatNumber = (num) => Number(num.toFixed(1));
+export const formatNumber = (num) => {
+  if (num === undefined || num === null) return 0;
+  return Number(num.toFixed(1));
+};
 
 export const getComplianceColor = (rate) => {
   if (rate >= 80) return 'bg-green-100 text-green-800';
@@ -29,24 +32,44 @@ export const formatTimeRange = (timeRange) => {
 export const hasSignificantBottleneck = (bottlenecks) => 
   bottlenecks.length > 0 && bottlenecks[0].bottleneck_score > 5;
 
-export const getMetricsSummary = (data) => ({
-  totalIssues: data.total_issues,
-  cycleTime: {
-    mean: formatNumber(data.cycle_time_stats.mean),
-    median: formatNumber(data.cycle_time_stats.median),
-    p85: formatNumber(data.cycle_time_stats.p85),
-    p95: formatNumber(data.cycle_time_stats.p95),
-    stdDev: formatNumber(data.cycle_time_stats.std_dev)
-  },
-  compliance: {
-    rate: formatNumber(data.workflow_compliance.compliance_rate),
-    compliantIssues: data.workflow_compliance.compliant_issues
-  }
-});
+export const getMetricsSummary = (data) => {
+  if (!data) return {
+    totalIssues: 0,
+    cycleTime: { mean: 0, median: 0, p85: 0, p95: 0, stdDev: 0 },
+    compliance: { rate: 0, compliantIssues: 0 }
+  };
 
-export const getBottleneckSummary = (bottleneck) => ({
-  status: bottleneck.status,
-  avgTime: formatNumber(bottleneck.avg_time),
-  stdDev: formatNumber(bottleneck.std_dev),
-  impact: bottleneck.impact
-});
+  const cycleTimeStats = data.cycle_time_stats || {};
+  const workflowCompliance = data.workflow_compliance || {};
+
+  return {
+    totalIssues: data.total_issues || 0,
+    cycleTime: {
+      mean: formatNumber(cycleTimeStats.mean),
+      median: formatNumber(cycleTimeStats.median),
+      p85: formatNumber(cycleTimeStats.p85),
+      p95: formatNumber(cycleTimeStats.p95),
+      stdDev: formatNumber(cycleTimeStats.std_dev)
+    },
+    compliance: {
+      rate: formatNumber(workflowCompliance.compliance_rate),
+      compliantIssues: workflowCompliance.compliant_issues || 0
+    }
+  };
+};
+
+export const getBottleneckSummary = (bottleneck) => {
+  if (!bottleneck) return {
+    status: '',
+    avgTime: 0,
+    stdDev: 0,
+    impact: 0
+  };
+
+  return {
+    status: bottleneck.status || '',
+    avgTime: formatNumber(bottleneck.avg_time),
+    stdDev: formatNumber(bottleneck.std_dev),
+    impact: bottleneck.impact || 0
+  };
+};

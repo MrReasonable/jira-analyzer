@@ -47,6 +47,21 @@ class JiraIssueTracker(IssueTrackingSystem):
         # Calculate cycle times using WorkflowAnalyzer
         from app.core.workflow_analyzer import WorkflowAnalyzer
         workflow_analyzer = WorkflowAnalyzer(self.config.workflow['expected_path'])
+        
+        # If there are no transitions and the current status is in the workflow,
+        # create an initial transition from creation date
+        created_date = datetime.strptime(
+            raw_issue.fields.created.split('.')[0],
+            '%Y-%m-%dT%H:%M:%S'
+        ).replace(tzinfo=timezone.utc)
+        
+        if not status_changes and current_status in self.config.workflow['expected_path']:
+            status_changes.append(StatusChange(
+                from_status=current_status,
+                to_status=current_status,
+                timestamp=created_date
+            ))
+        
         total_time, _, status_periods = workflow_analyzer.calculate_cycle_time(
             status_changes,
             current_status
