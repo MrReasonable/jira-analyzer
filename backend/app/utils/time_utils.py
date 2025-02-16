@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.core.models import TimeRange
 from typing import Optional, Dict, List
 import re
@@ -42,22 +42,46 @@ class JQLParser:
             else:
                 self.conditions.append(main_query)
 
-    def add_completion_filter(self, done_statuses: List[str]):
-        """Add filter for completed items"""
+    def add_completion_filter(self, done_statuses: List[str], lead_time_only: bool = False):
+        """
+        Add filter for completed items or in-progress items
+        Args:
+            done_statuses: List of status names considered "done"
+            lead_time_only: If True, only include items that entered done states
+        """
         if done_statuses:
-            status_condition = ' OR '.join([f'status = "{status}"' for status in done_statuses])
-            self.conditions.append(f"({status_condition})")
+            if lead_time_only:
+                # For lead time, find items that entered done states during the period
+                status_conditions = [f'status WAS "{status}"' for status in done_statuses]
+                self.conditions.append(f"({' OR '.join(status_conditions)})")
+            else:
+                # For cycle time, include current done states and in-progress items
+                current_status = ' OR '.join([f'status = "{status}"' for status in done_statuses])
+                was_status = ' OR '.join([f'status WAS "{status}"' for status in done_statuses])
+                self.conditions.append(f"({current_status} OR {was_status})")
 
     def add_date_range(self, time_range: TimeRange):
-        """Add date range conditions if they don't conflict with existing ones"""
+        """Add date range conditions to capture items in progress or completed during the period"""
         start_date, end_date = get_date_range(time_range)
         
-        # Only add created conditions if there aren't existing created date filters
-        if 'created' not in self.existing_date_fields:
-            if start_date:
-                self.conditions.append(f'created >= "{start_date.strftime("%Y-%m-%d")}"')
-            if end_date:
-                self.conditions.append(f'created <= "{end_date.strftime("%Y-%m-%d")}"')
+        if start_date and end_date:
+            # Use status history to find items that were worked on during the period
+            date_conditions = []
+            
+            # Items that had status changes during the period
+            date_conditions.append(
+                f'status CHANGED DURING ("{start_date.strftime("%Y-%m-%d")}", "{end_date.strftime("%Y-%m-%d")}")'
+            )
+            
+            # Items that were created during the period
+            if 'created' not in self.existing_date_fields:
+                date_conditions.append(
+                    f'created >= "{start_date.strftime("%Y-%m-%d")}" AND ' +
+                    f'created <= "{end_date.strftime("%Y-%m-%d")}"'
+                )
+            
+            if date_conditions:
+                self.conditions.append(f"({' OR '.join(date_conditions)})")
 
     def build_query(self) -> str:
         """Build the final JQL query"""
@@ -71,7 +95,7 @@ def get_date_range(time_range: TimeRange) -> tuple[Optional[datetime], Optional[
     if time_range.start_date and time_range.end_date:
         return time_range.start_date, time_range.end_date
     
-    end_date = datetime.utcnow()
+    end_date = datetime.now(timezone.utc)
     
     if time_range.preset:
         if time_range.preset == 'two_weeks':
@@ -89,7 +113,7 @@ def get_date_range(time_range: TimeRange) -> tuple[Optional[datetime], Optional[
     
     return start_date, end_date
 
-def build_analysis_jql(base_query: str, time_range: TimeRange, done_statuses: List[str]) -> str:
+def build_analysis_jql(base_query: str, time_range: TimeRange, done_statuses: List[str], lead_time_only: bool = False) -> str:
     """
     Build JQL query for cycle time analysis
     
@@ -97,11 +121,12 @@ def build_analysis_jql(base_query: str, time_range: TimeRange, done_statuses: Li
         base_query: Base JQL query
         time_range: TimeRange configuration
         done_statuses: List of status names considered "done"
+        lead_time_only: If True, only include items in done states (for lead time calculations)
         
     Returns:
         Complete JQL query for analysis
     """
     parser = JQLParser(base_query)
-    parser.add_completion_filter(done_statuses)
+    parser.add_completion_filter(done_statuses, lead_time_only)
     parser.add_date_range(time_range)
     return parser.build_query()

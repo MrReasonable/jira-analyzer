@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CycleTimeChart from './CycleTimeChart';
+import LeadTimeChart from './LeadTimeChart';
+import CFDChart from './CFDChart';
+import FlowEfficiencyChart from './FlowEfficiencyChart';
+import EpicLeadTimeChart from './EpicLeadTimeChart';
 import IssueTable from './IssueTable';
-import { AlertTriangle, Calendar } from 'lucide-react';
+import { AlertTriangle, Calendar, BarChart2, TrendingUp, Table, Activity, GitBranch } from 'lucide-react';
 
 const AnalysisResults = ({ data, jiraUrl, timeRange }) => {
+  const [activeSection, setActiveSection] = useState('metrics');
   const formatNumber = (num) => Number(num.toFixed(1));
 
   const getComplianceColor = (rate) => {
@@ -90,10 +95,69 @@ const AnalysisResults = ({ data, jiraUrl, timeRange }) => {
         </div>
       )}
 
-      {/* Cycle Time Distribution Chart */}
-      <CycleTimeChart data={data} />
+      {/* Analysis Navigation */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mt-6 mb-4">
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setActiveSection('metrics')}
+            className={`flex items-center px-4 py-2 rounded ${
+              activeSection === 'metrics' 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <BarChart2 className="h-5 w-5 mr-2" />
+            Process Metrics
+          </button>
+          <button
+            onClick={() => setActiveSection('flow')}
+            className={`flex items-center px-4 py-2 rounded ${
+              activeSection === 'flow' 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Activity className="h-5 w-5 mr-2" />
+            Flow Metrics
+          </button>
+          <button
+            onClick={() => setActiveSection('epics')}
+            className={`flex items-center px-4 py-2 rounded ${
+              activeSection === 'epics' 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <GitBranch className="h-5 w-5 mr-2" />
+            Epic Analysis
+          </button>
+          <button
+            onClick={() => setActiveSection('bottlenecks')}
+            className={`flex items-center px-4 py-2 rounded ${
+              activeSection === 'bottlenecks' 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <TrendingUp className="h-5 w-5 mr-2" />
+            Status Analysis
+          </button>
+          <button
+            onClick={() => setActiveSection('issues')}
+            className={`flex items-center px-4 py-2 rounded ${
+              activeSection === 'issues' 
+                ? 'bg-blue-50 text-blue-700' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Table className="h-5 w-5 mr-2" />
+            Issue Details
+          </button>
+        </div>
+      </div>
 
-      {/* Process Efficiency */}
+      {/* Process Metrics Section */}
+      {activeSection === 'metrics' && (
       <div className="bg-white p-6 rounded-lg shadow-sm">
         <h3 className="text-lg font-medium mb-4">Process Metrics</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -116,10 +180,41 @@ const AnalysisResults = ({ data, jiraUrl, timeRange }) => {
             </p>
           </div>
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CycleTimeChart data={{ 
+            ...data, 
+            expected_path: data.expected_path || data.config?.expectedPath || [],
+            end_states: data.end_states || [] 
+          }} />
+          <LeadTimeChart data={data} />
+        </div>
       </div>
+      )}
 
-      {/* Bottlenecks Table */}
-      {data.bottlenecks.length > 0 && (
+      {/* Flow Metrics Section */}
+      {activeSection === 'flow' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-medium mb-4">Flow Analysis</h3>
+            <CFDChart data={data.cfd_data} />
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-medium mb-4">Flow Efficiency</h3>
+            <FlowEfficiencyChart data={data.flow_efficiency_data} />
+          </div>
+        </div>
+      )}
+
+      {/* Epic Analysis Section */}
+      {activeSection === 'epics' && (
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h3 className="text-lg font-medium mb-4">Epic Lead Times</h3>
+          <EpicLeadTimeChart data={data.epic_data} />
+        </div>
+      )}
+
+      {/* Bottlenecks Section */}
+      {activeSection === 'bottlenecks' && data.bottlenecks.length > 0 && (
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h3 className="text-lg font-medium mb-4">Status Analysis</h3>
           <div className="overflow-x-auto">
@@ -168,8 +263,10 @@ const AnalysisResults = ({ data, jiraUrl, timeRange }) => {
         </div>
       )}
 
-      {/* Issues Table */}
-      <IssueTable issues={data.issues} jiraUrl={jiraUrl} />
+      {/* Issues Table Section */}
+      {activeSection === 'issues' && (
+        <IssueTable issues={data.issues} jiraUrl={jiraUrl} />
+      )}
     </div>
   );
 };

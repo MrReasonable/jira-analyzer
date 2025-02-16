@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional, Tuple
 from app.core.models import StatusChange, CycleTimeBreakdown
 
@@ -25,13 +25,74 @@ class WorkflowAnalyzer:
             return False
         return self.status_order[to_status] < self.status_order[from_status]
 
+    def calculate_status_periods(
+        self,
+        transitions: List[StatusChange],
+        current_status: str
+    ) -> Dict[str, List[Tuple[datetime, datetime]]]:
+        """
+        Calculate time periods spent in each status, respecting workflow order
+        
+        Args:
+            transitions: List of status changes
+            current_status: Current issue status
+            
+        Returns:
+            Dictionary mapping status to list of (start_time, end_time) tuples
+        """
+        status_periods: Dict[str, List[Tuple[datetime, datetime]]] = {
+            status: [] for status in self.expected_path
+        }
+        
+        if not transitions:
+            # Handle items with no transitions - count time in current status if it's in workflow
+            if current_status in self.expected_path:
+                now = datetime.now(timezone.utc)
+                # Assume the item has been in this status since creation
+                status_periods[current_status].append((now, now))
+            return status_periods
+
+        sorted_transitions = sorted(transitions, key=lambda x: x.timestamp)
+        first_transition = sorted_transitions[0]
+        
+        # Track the current status and its start time
+        current_status_tracking = {
+            'status': first_transition.from_status,
+            'start_time': first_transition.timestamp
+        }
+
+        # Process transitions
+        for transition in sorted_transitions:
+            # If the current status is in our workflow, record the time period
+            if current_status_tracking['status'] in self.expected_path:
+                status_periods[current_status_tracking['status']].append((
+                    current_status_tracking['start_time'],
+                    transition.timestamp
+                ))
+            
+            # Update tracking for new status
+            current_status_tracking = {
+                'status': transition.to_status,
+                'start_time': transition.timestamp
+            }
+
+        # Handle the final/current status
+        now = datetime.now(timezone.utc)
+        if current_status_tracking['status'] in self.expected_path:
+            status_periods[current_status_tracking['status']].append((
+                current_status_tracking['start_time'],
+                now
+            ))
+
+        return status_periods
+
     def calculate_cycle_time(
         self,
         transitions: List[StatusChange],
         current_status: str
     ) -> Tuple[float, List[CycleTimeBreakdown], Dict[str, List[Tuple[datetime, datetime]]]]:
         """
-        Calculate cycle time respecting workflow order
+        Calculate cycle time respecting workflow order and handling skipped statuses
         
         Args:
             transitions: List of status changes
@@ -40,62 +101,28 @@ class WorkflowAnalyzer:
         Returns:
             Tuple of (total_cycle_time, breakdowns, status_periods)
         """
-        if not transitions:
-            return 0.0, [], {}
-
-        # Sort transitions by timestamp
-        sorted_transitions = sorted(transitions, key=lambda x: x.timestamp)
+        status_periods = self.calculate_status_periods(transitions, current_status)
         
-        # Track time periods spent in each status
-        status_periods: Dict[str, List[Tuple[datetime, datetime]]] = {
-            status: [] for status in self.expected_path
-        }
-        
-        # Track current period for each status
-        current_periods: Dict[str, Optional[datetime]] = {
-            status: None for status in self.expected_path
-        }
-
-        # Process transitions
-        for i, transition in enumerate(sorted_transitions):
-            from_status = transition.from_status
-            to_status = transition.to_status
-            
-            # Close period for previous status if it exists
-            if from_status in current_periods and current_periods[from_status] is not None:
-                status_periods[from_status].append((
-                    current_periods[from_status],
-                    transition.timestamp
-                ))
-                current_periods[from_status] = None
-            
-            # Start period for new status
-            if to_status in current_periods:
-                current_periods[to_status] = transition.timestamp
-
-        # Close any open periods
-        now = datetime.utcnow()
-        for status, start_time in current_periods.items():
-            if start_time is not None:
-                status_periods[status].append((start_time, now))
-
         # Calculate cycle time and breakdowns
         total_time = 0.0
         breakdowns = []
         
         for status in self.expected_path:
-            status_time = 0.0
             periods = status_periods[status]
-            
-            for start, end in periods:
-                period_time = (end - start).total_seconds() / 86400  # Convert to days
-                status_time += period_time
+            if not periods:
+                continue
+                
+            status_time = sum(
+                (end - start).total_seconds() / 86400  # Convert to days
+                for start, end in periods
+            )
             
             if status_time > 0:
                 breakdowns.append(CycleTimeBreakdown(
-                    status=status,
-                    time=status_time,
-                    periods=periods
+                    start_state=status,
+                    end_state=status,  # Same since this is time in a single status
+                    duration=status_time,
+                    transitions=[]  # We don't track individual transitions within a status
                 ))
                 total_time += status_time
 
@@ -124,8 +151,8 @@ class WorkflowAnalyzer:
             return 0.0
             
         active_time = sum(
-            b.time for b in breakdowns 
-            if b.status in active_statuses
+            b.duration for b in breakdowns 
+            if b.start_state in active_statuses
         )
         
         return (active_time / total_time) * 100
@@ -149,10 +176,10 @@ class WorkflowAnalyzer:
         
         bottlenecks = []
         for b in breakdowns:
-            if b.time > 0:
+            if b.duration > 0:
                 # Calculate metrics for bottleneck detection
-                avg_time_in_status = b.time
-                num_times_entered = len(b.periods)
+                avg_time_in_status = b.duration
+                num_times_entered = len(b.transitions) + 1  # Add 1 since transitions list may be empty
                 if num_times_entered > 1:
                     # Multiple entries might indicate a problem
                     bottleneck_score = avg_time_in_status * (num_times_entered - 1)
@@ -160,7 +187,7 @@ class WorkflowAnalyzer:
                     bottleneck_score = avg_time_in_status
                 
                 bottlenecks.append({
-                    'status': b.status,
+                    'status': b.start_state,  # Use start_state since it's the same as end_state for single status
                     'avg_time': avg_time_in_status,
                     'times_entered': num_times_entered,
                     'bottleneck_score': bottleneck_score

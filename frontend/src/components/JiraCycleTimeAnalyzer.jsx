@@ -1,174 +1,99 @@
 import React, { useState } from "react";
 import ConfigurationForm from "./ConfigurationForm";
-import AnalysisResults from "./AnalysisResults";
+import AnalysisResults from "./analysis/AnalysisResults";
 import TeamConfigManager from "./TeamConfigManager";
 import TimeRangeSelector from "./TimeRangeSelector";
 import ConfigurationSelector from "./ConfigurationSelector";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
+import { useConfiguration } from "@/hooks/useConfiguration";
+import { useAnalysis } from "@/hooks/useAnalysis";
 
 const JiraCycleTimeAnalyzer = () => {
-  const [config, setConfig] = useState({
-    jiraUrl: "",
-    username: "",
-    apiToken: "",
-    jqlQuery: "",
-    statuses: ["To Do", "In Progress", "Code Review", "QA", "Done"],
-    expectedPath: ["To Do", "In Progress", "Code Review", "QA", "Done"],
-    endStates: ["Done"], // Default end state
-    projectKey: "",
-    projectName: "",
-    filterId: "",
-    filterName: "",
-    filterJql: "",
-  });
+  const {
+    config,
+    setConfig,
+    currentConfigName,
+    currentConfigId,
+    handleConfigSelect,
+    validateConfig,
+    saveConfig,
+    setError: setConfigError
+  } = useConfiguration();
 
-  const [currentConfigName, setCurrentConfigName] = useState("");
-  const [currentConfigId, setCurrentConfigId] = useState(null);
+  const {
+    analysisData,
+    error,
+    loading,
+    activeTab,
+    setActiveTab,
+    runAnalysis,
+    clearError
+  } = useAnalysis();
 
   const [timeRange, setTimeRange] = useState({
-    timePreset: "two_weeks",
+    timePreset: "quarter",
     startDate: null,
     endDate: null,
   });
-
-  const [analysisData, setAnalysisData] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const handleTimeRangeChange = (newTimeRange) => {
     setTimeRange(newTimeRange);
   };
 
-  const handleConfigSelect = (selectedConfig) => {
-    setConfig({
-      jiraUrl: selectedConfig.jiraUrl,
-      username: selectedConfig.username,
-      apiToken: selectedConfig.apiToken,
-      statuses: selectedConfig.statuses,
-      expectedPath: selectedConfig.expectedPath,
-      endStates: selectedConfig.endStates || ['Done'],
-      // Use filterJql if it exists, otherwise use defaultJql or empty string
-      jqlQuery: selectedConfig.filterJql || selectedConfig.defaultJql || '',
-      defaultJql: selectedConfig.defaultJql || '',
-      projectKey: selectedConfig.projectKey || '',
-      projectName: selectedConfig.projectName || '',
-      filterId: selectedConfig.filterId || '',
-      filterName: selectedConfig.filterName || '',
-      filterJql: selectedConfig.filterJql || ''
-    });
-    setCurrentConfigName(selectedConfig.name);
-    setCurrentConfigId(selectedConfig.id);
-    setAnalysisData(null);
-  };
-
-  const handleSaveConfig = async (configToSave) => {
-    try {
-      const url = configToSave.id
-        ? `/api/team-configs/${configToSave.id}`
-        : "/api/team-configs";
-
-      const method = configToSave.id ? "PUT" : "POST";
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(configToSave),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save configuration");
-      }
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setError(null);
-        // Update current config details if this was an update
-        if (configToSave.id) {
-          setCurrentConfigName(configToSave.name);
-        }
-        alert(
-          configToSave.id
-            ? "Configuration updated successfully!"
-            : "Configuration saved successfully!"
-        );
-      } else {
-        setError(data.message || "Failed to save configuration");
-      }
-    } catch (err) {
-      setError(err.message || "Failed to save configuration");
-    }
-  };
-
-  const validateInputs = () => {
-    if (!config.jiraUrl) return "Jira URL is required";
-    if (!config.username) return "Username is required";
-    if (!config.apiToken) return "API Token is required";
-    if (!config.jqlQuery && !config.filterJql) return "JQL Query is required";
-    if (!config.statuses.length) return "At least one status is required";
-    if (!config.expectedPath.length) return "Expected path cannot be empty";
-    
-    // Validate URL format
-    try {
-      new URL(config.jiraUrl);
-    } catch {
-      return "Invalid Jira URL format";
-    }
-    
-    return null;
-  };
-
   const handleAnalyze = async () => {
-    setLoading(true);
-    setError(null);
-
-    const validationError = validateInputs();
+    const validationError = validateConfig(config);
     if (validationError) {
-      setError(validationError);
-      setLoading(false);
+      setConfigError(validationError);
       return;
     }
-
-    try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...config,
-          ...timeRange,
-          expectedPath: config.expectedPath,
-          doneStates: config.endStates || [], // Use end states selected by user
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to analyze data");
-      }
-
-      if (data.status === "warning") {
-        setError(data.message);
-        setAnalysisData(data.data);
-      } else if (data.status === "success") {
-        setAnalysisData(data.data);
-      } else {
-        throw new Error(data.message || "Unknown error occurred");
-      }
-    } catch (err) {
-      setError(err.message);
-      setAnalysisData(null);
-    } finally {
-      setLoading(false);
-    }
+    await runAnalysis(config, timeRange);
   };
 
-  const clearError = () => setError(null);
+  const renderTabContent = () => {
+    if (activeTab === "config") {
+      return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Configuration Management */}
+          <div className="lg:col-span-1 space-y-6">
+            <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} />
+            <TeamConfigManager
+              onConfigSelect={handleConfigSelect}
+              currentConfig={config}
+              currentConfigName={currentConfigName}
+              onSaveConfig={saveConfig}
+            />
+          </div>
+
+          {/* Right Column - Configuration Form */}
+          <div className="lg:col-span-2">
+            <ConfigurationForm
+              config={config}
+              onConfigChange={setConfig}
+              onAnalyze={handleAnalyze}
+              onSaveConfig={saveConfig}
+              loading={loading}
+              error={error}
+              onErrorClear={clearError}
+              currentConfigName={currentConfigName}
+              currentConfigId={currentConfigId}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === "analysis" && analysisData) {
+      return (
+        <AnalysisResults
+          data={analysisData}
+          jiraUrl={config.jiraUrl}
+          timeRange={timeRange}
+        />
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -181,47 +106,42 @@ const JiraCycleTimeAnalyzer = () => {
           currentConfigName={currentConfigName}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Configuration Management */}
-          <div className="lg:col-span-1 space-y-6">
-            <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} />
-
-            <TeamConfigManager
-              onConfigSelect={handleConfigSelect}
-              currentConfig={config}
-              currentConfigName={currentConfigName}
-            />
-          </div>
-
-          {/* Right Column - Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <ConfigurationForm
-              config={config}
-              onConfigChange={setConfig}
-              onAnalyze={handleAnalyze}
-              onSaveConfig={handleSaveConfig}
-              loading={loading}
-              error={error}
-              onErrorClear={clearError}
-              currentConfigName={currentConfigName}
-              currentConfigId={currentConfigId}
-            />
-
-            {analysisData && (
-              <AnalysisResults
-                data={analysisData}
-                jiraUrl={config.jiraUrl}
-                timeRange={timeRange}
-              />
-            )}
-          </div>
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab("config")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "config"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Configuration
+            </button>
+            <button
+              onClick={() => setActiveTab("analysis")}
+              disabled={!analysisData}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                !analysisData
+                  ? "border-transparent text-gray-300 cursor-not-allowed"
+                  : activeTab === "analysis"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Analysis
+            </button>
+          </nav>
         </div>
+
+        {error && (
+          <Alert variant="destructive" className="mb-8" onClose={clearError}>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {renderTabContent()}
       </div>
     </div>
   );

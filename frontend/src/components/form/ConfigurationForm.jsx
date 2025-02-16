@@ -1,23 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Loader2, ArrowUpDown } from 'lucide-react';
-import WorkflowOrdering from './WorkflowOrdering';
-import WorkflowExtractor from './WorkflowExtractor';
-
-const InputField = ({ name, value, onChange, placeholder, type = "text" }) => (
-  <div className="relative">
-    <input
-      type={type}
-      name={name}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      className="w-full px-4 py-3 rounded-md border border-zinc-200 bg-white text-zinc-900 shadow-sm 
-                 placeholder:text-zinc-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 
-                 transition duration-200 ease-in-out"
-    />
-  </div>
-);
+import WorkflowOrdering from '../workflow/WorkflowOrdering';
+import WorkflowExtractor from '../WorkflowExtractor';
+import FormField from './FormField';
+import { useFormFields } from '@/hooks/useFormFields';
 
 const ConfigurationForm = ({ 
   config, 
@@ -29,13 +16,7 @@ const ConfigurationForm = ({
 }) => {
   const [useExtractor, setUseExtractor] = useState(false);
   
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    onConfigChange({
-      ...config,
-      [name]: value
-    });
-  };
+  const { handleFieldChange } = useFormFields(config, onConfigChange);
 
   const handleWorkflowChange = (newStatuses, newPath) => {
     onConfigChange({
@@ -53,9 +34,32 @@ const ConfigurationForm = ({
     });
   };
 
+  const formFields = [
+    {
+      name: "jiraUrl",
+      label: "Jira URL",
+      placeholder: "https://your-domain.atlassian.net"
+    },
+    {
+      name: "username",
+      label: "Email",
+      placeholder: "Your Jira email"
+    },
+    {
+      name: "apiToken",
+      label: "API Token",
+      type: "password",
+      placeholder: "Your Jira API token"
+    },
+    {
+      name: "jqlQuery",
+      label: "JQL Query",
+      placeholder: "project = 'KEY' AND status = Done"
+    }
+  ];
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-zinc-100 overflow-hidden">
-      {/* Header */}
       <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
         <h2 className="text-xl font-semibold text-zinc-900">Configuration</h2>
       </div>
@@ -63,31 +67,14 @@ const ConfigurationForm = ({
       <div className="p-6 space-y-6">
         {/* Input Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputField
-            name="jiraUrl"
-            value={config.jiraUrl}
-            onChange={handleInputChange}
-            placeholder="Jira URL (e.g., https://your-domain.atlassian.net)"
-          />
-          <InputField
-            name="username"
-            value={config.username}
-            onChange={handleInputChange}
-            placeholder="Email"
-          />
-          <InputField
-            name="apiToken"
-            value={config.apiToken}
-            onChange={handleInputChange}
-            placeholder="API Token"
-            type="password"
-          />
-          <InputField
-            name="jqlQuery"
-            value={config.jqlQuery}
-            onChange={handleInputChange}
-            placeholder="JQL Query (e.g., project = 'KEY' AND status = Done)"
-          />
+          {formFields.map(field => (
+            <FormField
+              key={field.name}
+              {...field}
+              value={config[field.name]}
+              onChange={handleFieldChange}
+            />
+          ))}
         </div>
 
         {/* Workflow Configuration Section */}
@@ -113,7 +100,6 @@ const ConfigurationForm = ({
                   apiToken: config.apiToken
                 }}
                 onWorkflowExtracted={(workflow) => {
-                  // Ensure we maintain the same order between statuses and expectedPath
                   const uniqueStatuses = [...new Set(workflow.suggestedFlow)];
                   onConfigChange({
                     ...config,

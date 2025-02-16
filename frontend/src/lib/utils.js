@@ -29,3 +29,11 @@ export const calculateStandardDeviation = (values) => {
   const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (n - 1);
   return Math.sqrt(variance);
 };
+
+export const handleResponse = async (response) => {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(error.message || 'An error occurred while processing your request');
+  }
+  return response.json();
+};

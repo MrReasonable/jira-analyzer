@@ -1,6 +1,6 @@
 from typing import Dict, Any, Tuple, Optional
 from urllib.parse import urlparse
-from datetime import datetime
+from datetime import datetime, timezone
 from app.core.models import TimeRange
 
 def validate_time_range(time_range: TimeRange) -> Tuple[bool, Optional[str]]:
@@ -24,7 +24,7 @@ def validate_time_range(time_range: TimeRange) -> Tuple[bool, Optional[str]]:
         if time_range.start_date and time_range.end_date:
             if time_range.start_date > time_range.end_date:
                 return False, "Start date must be before end date"
-            if time_range.end_date > datetime.utcnow():
+            if time_range.end_date > datetime.now(timezone.utc):
                 return False, "End date cannot be in the future"
         else:
             return False, "Both start and end dates must be provided for custom range"
@@ -104,18 +104,6 @@ def validate_team_config(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     
     # Reuse Jira config validation
     return validate_jira_config(data)
-
-def validate_jql_query(query: str) -> Tuple[bool, Optional[str]]:
-    """Basic validation of JQL query string."""
-    if not query:
-        return False, "JQL query cannot be empty"
-    
-    # Check for some basic required keywords
-    required_keywords = ['project', 'issue']
-    if not any(keyword in query.lower() for keyword in required_keywords):
-        return False, "JQL query must contain at least one of: project, issue"
-    
-    return True, None
 
 def validate_connection_request(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Validate connection test request data."""
