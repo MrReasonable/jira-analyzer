@@ -223,7 +223,8 @@ class JiraService:
                 'timespent',
                 'parent',
                 'subtasks',
-                'customfield_10014'  # Epic Link field (may need to adjust field ID)
+                'customfield_10014',  # Epic Link field (may need to adjust field ID)
+                'customfield_10015'   # Epic Name field (may need to adjust field ID)
             ]
             return self.client.search_issues(
                 jql_query,

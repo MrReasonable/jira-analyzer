@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import ConfigurationForm from "./ConfigurationForm";
+import React, { useState, useCallback, useEffect } from "react";
+import ConfigurationForm from "./form/ConfigurationForm";
 import AnalysisResults from "./analysis/AnalysisResults";
 import TeamConfigManager from "./TeamConfigManager";
 import TimeRangeSelector from "./TimeRangeSelector";
@@ -7,6 +7,7 @@ import ConfigurationSelector from "./ConfigurationSelector";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { useConfiguration } from "@/hooks/useConfiguration";
 import { useAnalysis } from "@/hooks/useAnalysis";
+import { fetchTeamConfigs } from "@/services/api";
 
 const JiraCycleTimeAnalyzer = () => {
   const {
@@ -30,15 +31,40 @@ const JiraCycleTimeAnalyzer = () => {
     clearError
   } = useAnalysis();
 
-  const [timeRange, setTimeRange] = useState({
-    timePreset: "quarter",
-    startDate: null,
-    endDate: null,
+  const [configs, setConfigs] = useState([]);
+  const [configLoadError, setConfigLoadError] = useState(null);
+
+  const [timeRange, setTimeRange] = useState(() => {
+    const now = new Date();
+    const quarterAgo = new Date();
+    quarterAgo.setDate(quarterAgo.getDate() - 90); // 90 days = ~1 quarter
+    return {
+      timePreset: "quarter",
+      startDate: quarterAgo.toISOString().split('T')[0],
+      endDate: now.toISOString().split('T')[0],
+    };
   });
 
-  const handleTimeRangeChange = (newTimeRange) => {
-    setTimeRange(newTimeRange);
+  useEffect(() => {
+    fetchConfigs();
+  }, []);
+
+  const fetchConfigs = async () => {
+    try {
+      const result = await fetchTeamConfigs();
+      if (result.status === 'success') {
+        setConfigs(result.data);
+      } else {
+        setConfigLoadError('Failed to load configurations');
+      }
+    } catch (err) {
+      setConfigLoadError('Failed to load configurations');
+    }
   };
+
+  const handleTimeRangeChange = useCallback((newTimeRange) => {
+    setTimeRange(newTimeRange);
+  }, []); // No dependencies needed since setTimeRange is stable
 
   const handleAnalyze = async () => {
     const validationError = validateConfig(config);
@@ -55,12 +81,22 @@ const JiraCycleTimeAnalyzer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Configuration Management */}
           <div className="lg:col-span-1 space-y-6">
-            <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} />
+            <TimeRangeSelector 
+              defaultValue={timeRange}
+              onTimeRangeChange={handleTimeRangeChange} 
+            />
             <TeamConfigManager
               onConfigSelect={handleConfigSelect}
               currentConfig={config}
               currentConfigName={currentConfigName}
-              onSaveConfig={saveConfig}
+              onSaveConfig={async (name) => {
+                if (name) {
+                  await saveConfig(name);
+                }
+                fetchConfigs();
+              }}
+              configs={configs}
+              error={configLoadError}
             />
           </div>
 
@@ -70,7 +106,10 @@ const JiraCycleTimeAnalyzer = () => {
               config={config}
               onConfigChange={setConfig}
               onAnalyze={handleAnalyze}
-              onSaveConfig={saveConfig}
+              onSaveConfig={async (name) => {
+                await saveConfig(name);
+                fetchConfigs();
+              }}
               loading={loading}
               error={error}
               onErrorClear={clearError}
@@ -104,6 +143,8 @@ const JiraCycleTimeAnalyzer = () => {
         <ConfigurationSelector
           onConfigSelect={handleConfigSelect}
           currentConfigName={currentConfigName}
+          configs={configs}
+          error={configLoadError}
         />
 
         {/* Tab Navigation */}

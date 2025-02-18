@@ -95,16 +95,13 @@ def update_config(config_id):
         config.jira_url = data['jiraUrl']
         config.username = data['username']
         config.api_token = data['apiToken']
-        config.project_key = data.get('projectKey')
-        config.project_name = data.get('projectName')
-        config.filter_id = data.get('filterId')
-        config.filter_name = data.get('filterName')
         config.filter_jql = data.get('filterJql')
         config.statuses = json.dumps(data['statuses'])
         config.expected_path = json.dumps(data['expectedPath'])
         config.start_states = json.dumps(data.get('startStates', []))
         config.end_states = json.dumps(data.get('endStates', []))
-        config.default_jql = data.get('defaultJql')
+        config.active_statuses = json.dumps(data.get('activeStatuses', []))
+        config.flow_efficiency_method = data.get('flowEfficiencyMethod', 'active_statuses')
         
         db.session.commit()
         

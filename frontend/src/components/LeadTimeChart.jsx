@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import withFullscreen from './hoc/withFullscreen';
 import {
   AreaChart,
   Area,
@@ -10,7 +11,9 @@ import {
   ReferenceLine
 } from 'recharts';
 
-const LeadTimeChart = ({ data }) => {
+const LeadTimeChart = ({ data, isFullscreen, fullscreenButton }) => {
+  const [isLogScale, setIsLogScale] = useState(true);
+  
   if (!data || !data.cycle_time_stats) return null;
 
   const { median = 0, p85 = 0, p95 = 0 } = data.cycle_time_stats;
@@ -38,7 +41,7 @@ const LeadTimeChart = ({ data }) => {
     
     distributionData.push({
       days: day,
-      count,
+      count: isLogScale ? Math.max(1, count) : count, // Ensure minimum of 1 for log scale
       cumulativePercentage: percentile.toFixed(1),
       percentileRegion: day <= median ? 'within_50th' :
                        day <= p85 ? '50th_to_85th' :
@@ -47,9 +50,25 @@ const LeadTimeChart = ({ data }) => {
   });
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <h3 className="text-lg font-medium mb-4">Lead Time Distribution</h3>
-      <div className="h-96">
+    <div className={`bg-white p-6 rounded-lg shadow-sm ${isFullscreen ? 'h-full' : ''}`}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Lead Time Distribution</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Scale:</label>
+            <select 
+              className="text-sm border rounded p-1"
+              value={isLogScale ? 'log' : 'linear'}
+              onChange={(e) => setIsLogScale(e.target.value === 'log')}
+            >
+              <option value="log">Logarithmic</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+          {fullscreenButton}
+        </div>
+      </div>
+      <div className={isFullscreen ? 'h-full' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={distributionData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -58,7 +77,10 @@ const LeadTimeChart = ({ data }) => {
               label={{ value: 'Days', position: 'insideBottom', offset: -5 }}
             />
             <YAxis 
-              label={{ value: 'Number of Items', angle: -90, position: 'insideLeft' }}
+              scale={isLogScale ? 'log' : 'linear'}
+              domain={isLogScale ? [1, 'auto'] : [0, 'auto']}
+              allowDataOverflow={true}
+              label={{ value: `Number of Items${isLogScale ? ' (log scale)' : ''}`, angle: -90, position: 'insideLeft' }}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -159,4 +181,4 @@ const LeadTimeChart = ({ data }) => {
   );
 };
 
-export default LeadTimeChart;
+export default withFullscreen(LeadTimeChart);

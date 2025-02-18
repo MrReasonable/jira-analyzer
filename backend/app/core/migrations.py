@@ -41,6 +41,18 @@ def run_migrations(db: SQLAlchemy):
                 'ALTER TABLE team_config ADD COLUMN filter_name TEXT',
                 'ALTER TABLE team_config ADD COLUMN filter_jql TEXT'
             ]
+        },
+        {
+            'name': 'add_active_statuses_column',
+            'sql': [
+                'ALTER TABLE team_config ADD COLUMN active_statuses TEXT'
+            ]
+        },
+        {
+            'name': 'add_flow_efficiency_method_column',
+            'sql': [
+                'ALTER TABLE team_config ADD COLUMN flow_efficiency_method TEXT DEFAULT "active_statuses"'
+            ]
         }
     ]
 

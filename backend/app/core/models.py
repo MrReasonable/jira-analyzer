@@ -47,6 +47,7 @@ class IssueData:
     time_spent: Optional[int] = None  # Time spent in seconds
     original_estimate: Optional[int] = None  # Original estimate in seconds
     epic_key: Optional[str] = None  # Epic link
+    epic_summary: Optional[str] = None  # Epic summary
     parent_key: Optional[str] = None  # Parent issue key
     subtask_keys: List[str] = field(default_factory=list)  # List of subtask keys
 
@@ -76,6 +77,13 @@ class FlowEfficiencyData:
     efficiency: float  # Percentage of active time vs total time
 
 @dataclass
+class TimeRange:
+    """Represents a time range for analysis"""
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    preset: Optional[str] = None  # 'two_weeks', 'quarter', 'half_year', 'year'
+
+@dataclass
 class JiraConfig:
     """Represents Jira configuration"""
     url: str
@@ -84,6 +92,9 @@ class JiraConfig:
     workflow: Dict[str, List[str]]
     start_states: List[str] = field(default_factory=list)
     end_states: List[str] = field(default_factory=list)
+    time_range: Optional[TimeRange] = None
+    flow_efficiency_method: str = 'active_statuses'
+    active_statuses: List[str] = field(default_factory=list)
 
 @dataclass
 class AnalysisResult:
@@ -101,13 +112,6 @@ class AnalysisResult:
     flow_efficiency_data: Optional[List[FlowEfficiencyData]] = None
     epic_data: Optional[List[EpicData]] = None
 
-@dataclass
-class TimeRange:
-    """Represents a time range for analysis"""
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    preset: Optional[str] = None  # 'two_weeks', 'quarter', 'half_year', 'year'
-
 class TeamConfig(db.Model):
     """Stored team configuration"""
     id = db.Column(db.Integer, primary_key=True)
@@ -115,16 +119,13 @@ class TeamConfig(db.Model):
     jira_url = db.Column(db.String(500), nullable=False)
     username = db.Column(db.String(100), nullable=False)
     api_token = db.Column(db.String(100), nullable=False)
-    project_key = db.Column(db.String(50))
-    project_name = db.Column(db.String(100))
-    filter_id = db.Column(db.String(50))
-    filter_name = db.Column(db.String(100))
-    filter_jql = db.Column(db.Text)
-    statuses = db.Column(db.Text, nullable=False)  # JSON string
-    expected_path = db.Column(db.Text, nullable=False)  # JSON string
-    start_states = db.Column(db.Text)  # JSON string
-    end_states = db.Column(db.Text)  # JSON string
-    default_jql = db.Column(db.Text)
+    filter_jql = db.Column(db.Text)  # The JQL query to use
+    statuses = db.Column(db.Text, nullable=False)  # JSON string of workflow statuses
+    expected_path = db.Column(db.Text, nullable=False)  # JSON string of expected workflow path
+    start_states = db.Column(db.Text)  # JSON string of start states
+    end_states = db.Column(db.Text)  # JSON string of end states
+    active_statuses = db.Column(db.Text)  # JSON string of active statuses
+    flow_efficiency_method = db.Column(db.Text)  # 'active_statuses' or 'time_logged'
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -136,16 +137,13 @@ class TeamConfig(db.Model):
             'jiraUrl': self.jira_url,
             'username': self.username,
             'apiToken': self.api_token,
-            'projectKey': self.project_key,
-            'projectName': self.project_name,
-            'filterId': self.filter_id,
-            'filterName': self.filter_name,
             'filterJql': self.filter_jql,
             'statuses': json.loads(self.statuses),
             'expectedPath': json.loads(self.expected_path),
             'startStates': json.loads(self.start_states) if self.start_states else [],
             'endStates': json.loads(self.end_states) if self.end_states else [],
-            'defaultJql': self.default_jql,
+            'activeStatuses': json.loads(self.active_statuses) if self.active_statuses else [],
+            'flowEfficiencyMethod': self.flow_efficiency_method or 'active_statuses',
             'createdAt': self.created_at.isoformat(),
             'updatedAt': self.updated_at.isoformat()
         }
@@ -158,14 +156,11 @@ class TeamConfig(db.Model):
             jira_url=data['jiraUrl'],
             username=data['username'],
             api_token=data['apiToken'],
-            project_key=data.get('projectKey'),
-            project_name=data.get('projectName'),
-            filter_id=data.get('filterId'),
-            filter_name=data.get('filterName'),
             filter_jql=data.get('filterJql'),
             statuses=json.dumps(data['statuses']),
             expected_path=json.dumps(data['expectedPath']),
             start_states=json.dumps(data.get('startStates', [])),
             end_states=json.dumps(data.get('endStates', [])),
-            default_jql=data.get('defaultJql')
+            active_statuses=json.dumps(data.get('activeStatuses', [])),
+            flow_efficiency_method=data.get('flowEfficiencyMethod', 'active_statuses')
         )

@@ -7,22 +7,32 @@ const WorkflowOrdering = ({
   statuses, 
   expectedPath,
   startStates = [],
-  endStates = [], 
+  endStates = [],
+  activeStatuses = [],
+  flowEfficiencyMethod = 'active_statuses',
   onOrderChange,
   onStatusesChange,
-  onStateChange
+  onStateChange,
+  onActiveStatusesChange
 }) => {
-  const dragHandlers = useDragAndDrop(expectedPath, onOrderChange);
+  const dragHandlers = useDragAndDrop(expectedPath, (newPath) => {
+    // When order changes, ensure both path and statuses are updated
+    onStatusesChange([...new Set(newPath)], newPath);
+  });
   const workflowState = useWorkflowState(
     statuses,
     expectedPath,
     startStates,
     endStates,
+    activeStatuses,
     onStatusesChange,
-    onStateChange
+    onStateChange,
+    onActiveStatusesChange
   );
 
   const [newStatus, setNewStatus] = useState('');
+  const [editingStatus, setEditingStatus] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   const handleAddStatus = (e) => {
     if (e.key === 'Enter' && newStatus) {
@@ -54,14 +64,33 @@ const WorkflowOrdering = ({
         <div className="space-y-2">
           {expectedPath.map((status, index) => (
             <WorkflowStatusItem
-              key={status}
+              key={index}
               status={status}
               isStartState={startStates.includes(status)}
               isEndState={endStates.includes(status)}
               dragHandlers={dragHandlers}
-              onStatusChange={(newValue) => workflowState.updateStatus(status, newValue)}
+              onStatusChange={(newValue) => {
+                if (newValue.trim() && newValue.trim() !== status) {
+                  workflowState.updateStatus(status, newValue.trim());
+                }
+                setEditingStatus(null);
+                setEditValue('');
+              }}
+              editValue={editingStatus === status ? editValue : status}
+              onEditValueChange={(value) => setEditValue(value)}
+              onStartEdit={() => {
+                setEditingStatus(status);
+                setEditValue(status);
+              }}
+              onCancelEdit={() => {
+                setEditingStatus(null);
+                setEditValue('');
+              }}
               onToggleStart={() => workflowState.toggleStartState(status)}
               onToggleEnd={() => workflowState.toggleEndState(status)}
+              isActiveState={flowEfficiencyMethod === 'active_statuses' && activeStatuses.includes(status)}
+              onToggleActive={flowEfficiencyMethod === 'active_statuses' ? () => workflowState.toggleActiveState(status) : undefined}
+              showActiveToggle={flowEfficiencyMethod === 'active_statuses'}
               onRemove={() => workflowState.removeStatus(status)}
               index={index}
             />
@@ -72,8 +101,18 @@ const WorkflowOrdering = ({
           <p>
             <span className="font-medium">To-Do States:</span> States that indicate work hasn't started
           </p>
+          {flowEfficiencyMethod === 'active_statuses' && (
+            <p>
+              <span className="font-medium">Active States:</span> States where active work is being done (used for flow efficiency calculation)
+            </p>
+          )}
           <p>
             <span className="font-medium">Done States:</span> States that indicate work is complete
+          </p>
+          <p className="mt-2 text-xs">
+            Flow efficiency is calculated using {flowEfficiencyMethod === 'active_statuses' 
+              ? 'time spent in active states' 
+              : 'time logged on issues'}
           </p>
         </div>
       </div>

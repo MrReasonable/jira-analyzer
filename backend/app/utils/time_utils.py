@@ -42,46 +42,67 @@ class JQLParser:
             else:
                 self.conditions.append(main_query)
 
-    def add_completion_filter(self, done_statuses: List[str], lead_time_only: bool = False):
+    def add_completion_filter(self, done_statuses: List[str], lead_time_only: bool = False, time_range: Optional[TimeRange] = None):
         """
         Add filter for completed items or in-progress items
         Args:
             done_statuses: List of status names considered "done"
             lead_time_only: If True, only include items that entered done states
+            time_range: Optional time range to filter transitions
         """
         if done_statuses:
-            if lead_time_only:
+            if lead_time_only and time_range:
                 # For lead time, find items that entered done states during the period
-                status_conditions = [f'status WAS "{status}"' for status in done_statuses]
-                self.conditions.append(f"({' OR '.join(status_conditions)})")
+                # We'll get their full history but filter in the analyzer
+                start_date, end_date = get_date_range(time_range)
+                if start_date and end_date:
+                    status_conditions = []
+                    for status in done_statuses:
+                        status_conditions.append(
+                            f'(status WAS "{status}" AND status CHANGED TO "{status}" ' +
+                            f'DURING ("{start_date.strftime("%Y-%m-%d")}", "{end_date.strftime("%Y-%m-%d")}")'
+                        )
+                    self.conditions.append(f"({' OR '.join(status_conditions)})")
+                else:
+                    # If no time range, just check if it ever reached done status
+                    status_conditions = [f'status WAS "{status}"' for status in done_statuses]
+                    self.conditions.append(f"({' OR '.join(status_conditions)})")
             else:
-                # For cycle time, include current done states and in-progress items
-                current_status = ' OR '.join([f'status = "{status}"' for status in done_statuses])
-                was_status = ' OR '.join([f'status WAS "{status}"' for status in done_statuses])
-                self.conditions.append(f"({current_status} OR {was_status})")
+                # For CFD, we want items that existed or had transitions in the period
+                if time_range and time_range.start_date and time_range.end_date:
+                    start_date, end_date = get_date_range(time_range)
+                    if start_date and end_date:
+                        self.conditions.append(
+                            f'(created <= "{end_date.strftime("%Y-%m-%d")}" OR ' +
+                            f'status changed DURING ("{start_date.strftime("%Y-%m-%d")}", "{end_date.strftime("%Y-%m-%d")}"))'
+                        )
 
     def add_date_range(self, time_range: TimeRange):
-        """Add date range conditions to capture items in progress or completed during the period"""
+        """Add date range conditions based on time range configuration"""
+        if not time_range:
+            return
+
         start_date, end_date = get_date_range(time_range)
-        
-        if start_date and end_date:
-            # Use status history to find items that were worked on during the period
-            date_conditions = []
-            
-            # Items that had status changes during the period
+        if not start_date and not end_date:
+            return
+
+        # For both lead time and CFD analysis, we want to be precise about the time range
+        date_conditions = []
+        if start_date:
             date_conditions.append(
-                f'status CHANGED DURING ("{start_date.strftime("%Y-%m-%d")}", "{end_date.strftime("%Y-%m-%d")}")'
+                f'(updated >= "{start_date.strftime("%Y-%m-%d")}" OR ' +
+                f'status changed AFTER "{start_date.strftime("%Y-%m-%d")}" OR ' +
+                f'created >= "{start_date.strftime("%Y-%m-%d")}")'
             )
-            
-            # Items that were created during the period
-            if 'created' not in self.existing_date_fields:
-                date_conditions.append(
-                    f'created >= "{start_date.strftime("%Y-%m-%d")}" AND ' +
-                    f'created <= "{end_date.strftime("%Y-%m-%d")}"'
-                )
-            
-            if date_conditions:
-                self.conditions.append(f"({' OR '.join(date_conditions)})")
+        if end_date:
+            date_conditions.append(
+                f'(updated <= "{end_date.strftime("%Y-%m-%d")}" OR ' +
+                f'status changed BEFORE "{end_date.strftime("%Y-%m-%d")}" OR ' +
+                f'created <= "{end_date.strftime("%Y-%m-%d")}")'
+            )
+
+        if date_conditions:
+            self.conditions.append(f"({' AND '.join(date_conditions)})")
 
     def build_query(self) -> str:
         """Build the final JQL query"""
@@ -92,26 +113,33 @@ class JQLParser:
 
 def get_date_range(time_range: TimeRange) -> tuple[Optional[datetime], Optional[datetime]]:
     """Get start and end dates based on time range configuration"""
-    if time_range.start_date and time_range.end_date:
-        return time_range.start_date, time_range.end_date
-    
     end_date = datetime.now(timezone.utc)
     
-    if time_range.preset:
+    if time_range.start_date and time_range.end_date:
+        # Use provided dates if they exist, but ensure proper time boundaries
+        start_date = time_range.start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = time_range.end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start_date, end_date
+    elif time_range.preset:
+        # Calculate dates based on preset
         if time_range.preset == 'two_weeks':
-            start_date = end_date - timedelta(weeks=2)
+            start_date = end_date - timedelta(days=14)
         elif time_range.preset == 'quarter':
-            start_date = end_date - timedelta(weeks=13)
+            start_date = end_date - timedelta(days=90)
         elif time_range.preset == 'half_year':
-            start_date = end_date - timedelta(weeks=26)
+            start_date = end_date - timedelta(days=180)
         elif time_range.preset == 'year':
-            start_date = end_date - timedelta(weeks=52)
+            start_date = end_date - timedelta(days=365)
         else:
-            start_date = None
+            return None, None
+        
+        # Set time to start/end of day
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        return start_date, end_date
     else:
-        start_date = None
-    
-    return start_date, end_date
+        return None, None
 
 def build_analysis_jql(base_query: str, time_range: TimeRange, done_statuses: List[str], lead_time_only: bool = False) -> str:
     """
@@ -127,6 +155,6 @@ def build_analysis_jql(base_query: str, time_range: TimeRange, done_statuses: Li
         Complete JQL query for analysis
     """
     parser = JQLParser(base_query)
-    parser.add_completion_filter(done_statuses, lead_time_only)
+    parser.add_completion_filter(done_statuses, lead_time_only, time_range)
     parser.add_date_range(time_range)
     return parser.build_query()

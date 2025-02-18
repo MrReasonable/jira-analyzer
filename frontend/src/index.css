@@ -1,5 +1,28 @@
 @import 'tailwindcss';
 
+@layer base {
+  button, 
+  [role="button"],
+  a,
+  .clickable {
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    cursor: text;
+  }
+
+  .draggable {
+    cursor: grab;
+  }
+
+  .draggable:active {
+    cursor: grabbing;
+  }
+}
+
 body {
   margin: 0;
   padding: 0;

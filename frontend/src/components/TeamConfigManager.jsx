@@ -1,37 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Save, Edit2, Trash2, Check, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { deleteTeamConfig } from '@/services/api';
 
 const TeamConfigManager = ({ 
   onConfigSelect, 
   currentConfig,
   currentConfigName,
-  onSaveConfig 
+  onSaveConfig,
+  configs,
+  error: propError
 }) => {
-  const [configs, setConfigs] = useState([]);
   const [editingConfig, setEditingConfig] = useState(null);
-  const [error, setError] = useState(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newConfigName, setNewConfigName] = useState('');
-
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const fetchConfigs = async () => {
-    try {
-      const response = await fetch('/api/team-configs');
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setConfigs(data.data);
-      } else {
-        setError('Failed to load configurations');
-      }
-    } catch (err) {
-      setError('Failed to load configurations');
-    }
-  };
+  const [error, setError] = useState(null);
 
   const handleSaveCurrentConfig = async () => {
     if (!newConfigName.trim()) {
@@ -39,11 +22,13 @@ const TeamConfigManager = ({
       return;
     }
 
-    const success = await onSaveConfig(newConfigName);
-    if (success) {
+    try {
+      await onSaveConfig(newConfigName);
       setShowSaveDialog(false);
       setNewConfigName('');
-      fetchConfigs(); // Refresh the config list
+      setError(null);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -52,20 +37,15 @@ const TeamConfigManager = ({
     setShowSaveDialog(true);
   };
 
-  const deleteConfig = async (configId) => {
+  const handleDelete = async (configId) => {
     if (!confirm('Are you sure you want to delete this configuration?')) return;
     
     try {
-      const response = await fetch(`/api/team-configs/${configId}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        fetchConfigs();
+      const result = await deleteTeamConfig(configId);
+      if (result.status === 'success') {
+        await onSaveConfig(); // Trigger parent refresh without saving
       } else {
-        setError(data.message || 'Failed to delete configuration');
+        setError(result.message || 'Failed to delete configuration');
       }
     } catch (err) {
       setError('Failed to delete configuration');
@@ -87,9 +67,9 @@ const TeamConfigManager = ({
         )}
       </div>
 
-      {error && (
+      {(error || propError) && (
         <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{error || propError}</AlertDescription>
         </Alert>
       )}
 
@@ -148,7 +128,7 @@ const TeamConfigManager = ({
                 Load
               </button>
               <button
-                onClick={() => deleteConfig(config.id)}
+                onClick={() => handleDelete(config.id)}
                 className="p-2 text-red-600 hover:text-red-800"
                 title="Delete"
               >

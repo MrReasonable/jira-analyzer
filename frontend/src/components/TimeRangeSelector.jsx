@@ -1,21 +1,12 @@
 import React, { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 
-const TimeRangeSelector = ({ onTimeRangeChange }) => {
-  const [selectedPreset, setSelectedPreset] = useState('quarter');
+const TimeRangeSelector = ({ defaultValue, onTimeRangeChange }) => {
+  const [selectedPreset, setSelectedPreset] = useState(defaultValue?.timePreset || 'quarter');
   const [customRange, setCustomRange] = useState({
-    startDate: '',
-    endDate: ''
+    startDate: defaultValue?.startDate || '',
+    endDate: defaultValue?.endDate || ''
   });
-
-  // Trigger initial time range change
-  React.useEffect(() => {
-    onTimeRangeChange({
-      timePreset: selectedPreset,
-      startDate: null,
-      endDate: null
-    });
-  }, [selectedPreset, onTimeRangeChange]); // Include dependencies
 
   const presets = [
     { value: 'two_weeks', label: 'Last 2 Weeks' },
@@ -27,10 +18,32 @@ const TimeRangeSelector = ({ onTimeRangeChange }) => {
   const handlePresetChange = (preset) => {
     setSelectedPreset(preset);
     setCustomRange({ startDate: '', endDate: '' });
+    
+    // Calculate dates based on preset
+    const now = new Date();
+    let startDate = new Date();
+    
+    switch (preset) {
+      case 'two_weeks':
+        startDate.setDate(now.getDate() - 14);
+        break;
+      case 'quarter':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case 'half_year':
+        startDate.setDate(now.getDate() - 180);
+        break;
+      case 'year':
+        startDate.setDate(now.getDate() - 365);
+        break;
+      default:
+        startDate = null;
+    }
+    
     onTimeRangeChange({
       timePreset: preset,
-      startDate: null,
-      endDate: null
+      startDate: startDate ? startDate.toISOString().split('T')[0] : null,
+      endDate: now.toISOString().split('T')[0]
     });
   };
 
