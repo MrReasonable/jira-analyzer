@@ -1,14 +1,9 @@
-import { useState } from 'react';
-
 export const useFormFields = (initialFields, onFieldsChange) => {
-  const [fields, setFields] = useState(initialFields);
-
   const handleFieldChange = (name, value) => {
     const updatedFields = {
-      ...fields,
+      ...initialFields,
       [name]: value
     };
-    setFields(updatedFields);
     onFieldsChange(updatedFields);
   };
 
@@ -18,15 +13,14 @@ export const useFormFields = (initialFields, onFieldsChange) => {
 
   const setMultipleFields = (updates) => {
     const updatedFields = {
-      ...fields,
+      ...initialFields,
       ...updates
     };
-    setFields(updatedFields);
     onFieldsChange(updatedFields);
   };
 
   return {
-    fields,
+    fields: initialFields,
     handleFieldChange,
     setFieldValue,
     setMultipleFields

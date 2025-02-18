@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import withFullscreen from './hoc/withFullscreen';
 import {
   BarChart,
   Bar,
@@ -15,7 +16,9 @@ const formatNumber = (value) => {
   return value.toFixed(1);
 };
 
-const EpicLeadTimeChart = ({ data }) => {
+const EpicLeadTimeChart = ({ data, isFullscreen, fullscreenButton }) => {
+  const [isLogScale, setIsLogScale] = useState(true);
+
   if (!data || !data.length) {
     return <div>No epic data available</div>;
   }
@@ -56,16 +59,30 @@ const EpicLeadTimeChart = ({ data }) => {
   });
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <div className={`p-4 bg-white rounded-lg shadow ${isFullscreen ? 'h-full' : ''}`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Epic Lead Times</h2>
-        <div className="text-sm text-gray-600 space-x-4">
-          <span>50th percentile: {formatNumber(medianLeadTime)} days</span>
-          <span>85th percentile: {formatNumber(p85LeadTime)} days</span>
-          <span>95th percentile: {formatNumber(p95LeadTime)} days</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Scale:</label>
+            <select 
+              className="text-sm border rounded p-1"
+              value={isLogScale ? 'log' : 'linear'}
+              onChange={(e) => setIsLogScale(e.target.value === 'log')}
+            >
+              <option value="log">Logarithmic</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600 space-x-4">
+            <span>50th percentile: {formatNumber(medianLeadTime)} days</span>
+            <span>85th percentile: {formatNumber(p85LeadTime)} days</span>
+            <span>95th percentile: {formatNumber(p95LeadTime)} days</span>
+          </div>
+          {fullscreenButton}
         </div>
       </div>
-      <div className="h-[400px]">
+      <div className={isFullscreen ? 'h-full' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -74,7 +91,10 @@ const EpicLeadTimeChart = ({ data }) => {
               label={{ value: 'Epic Key', position: 'insideBottom', offset: -5 }}
             />
             <YAxis
-              label={{ value: 'Lead Time (days)', angle: -90, position: 'insideLeft' }}
+              scale={isLogScale ? 'log' : 'linear'}
+              domain={isLogScale ? [0.1, 'auto'] : [0, 'auto']}
+              allowDataOverflow={true}
+              label={{ value: `Lead Time (days${isLogScale ? ', log scale' : ''})`, angle: -90, position: 'insideLeft' }}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -169,4 +189,4 @@ const EpicLeadTimeChart = ({ data }) => {
   );
 };
 
-export default EpicLeadTimeChart;
+export default withFullscreen(EpicLeadTimeChart);

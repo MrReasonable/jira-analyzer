@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Loader2, ArrowUpDown } from 'lucide-react';
 import WorkflowOrdering from '../workflow/WorkflowOrdering';
-import WorkflowExtractor from '../WorkflowExtractor';
+import WorkflowExtractor from '../workflow/WorkflowExtractor';
 import FormField from './FormField';
 import { useFormFields } from '@/hooks/useFormFields';
 
@@ -19,9 +19,11 @@ const ConfigurationForm = ({
   const { handleFieldChange } = useFormFields(config, onConfigChange);
 
   const handleWorkflowChange = (newStatuses, newPath) => {
+    // Ensure statuses array maintains same order as path
+    const orderedStatuses = [...new Set(newPath)];
     onConfigChange({
       ...config,
-      statuses: newStatuses,
+      statuses: orderedStatuses,
       expectedPath: newPath
     });
   };
@@ -31,6 +33,13 @@ const ConfigurationForm = ({
       ...config,
       startStates: newStartStates,
       endStates: newEndStates
+    });
+  };
+
+  const handleActiveStatusesChange = (newActiveStatuses) => {
+    onConfigChange({
+      ...config,
+      activeStatuses: newActiveStatuses
     });
   };
 
@@ -91,36 +100,57 @@ const ConfigurationForm = ({
             </button>
           </div>
 
-          <div className="bg-zinc-50 rounded-lg p-4">
-            {useExtractor ? (
-              <WorkflowExtractor
-                connectionDetails={{
-                  jiraUrl: config.jiraUrl,
-                  username: config.username,
-                  apiToken: config.apiToken
-                }}
-                onWorkflowExtracted={(workflow) => {
-                  const uniqueStatuses = [...new Set(workflow.suggestedFlow)];
-                  onConfigChange({
-                    ...config,
-                    statuses: uniqueStatuses,
-                    expectedPath: workflow.suggestedFlow,
-                    startStates: workflow.startStates,
-                    endStates: workflow.endStates
-                  });
-                }}
-              />
-            ) : (
-              <WorkflowOrdering
-                statuses={config.statuses || []}
-                expectedPath={config.expectedPath || []}
-                startStates={config.startStates || []}
-                endStates={config.endStates || []}
-                onOrderChange={(newPath) => handleWorkflowChange(config.statuses, newPath)}
-                onStatusesChange={handleWorkflowChange}
-                onStateChange={handleStateChange}
-              />
-            )}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600">Flow Efficiency Calculation:</label>
+              <select 
+                className="text-sm border rounded p-1"
+                value={config.flowEfficiencyMethod || 'active_statuses'}
+                onChange={(e) => onConfigChange({
+                  ...config,
+                  flowEfficiencyMethod: e.target.value
+                })}
+              >
+                <option value="active_statuses">Active Statuses</option>
+                <option value="time_logged">Time Logged</option>
+              </select>
+            </div>
+
+            <div className="bg-zinc-50 rounded-lg p-4">
+              {useExtractor ? (
+                <WorkflowExtractor
+                  connectionDetails={{
+                    jiraUrl: config.jiraUrl,
+                    username: config.username,
+                    apiToken: config.apiToken
+                  }}
+                  onWorkflowExtracted={(workflow) => {
+                    const uniqueStatuses = [...new Set(workflow.suggestedFlow)];
+                    onConfigChange({
+                      ...config,
+                      statuses: uniqueStatuses,
+                      expectedPath: workflow.suggestedFlow,
+                      startStates: workflow.startStates,
+                      endStates: workflow.endStates,
+                      activeStatuses: workflow.activeStatuses
+                    });
+                  }}
+                />
+              ) : (
+                <WorkflowOrdering
+                  statuses={config.statuses || []}
+                  expectedPath={config.expectedPath || []}
+                  startStates={config.startStates || []}
+                  endStates={config.endStates || []}
+                  activeStatuses={config.activeStatuses || []}
+                  flowEfficiencyMethod={config.flowEfficiencyMethod || 'active_statuses'}
+                  onOrderChange={(newPath) => handleWorkflowChange(config.statuses, newPath)}
+                  onStatusesChange={handleWorkflowChange}
+                  onStateChange={handleStateChange}
+                  onActiveStatusesChange={handleActiveStatusesChange}
+                />
+              )}
+            </div>
           </div>
         </div>
 

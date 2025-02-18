@@ -1,29 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, Settings } from 'lucide-react';
 
-const ConfigurationSelector = ({ onConfigSelect, currentConfigName }) => {
-  const [configs, setConfigs] = useState([]);
+const ConfigurationSelector = ({ onConfigSelect, currentConfigName, configs, error }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const fetchConfigs = async () => {
-    try {
-      const response = await fetch('/api/team-configs');
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setConfigs(data.data);
-      } else {
-        setError('Failed to load configurations');
-      }
-    } catch (err) {
-      setError('Failed to load configurations');
-    }
-  };
 
   return (
     <div className="relative">

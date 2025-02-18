@@ -5,6 +5,7 @@ export const WorkflowPreview = ({
   workflow,
   selectedStartStates,
   selectedEndStates,
+  selectedActiveStatuses,
   onStateSelection
 }) => {
   if (!workflow) return null;
@@ -41,9 +42,9 @@ export const WorkflowPreview = ({
       </div>
 
       {/* Start/End State Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="text-sm text-gray-600 mb-2 md:col-span-2">
-          Select the states that represent the start and end of your workflow. Multiple states can be selected to handle different workflow paths:
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="text-sm text-gray-600 mb-2 md:col-span-3">
+          Select the states that represent the start, active work, and end of your workflow. Multiple states can be selected to handle different workflow paths:
         </div>
         {/* Start States */}
         <div>
@@ -57,6 +58,26 @@ export const WorkflowPreview = ({
                   type="checkbox"
                   checked={selectedStartStates.includes(status)}
                   onChange={() => onStateSelection(status, 'start')}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">{status}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Active States */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Select Active States
+          </h4>
+          <div className="p-4 bg-gray-50 rounded space-y-2">
+            {workflow.allStatuses.map((status) => (
+              <label key={status} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedActiveStatuses.includes(status)}
+                  onChange={() => onStateSelection(status, 'active')}
                   className="rounded border-gray-300"
                 />
                 <span className="text-sm">{status}</span>

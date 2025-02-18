@@ -18,6 +18,7 @@ const WorkflowExtractor = ({
     extractedWorkflow,
     selectedStartStates,
     selectedEndStates,
+    selectedActiveStatuses,
     handleFetchProjects,
     handleProjectSelect,
     handleExtractWorkflow,
@@ -74,12 +75,13 @@ const WorkflowExtractor = ({
               workflow={extractedWorkflow}
               selectedStartStates={selectedStartStates}
               selectedEndStates={selectedEndStates}
+              selectedActiveStatuses={selectedActiveStatuses}
               onStateSelection={handleStateSelection}
             />
 
             <button
               onClick={handleApplyWorkflow}
-              disabled={!selectedStartStates.length || !selectedEndStates.length}
+              disabled={!selectedStartStates.length || !selectedEndStates.length || !selectedActiveStatuses.length}
               className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 
                          disabled:bg-green-300 flex items-center justify-center gap-2"
             >

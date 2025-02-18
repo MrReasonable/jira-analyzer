@@ -1,5 +1,10 @@
 import { handleResponse } from '../lib/utils';
 
+export const fetchTeamConfigs = async () => {
+  const response = await fetch('/api/team-configs');
+  return handleResponse(response);
+};
+
 export const analyzeData = async (config, timeRange) => {
   const response = await fetch("/api/analyze", {
     method: "POST",
@@ -10,6 +15,13 @@ export const analyzeData = async (config, timeRange) => {
       ...config,
       ...timeRange,
     }),
+  });
+  return handleResponse(response);
+};
+
+export const deleteTeamConfig = async (configId) => {
+  const response = await fetch(`/api/team-configs/${configId}`, {
+    method: 'DELETE',
   });
   return handleResponse(response);
 };

@@ -9,6 +9,7 @@ export const useWorkflowExtraction = (connectionDetails, onProjectSelect) => {
   const [extractedWorkflow, setExtractedWorkflow] = useState(null);
   const [selectedStartStates, setSelectedStartStates] = useState([]);
   const [selectedEndStates, setSelectedEndStates] = useState([]);
+  const [selectedActiveStatuses, setSelectedActiveStatuses] = useState([]);
 
   const handleFetchProjects = async () => {
     setLoading(true);
@@ -54,8 +55,14 @@ export const useWorkflowExtraction = (connectionDetails, onProjectSelect) => {
           ? prev.filter(s => s !== state)
           : [...prev, state]
       );
-    } else {
+    } else if (type === 'end') {
       setSelectedEndStates(prev => 
+        prev.includes(state) 
+          ? prev.filter(s => s !== state)
+          : [...prev, state]
+      );
+    } else if (type === 'active') {
+      setSelectedActiveStatuses(prev => 
         prev.includes(state) 
           ? prev.filter(s => s !== state)
           : [...prev, state]
@@ -66,7 +73,8 @@ export const useWorkflowExtraction = (connectionDetails, onProjectSelect) => {
   const getWorkflowData = () => ({
     ...extractedWorkflow,
     startStates: selectedStartStates,
-    endStates: selectedEndStates
+    endStates: selectedEndStates,
+    activeStatuses: selectedActiveStatuses
   });
 
   return {
@@ -77,6 +85,7 @@ export const useWorkflowExtraction = (connectionDetails, onProjectSelect) => {
     extractedWorkflow,
     selectedStartStates,
     selectedEndStates,
+    selectedActiveStatuses,
     handleFetchProjects,
     handleProjectSelect,
     handleExtractWorkflow,

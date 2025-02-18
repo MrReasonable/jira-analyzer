@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Tuple, Dict, Any, Optional
 
 from app.core.models import JiraConfig, TimeRange, AnalysisResult
@@ -34,6 +34,14 @@ class AnalysisService:
         if not end_states and data.get('statuses'):
             end_states = [data['statuses'][-1]]
 
+        # Parse time range
+        # Parse dates with timezone
+        time_range = TimeRange(
+            start_date=datetime.fromisoformat(data['startDate']).replace(tzinfo=timezone.utc) if data.get('startDate') else None,
+            end_date=datetime.fromisoformat(data['endDate']).replace(tzinfo=timezone.utc) if data.get('endDate') else None,
+            preset=data.get('timePreset')
+        )
+
         config = JiraConfig(
             url=data['jiraUrl'],
             username=data['username'],
@@ -43,7 +51,10 @@ class AnalysisService:
                 'expected_path': data.get('expectedPath', [])
             },
             start_states=start_states,
-            end_states=end_states
+            end_states=end_states,
+            time_range=time_range,
+            flow_efficiency_method=data.get('flowEfficiencyMethod', 'active_statuses'),
+            active_statuses=data.get('activeStatuses', [])
         )
         
         self.jira_service = JiraService(config)
@@ -98,9 +109,10 @@ class AnalysisService:
     def _create_analysis_config(self, data: Dict[str, Any]) -> Tuple[JiraConfig, TimeRange, str]:
         """Create analysis configuration from request data"""
         # Parse time range
+        # Parse dates with timezone
         time_range = TimeRange(
-            start_date=datetime.fromisoformat(data['startDate']) if data.get('startDate') else None,
-            end_date=datetime.fromisoformat(data['endDate']) if data.get('endDate') else None,
+            start_date=datetime.fromisoformat(data['startDate']).replace(tzinfo=timezone.utc) if data.get('startDate') else None,
+            end_date=datetime.fromisoformat(data['endDate']).replace(tzinfo=timezone.utc) if data.get('endDate') else None,
             preset=data.get('timePreset')
         )
         
@@ -128,7 +140,10 @@ class AnalysisService:
                 'expected_path': data['expectedPath']
             },
             start_states=start_states,
-            end_states=end_states
+            end_states=end_states,
+            time_range=time_range,  # Add time_range to config
+            flow_efficiency_method=data.get('flowEfficiencyMethod', 'active_statuses'),
+            active_statuses=data.get('activeStatuses', [])
         )
         
         return config, time_range, final_jql
@@ -141,14 +156,18 @@ class AnalysisService:
     def create_empty_result(self, time_range: TimeRange, jql: str, end_states: list) -> Dict[str, Any]:
         """Create an empty result structure when no issues are found"""
         config = self._create_analysis_config(self.last_request_data)[0]
+        cycle_time_stats = {
+            'mean': 0,
+            'median': 0,
+            'p85': 0,
+            'p95': 0,
+            'std_dev': 0
+        }
         return {
             'total_issues': 0,
-            'cycle_time_stats': {
-                'mean': 0,
-                'median': 0,
-                'p85': 0,
-                'p95': 0,
-                'std_dev': 0
+            'cycle_time_stats': cycle_time_stats,
+            'flow_metrics': {
+                'cycle_time': cycle_time_stats
             },
             'status_distribution': {},
             'workflow_compliance': {
@@ -194,13 +213,13 @@ class AnalysisService:
                 'dates': [d.isoformat() for d in result.cfd_data.dates] if result.cfd_data else [],
                 'status_counts': result.cfd_data.status_counts if result.cfd_data else {},
                 'wip_counts': result.cfd_data.wip_counts if result.cfd_data else []
-            } if result.cfd_data else None,
+            },
             'flow_efficiency_data': [{
                 'issue_key': item['issue_key'],
                 'total_time': item['total_time'],
                 'active_time': item['active_time'],
                 'efficiency': item['efficiency']
-            } for item in result.flow_efficiency_data] if result.flow_efficiency_data else None,
+            } for item in result.flow_efficiency_data] if result.flow_efficiency_data else [],
             'epic_data': [{
                 'key': epic.key,
                 'summary': epic.summary,

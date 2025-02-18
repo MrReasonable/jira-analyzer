@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import withFullscreen from './hoc/withFullscreen';
 import {
   BarChart,
   Bar,
@@ -16,9 +17,11 @@ const formatNumber = (value) => {
   return value.toFixed(1);
 };
 
-const FlowEfficiencyChart = ({ data }) => {
-  if (!data || !data.length) {
-    return <div>No flow efficiency data available</div>;
+const FlowEfficiencyChart = ({ data, isFullscreen, fullscreenButton }) => {
+  const [isLogScale, setIsLogScale] = useState(true);
+  const [showPercentage, setShowPercentage] = useState(false);
+  if (!data || !data.length || !data.some(item => item.efficiency > 0)) {
+    return <div>No flow efficiency data available for the selected time range</div>;
   }
 
   // Sort by efficiency for better visualization
@@ -53,16 +56,41 @@ const FlowEfficiencyChart = ({ data }) => {
   });
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <div className={`p-4 bg-white rounded-lg shadow ${isFullscreen ? 'h-full' : ''}`}>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Flow Efficiency</h2>
-        <div className="text-sm text-gray-600 space-x-4">
-          <span>50th percentile: {formatNumber(median)}%</span>
-          <span>85th percentile: {formatNumber(p85)}%</span>
-          <span>95th percentile: {formatNumber(p95)}%</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Scale:</label>
+            <select 
+              className="text-sm border rounded p-1"
+              value={isLogScale ? 'log' : 'linear'}
+              onChange={(e) => setIsLogScale(e.target.value === 'log')}
+            >
+              <option value="log">Logarithmic</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Y-Axis:</label>
+            <select
+              className="text-sm border rounded p-1"
+              value={showPercentage ? 'percentage' : 'time'}
+              onChange={(e) => setShowPercentage(e.target.value === 'percentage')}
+            >
+              <option value="time">Time (days)</option>
+              <option value="percentage">Efficiency (%)</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600 space-x-4">
+            <span>50th percentile: {formatNumber(median)}%</span>
+            <span>85th percentile: {formatNumber(p85)}%</span>
+            <span>95th percentile: {formatNumber(p95)}%</span>
+          </div>
+          {fullscreenButton}
         </div>
       </div>
-      <div className="h-[400px]">
+      <div className={isFullscreen ? 'h-full' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -71,7 +99,14 @@ const FlowEfficiencyChart = ({ data }) => {
               label={{ value: 'Issue Key', position: 'insideBottom', offset: -5 }}
             />
             <YAxis
-              label={{ value: 'Time (days)', angle: -90, position: 'insideLeft' }}
+              scale={isLogScale ? 'log' : 'linear'}
+              domain={showPercentage ? [0, 100] : isLogScale ? [0.1, 'auto'] : [0, 'auto']}
+              allowDataOverflow={true}
+              label={{ 
+                value: showPercentage ? 'Efficiency (%)' : `Time (days${isLogScale ? ', log scale' : ''})`, 
+                angle: -90, 
+                position: 'insideLeft' 
+              }}
             />
             <Tooltip
               content={({ active, payload }) => {
@@ -97,77 +132,94 @@ const FlowEfficiencyChart = ({ data }) => {
               }}
             />
             <Legend />
-            <ReferenceLine
-              y={median}
-              stroke="#4ade80"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              label={{ 
-                value: '50th percentile', 
-                position: 'right',
-                fill: '#4ade80',
-                fontSize: 12,
-                fontWeight: 'bold'
-              }}
-            />
-            <ReferenceLine
-              y={p85}
-              stroke="#facc15"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              label={{ 
-                value: '85th percentile', 
-                position: 'right',
-                fill: '#facc15',
-                fontSize: 12,
-                fontWeight: 'bold'
-              }}
-            />
-            <ReferenceLine
-              y={p95}
-              stroke="#f87171"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              label={{ 
-                value: '95th percentile', 
-                position: 'right',
-                fill: '#f87171',
-                fontSize: 12,
-                fontWeight: 'bold'
-              }}
-            />
-            <Bar
-              dataKey="activeTime"
-              stackId="time"
-              name="Active Time"
-              fill="#4ade80"
-              fillOpacity={0.8}
-            />
-            <Bar
-              dataKey="waitTime"
-              stackId="time"
-              name="Wait Time"
-              fill="#f87171"
-              fillOpacity={0.8}
-            />
+            {showPercentage && (
+              <>
+                <ReferenceLine
+                  y={median}
+                  stroke="#4ade80"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  label={{ 
+                    value: '50th percentile', 
+                    position: 'right',
+                    fill: '#4ade80',
+                    fontSize: 12,
+                    fontWeight: 'bold'
+                  }}
+                />
+                <ReferenceLine
+                  y={p85}
+                  stroke="#facc15"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  label={{ 
+                    value: '85th percentile', 
+                    position: 'right',
+                    fill: '#facc15',
+                    fontSize: 12,
+                    fontWeight: 'bold'
+                  }}
+                />
+                <ReferenceLine
+                  y={p95}
+                  stroke="#f87171"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  label={{ 
+                    value: '95th percentile', 
+                    position: 'right',
+                    fill: '#f87171',
+                    fontSize: 12,
+                    fontWeight: 'bold'
+                  }}
+                />
+              </>
+            )}
+            {showPercentage ? (
+              <Bar
+                dataKey="efficiency"
+                name="Efficiency"
+                fill="#4ade80"
+                fillOpacity={0.8}
+              />
+            ) : (
+              <>
+                <Bar
+                  dataKey="activeTime"
+                  stackId="time"
+                  name="Active Time"
+                  fill="#4ade80"
+                  fillOpacity={0.8}
+                />
+                <Bar
+                  dataKey="waitTime"
+                  stackId="time"
+                  name="Wait Time"
+                  fill="#f87171"
+                  fillOpacity={0.8}
+                />
+              </>
+            )}
           </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-4 text-sm text-gray-600">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
-            <span>50% of items have efficiency above {formatNumber(median)}%</span>
+        {showPercentage && (
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+              <span>50% of items have efficiency above {formatNumber(median)}%</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
+              <span>85% of items have efficiency above {formatNumber(p85)}%</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
+              <span>95% of items have efficiency above {formatNumber(p95)}%</span>
+            </div>
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2" />
-            <span>85% of items have efficiency above {formatNumber(p85)}%</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-2" />
-            <span>95% of items have efficiency above {formatNumber(p95)}%</span>
-          </div>
-        </div>
+        )}
         <p className="mt-2">Flow efficiency measures the ratio of active work time to total lead time.</p>
         <p>Higher percentages indicate more efficient flow through the system.</p>
       </div>
@@ -175,4 +227,4 @@ const FlowEfficiencyChart = ({ data }) => {
   );
 };
 
-export default FlowEfficiencyChart;
+export default withFullscreen(FlowEfficiencyChart);

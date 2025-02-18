@@ -10,11 +10,8 @@ const defaultConfig = {
   expectedPath: ["To Do", "In Progress", "Code Review", "QA", "Done"],
   startStates: ["To Do"],
   endStates: ["Done"],
-  projectKey: "",
-  projectName: "",
-  filterId: "",
-  filterName: "",
   filterJql: "",
+  flowEfficiencyMethod: "active_statuses"
 };
 
 export const useConfiguration = () => {
@@ -33,13 +30,9 @@ export const useConfiguration = () => {
       expectedPath: selectedConfig.expectedPath,
       startStates: selectedConfig.startStates || [selectedConfig.statuses[0]],
       endStates: selectedConfig.endStates || [selectedConfig.statuses[selectedConfig.statuses.length - 1]],
-      jqlQuery: selectedConfig.filterJql || selectedConfig.defaultJql || '',
-      defaultJql: selectedConfig.defaultJql || '',
-      projectKey: selectedConfig.projectKey || '',
-      projectName: selectedConfig.projectName || '',
-      filterId: selectedConfig.filterId || '',
-      filterName: selectedConfig.filterName || '',
-      filterJql: selectedConfig.filterJql || ''
+      jqlQuery: selectedConfig.filterJql || '',
+      filterJql: selectedConfig.filterJql || '',
+      flowEfficiencyMethod: selectedConfig.flowEfficiencyMethod || 'active_statuses'
     });
     setCurrentConfigName(selectedConfig.name);
     setCurrentConfigId(selectedConfig.id);
@@ -63,12 +56,15 @@ export const useConfiguration = () => {
   };
 
   const saveConfig = async (name) => {
+    if (!name) return; // Early return if no name provided (used for refresh only)
+    
     setLoading(true);
     setError(null);
 
     const configToSave = {
       ...config,
       name,
+      filterJql: config.jqlQuery, // Map jqlQuery to filterJql for saving
       ...(currentConfigName === name ? { id: currentConfigId } : {})
     };
 
@@ -79,14 +75,17 @@ export const useConfiguration = () => {
         if (result.data.id) {
           setCurrentConfigId(result.data.id);
         }
+        setError(null);
         return true;
       } else {
-        setError(result.message || 'Failed to save configuration');
-        return false;
+        const errorMessage = result.message || 'Failed to save configuration';
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (err) {
-      setError('Failed to save configuration');
-      return false;
+      const errorMessage = err.message || 'Failed to save configuration';
+      setError(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }

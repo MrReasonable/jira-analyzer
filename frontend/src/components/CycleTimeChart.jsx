@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import withFullscreen from './hoc/withFullscreen';
 import {
   BarChart,
   Bar,
@@ -10,7 +11,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const CycleTimeChart = ({ data }) => {
+const CycleTimeChart = ({ data, isFullscreen, fullscreenButton }) => {
+  const [isLogScale, setIsLogScale] = useState(true);
   // Sort statuses according to the workflow order from the backend
   const chartData = data.expected_path
     .filter(status => !data.end_states?.includes(status))
@@ -23,21 +25,25 @@ const CycleTimeChart = ({ data }) => {
         p85_95_avg: 0,
         p95_100_avg: 0
       };
-    const { median, p85, p95, p50_85_avg, p85_95_avg, p95_100_avg } = metrics;
-    
-    // Calculate the max based on our highest percentile average
-    const max = p95_100_avg > 0 ? p95 + p95_100_avg : p95;
-    
-    return {
-      status,
-      p50: median,
-      p85: p50_85_avg || (p85 - median), // Use average if available, fallback to difference
-      p95: p85_95_avg || (p95 - p85), // Use average if available, fallback to difference
-      p100: p95_100_avg || 0, // Use the 95-100th percentile average
-      totalDays: max,
-      itemCount: data.issues.filter(issue => issue.statusTimes[status] > 0).length
-    };
-  });
+      const { median, p85, p95, p50_85_avg, p85_95_avg, p95_100_avg } = metrics;
+      
+      // For log scale, we need absolute values rather than differences
+      // Also ensure minimum value of 0.1 for log scale
+      return {
+        status,
+        p50: Math.max(0.1, median),
+        p85: Math.max(0.1, p85),
+        p95: Math.max(0.1, p95),
+        p100: Math.max(0.1, p95 + (p95_100_avg || 0)),
+        // Store original values for tooltip
+        originalP50: median,
+        originalP85: p85 - median,
+        originalP95: p95 - p85,
+        originalP100: p95_100_avg || 0,
+        totalDays: p95 + (p95_100_avg || 0),
+        itemCount: data.issues.filter(issue => issue.statusTimes[status] > 0).length
+      };
+    });
 
   const formatNumber = (value) => {
     if (value === undefined || value === null || isNaN(value)) return '0.0';
@@ -50,10 +56,10 @@ const CycleTimeChart = ({ data }) => {
       if (!data) return null;
 
       const itemCount = data.itemCount || 0;
-      const p50 = data.p50 ?? 0;
-      const p85 = data.p85 ?? 0;
-      const p95 = data.p95 ?? 0;
-      const p100 = data.p100 ?? 0;
+      const p50 = data.originalP50 ?? 0;
+      const p85 = data.originalP85 ?? 0;
+      const p95 = data.originalP95 ?? 0;
+      const p100 = data.originalP100 ?? 0;
       const totalDays = data.totalDays ?? 0;
 
       return (
@@ -71,9 +77,25 @@ const CycleTimeChart = ({ data }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <h3 className="text-lg font-medium mb-4">Cycle Time by Status</h3>
-      <div className="h-96">
+    <div className={`bg-white p-6 rounded-lg shadow-sm ${isFullscreen ? 'h-full' : ''}`}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Cycle Time by Status</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Scale:</label>
+            <select 
+              className="text-sm border rounded p-1"
+              value={isLogScale ? 'log' : 'linear'}
+              onChange={(e) => setIsLogScale(e.target.value === 'log')}
+            >
+              <option value="log">Logarithmic</option>
+              <option value="linear">Linear</option>
+            </select>
+          </div>
+          {fullscreenButton}
+        </div>
+      </div>
+      <div className={isFullscreen ? 'h-full' : 'h-96'}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart 
             data={chartData}
@@ -88,7 +110,10 @@ const CycleTimeChart = ({ data }) => {
               interval={0}
             />
             <YAxis 
-              label={{ value: 'Days in Status', angle: -90, position: 'insideLeft' }}
+              scale={isLogScale ? 'log' : 'linear'}
+              domain={isLogScale ? [0.1, 'auto'] : [0, 'auto']}
+              allowDataOverflow={true}
+              label={{ value: `Days in Status${isLogScale ? ' (log scale)' : ''}`, angle: -90, position: 'insideLeft' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend 
@@ -128,4 +153,4 @@ const CycleTimeChart = ({ data }) => {
   );
 };
 
-export default CycleTimeChart;
+export default withFullscreen(CycleTimeChart);
