@@ -28,6 +28,12 @@ class WorkflowAnalyzer:
             return False
         return self.status_order[to_status] < self.status_order[from_status]
 
+    def _ensure_utc(self, dt: datetime) -> datetime:
+        """Ensure datetime is in UTC timezone"""
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+
     def calculate_status_periods(
         self,
         transitions: List[StatusChange],
@@ -50,48 +56,49 @@ class WorkflowAnalyzer:
         if not transitions:
             return status_periods
 
-        sorted_transitions = sorted(transitions, key=lambda x: x.timestamp)
-        first_transition = sorted_transitions[0]
-        now = datetime.now(timezone.utc)
-        
-        # The first transition is always the creation date transition
-        # added by JiraIssueTracker
-        if first_transition.from_status in self.expected_path:
-            # For the first status, count time from creation until first real transition
-            # or until now if there are no other transitions
-            # Ensure timezone-aware timestamps
-            first_time = first_transition.timestamp.replace(tzinfo=timezone.utc) if first_transition.timestamp.tzinfo is None else first_transition.timestamp
-            if len(sorted_transitions) > 1:
-                end_time = sorted_transitions[1].timestamp.replace(tzinfo=timezone.utc) if sorted_transitions[1].timestamp.tzinfo is None else sorted_transitions[1].timestamp
-            else:
-                end_time = now
-            status_periods[first_transition.from_status].append((first_time, end_time))
+        # Ensure all transitions have UTC timezone
+        sorted_transitions = sorted(
+            [StatusChange(
+                from_status=t.from_status,
+                to_status=t.to_status,
+                timestamp=self._ensure_utc(t.timestamp)
+            ) for t in transitions],
+            key=lambda x: x.timestamp
+        )
 
-        # Track the current status and its start time
-        current_status_tracking = {
-            'status': first_transition.from_status,
-            'start_time': first_transition.timestamp
+        # Track current status and its start time
+        current_tracking = {
+            'status': sorted_transitions[0].from_status,
+            'start_time': sorted_transitions[0].timestamp
         }
 
-        # Process transitions
+        # Process each transition
         for i, transition in enumerate(sorted_transitions):
-            # If the current status is in our workflow, record the time period
-            if current_status_tracking['status'] in self.expected_path:
-                # For the last transition, use current time as end time
-                # Ensure timezone-aware timestamps
-                start_time = current_status_tracking['start_time'].replace(tzinfo=timezone.utc) if current_status_tracking['start_time'].tzinfo is None else current_status_tracking['start_time']
-                if i < len(sorted_transitions) - 1:
-                    end_time = transition.timestamp.replace(tzinfo=timezone.utc) if transition.timestamp.tzinfo is None else transition.timestamp
-                else:
+            # Only record periods for statuses in our workflow
+            if current_tracking['status'] in self.expected_path:
+                end_time = transition.timestamp
+                if i == len(sorted_transitions) - 1 and transition.to_status == current_status:
                     end_time = datetime.now(timezone.utc)
-                status_periods[current_status_tracking['status']].append((start_time, end_time))
-            
-            # Update tracking for new status
-            current_status_tracking = {
+                
+                # Don't record zero-length periods
+                if end_time > current_tracking['start_time']:
+                    status_periods[current_tracking['status']].append(
+                        (current_tracking['start_time'], end_time)
+                    )
+
+            # Update tracking
+            current_tracking = {
                 'status': transition.to_status,
                 'start_time': transition.timestamp
             }
 
+        # Handle final status if it's in our workflow
+        if current_tracking['status'] in self.expected_path:
+            end_time = datetime.now(timezone.utc)
+            if end_time > current_tracking['start_time']:
+                status_periods[current_tracking['status']].append(
+                    (current_tracking['start_time'], end_time)
+                )
 
         return status_periods
 
@@ -114,77 +121,45 @@ class WorkflowAnalyzer:
         Returns:
             Tuple of (total_cycle_time, breakdowns, status_periods)
         """
-        start_date = time_range.start_date if time_range else None
-        end_date = time_range.end_date if time_range else None
+        # Ensure all dates are in UTC
+        start_date = self._ensure_utc(time_range.start_date) if time_range and time_range.start_date else None
+        end_date = self._ensure_utc(time_range.end_date) if time_range and time_range.end_date else None
 
-        if for_cfd:
-            # For CFD, we only want transitions within the time range
-            if start_date and end_date:
-                # Find the last transition before the time range to establish initial state
-                pre_range_transitions = [
-                    t for t in transitions 
-                    if (t.timestamp.replace(tzinfo=timezone.utc) if t.timestamp.tzinfo is None else t.timestamp) < start_date
-                ]
-                range_transitions = [
-                    t for t in transitions 
-                    if start_date <= (t.timestamp.replace(tzinfo=timezone.utc) if t.timestamp.tzinfo is None else t.timestamp) <= end_date
-                ]
-                
-                if not range_transitions:
-                    return 0.0, [], {}
-                
-                if pre_range_transitions:
-                    # Add the last pre-range transition with adjusted timestamp
-                    last_pre_range = max(pre_range_transitions, key=lambda t: t.timestamp)
-                    initial_state = StatusChange(
-                        timestamp=start_date,
-                        from_status=last_pre_range.to_status,
-                        to_status=last_pre_range.to_status
-                    )
-                    transitions = [initial_state] + range_transitions
-                else:
-                    # If no pre-range transitions, use the first transition's from_status
-                    initial_state = StatusChange(
-                        timestamp=start_date,
-                        from_status=transitions[0].from_status,
-                        to_status=transitions[0].from_status
-                    )
-                    transitions = [initial_state] + range_transitions
+        filtered_transitions = []
+        if for_cfd and start_date and end_date:
+            # For CFD, include transitions within range plus last transition before range
+            pre_range = [t for t in transitions if self._ensure_utc(t.timestamp) < start_date]
+            if pre_range:
+                last_pre = max(pre_range, key=lambda t: t.timestamp)
+                filtered_transitions.append(StatusChange(
+                    from_status=last_pre.to_status,
+                    to_status=last_pre.to_status,
+                    timestamp=start_date
+                ))
+            
+            filtered_transitions.extend([
+                t for t in transitions
+                if start_date <= self._ensure_utc(t.timestamp) <= end_date
+            ])
         else:
-            # For lead/cycle time, use all transitions if the issue completed in range
-            completed_in_range = False
+            # For cycle time, check completion in range
             if start_date and end_date:
-                # First, check if the issue was completed in range
-                for t in transitions:
-                    # Ensure timezone-aware comparison
-                    transition_time = t.timestamp.replace(tzinfo=timezone.utc) if t.timestamp.tzinfo is None else t.timestamp
-                    if (start_date <= transition_time <= end_date and 
-                        t.to_status in self.expected_path[-1:]):  # Check if transitioned to final state
-                        completed_in_range = True
-                        break
-                
+                completed_in_range = any(
+                    start_date <= self._ensure_utc(t.timestamp) <= end_date and
+                    t.to_status == self.expected_path[-1]
+                    for t in transitions
+                )
                 if not completed_in_range:
                     return 0.0, [], {}
-                
-                # If completed in range, filter transitions to only include those before completion
-                completion_time = None
-                for t in reversed(transitions):
-                    if t.to_status in self.expected_path[-1:]:
-                        completion_time = t.timestamp.replace(tzinfo=timezone.utc) if t.timestamp.tzinfo is None else t.timestamp
-                        break
-                
-                if completion_time:
-                    transitions = [
-                        t for t in transitions 
-                        if (t.timestamp.replace(tzinfo=timezone.utc) if t.timestamp.tzinfo is None else t.timestamp) <= completion_time
-                    ]
+            filtered_transitions = transitions
 
         # Calculate status periods
-        status_periods = self.calculate_status_periods(transitions, current_status)
+        status_periods = self.calculate_status_periods(filtered_transitions, current_status)
         
         # Calculate cycle time and breakdowns
         total_time = 0.0
         breakdowns = []
+        transitions_by_status = {status: [] for status in self.expected_path}
         
         for status in self.expected_path:
             periods = status_periods[status]
@@ -193,18 +168,11 @@ class WorkflowAnalyzer:
             
             # For CFD, clip periods to time range
             if for_cfd and start_date and end_date:
-                filtered_periods = []
-                for period_start, period_end in periods:
-                    # Ensure timezone-aware comparison
-                    period_start_aware = period_start.replace(tzinfo=timezone.utc) if period_start.tzinfo is None else period_start
-                    period_end_aware = period_end.replace(tzinfo=timezone.utc) if period_end.tzinfo is None else period_end
-                    
-                    if period_end_aware < start_date or period_start_aware > end_date:
-                        continue
-                    period_start = max(period_start_aware, start_date)
-                    period_end = min(period_end_aware, end_date)
-                    filtered_periods.append((period_start, period_end))
-                periods = filtered_periods
+                periods = [
+                    (max(start, start_date), min(end, end_date))
+                    for start, end in periods
+                    if end > start_date and start < end_date
+                ]
             
             status_time = sum(
                 (end - start).total_seconds() / 86400  # Convert to days
@@ -212,13 +180,18 @@ class WorkflowAnalyzer:
             )
             
             if status_time > 0:
+                transitions_in_status = [
+                    t for t in filtered_transitions
+                    if t.from_status == status or t.to_status == status
+                ]
                 breakdowns.append(CycleTimeBreakdown(
                     start_state=status,
-                    end_state=status,  # Same since this is time in a single status
+                    end_state=status,
                     duration=status_time,
-                    transitions=[]  # We don't track individual transitions within a status
+                    transitions=transitions_in_status
                 ))
                 total_time += status_time
+                transitions_by_status[status].extend(transitions_in_status)
 
         return total_time, breakdowns, status_periods
 
@@ -269,22 +242,27 @@ class WorkflowAnalyzer:
         _, breakdowns, _ = self.calculate_cycle_time(transitions, current_status)
         
         bottlenecks = []
+        max_time = max((b.duration for b in breakdowns), default=0)
+        max_transitions = max((len(b.transitions) for b in breakdowns), default=0)
+        
         for b in breakdowns:
             if b.duration > 0:
-                # Calculate metrics for bottleneck detection
-                avg_time_in_status = b.duration
-                num_times_entered = len(b.transitions) + 1  # Add 1 since transitions list may be empty
-                if num_times_entered > 1:
-                    # Multiple entries might indicate a problem
-                    bottleneck_score = avg_time_in_status * (num_times_entered - 1)
-                else:
-                    bottleneck_score = avg_time_in_status
+                # Calculate normalized metrics
+                time_ratio = b.duration / max_time if max_time > 0 else 0
+                transition_ratio = len(b.transitions) / max_transitions if max_transitions > 0 else 0
+                
+                # Calculate bottleneck score
+                bottleneck_score = (time_ratio * 0.7) + (transition_ratio * 0.3)
+                
+                # Determine impact level
+                impact = "High" if bottleneck_score > 0.7 else "Medium" if bottleneck_score > 0.3 else "Low"
                 
                 bottlenecks.append({
-                    'status': b.start_state,  # Use start_state since it's the same as end_state for single status
-                    'avg_time': avg_time_in_status,
-                    'times_entered': num_times_entered,
-                    'bottleneck_score': bottleneck_score
+                    'status': b.start_state,
+                    'avg_time': b.duration,
+                    'times_entered': len(b.transitions),
+                    'bottleneck_score': bottleneck_score,
+                    'impact': impact
                 })
         
         # Sort by bottleneck score
