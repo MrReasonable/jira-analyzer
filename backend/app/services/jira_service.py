@@ -4,7 +4,6 @@ import logging
 from app.core.models import JiraConfig, WorkflowConfig
 from urllib.parse import unquote
 
-
 logger = logging.getLogger(__name__)
 
 class JiraService:
@@ -50,31 +49,28 @@ class JiraService:
             raise
 
     def get_filters(self) -> List[Dict]:
-            """Get list of available filters"""
-            try:
-                # Get favorite filters
-                favourite_filters = self.client.favourite_filters()
-                
-                # For now, just use favourite filters as the Jira Python library
-                # doesn't provide a direct method to get all filters
-                all_filters = {}
-                
-                # Process favorite filters
-                for f in favourite_filters:
-                    owner_name = getattr(f.owner, 'displayName', 'Unknown') if hasattr(f, 'owner') else 'Unknown'
-                    all_filters[f.id] = {
-                        'id': f.id,
-                        'name': f.name,
-                        'jql': getattr(f, 'jql', ''),
-                        'owner': owner_name,
-                        'favourite': True
-                    }
+        """Get list of available filters"""
+        try:
+            # Get favorite filters
+            favourite_filters = self.client.favourite_filters()
+            
+            # Process favorite filters
+            filters = []
+            for f in favourite_filters:
+                owner_name = getattr(f.owner, 'displayName', 'Unknown') if hasattr(f, 'owner') else 'Unknown'
+                filters.append({
+                    'id': f.id,
+                    'name': f.name,
+                    'jql': getattr(f, 'jql', ''),
+                    'owner': owner_name,
+                    'favourite': True
+                })
 
-                logger.info(f"Found {len(all_filters)} filters")
-                return list(all_filters.values())
-            except Exception as e:
-                logger.error(f"Error fetching filters: {str(e)}")
-                raise
+            logger.info(f"Found {len(filters)} filters")
+            return filters
+        except Exception as e:
+            logger.error(f"Error fetching filters: {str(e)}")
+            raise
 
     def validate_filter(self, filter_name: str) -> Optional[Dict]:
         """Validate and get details of a Jira filter"""
@@ -97,7 +93,7 @@ class JiraService:
                         'name': filter_obj.name,
                         'jql': getattr(filter_obj, 'jql', ''),
                         'owner': getattr(filter_obj.owner, 'displayName', 'Unknown') if hasattr(filter_obj, 'owner') else 'Unknown',
-                        'favourite': True  # Since we only have access to favourite filters
+                        'favourite': True
                     }
                 except:
                     # Fall back to the basic filter info if we can't get details
@@ -109,17 +105,31 @@ class JiraService:
             raise
 
     def extract_workflow(self, project_key: str) -> WorkflowConfig:
-        """Extract workflow configuration from a Jira project using the workflow API"""
+        """Extract workflow configuration from a Jira project"""
         try:
             # Get all statuses and transitions by analyzing existing issues
             jql = f"project = {project_key} ORDER BY created DESC"
             issues = self.client.search_issues(jql, maxResults=100, expand='changelog')
             
             # Track all statuses and transitions
-            all_statuses = set()
-            transitions = {}
-            initial_statuses = set()
-            final_statuses = set()
+            all_statuses: Set[str] = set()
+            transitions: Dict[str, Set[str]] = {}
+            initial_statuses: Set[str] = set()
+            final_statuses: Set[str] = set()
+            
+            # Get project statuses from configuration
+            project = self.client.project(project_key)
+            statuses = self.client._get_json(f'project/{project.id}/statuses')
+            
+            # Add statuses from project configuration
+            for issue_type in statuses:
+                for status in issue_type.get('statuses', []):
+                    status_name = status['name']
+                    all_statuses.add(status_name)
+                    
+                    # First status in configuration is typically initial
+                    if not initial_statuses:
+                        initial_statuses.add(status_name)
             
             # Analyze issue histories to build workflow
             for issue in issues:
@@ -153,27 +163,6 @@ class JiraService:
                     final_statuses.add(previous_status)
                 final_statuses.add(current_status)
             
-            # Get additional workflow info from project configuration
-            project = self.client.project(project_key)
-            statuses = self.client._get_json(f'project/{project.id}/statuses')
-            
-            # Add any statuses from project configuration that weren't in issues
-            for issue_type in statuses:
-                for status in issue_type['statuses']:
-                    status_name = status['name']
-                    all_statuses.add(status_name)
-                    
-                    # First status in configuration is typically initial
-                    if len(initial_statuses) == 0:
-                        initial_statuses.add(status_name)
-            
-            # Convert sets to sorted lists and normalize status names
-            status_list = sorted(list(all_statuses))
-            
-            # Normalize initial statuses to prevent duplicates with different casing
-            normalized_initial_statuses = {status.lower(): status for status in initial_statuses}
-            initial_statuses = set(normalized_initial_statuses.values())
-            
             # Build suggested flow starting from initial statuses
             suggested_flow = []
             if initial_statuses:
@@ -201,9 +190,9 @@ class JiraService:
                     suggested_flow.append(current)
             
             return WorkflowConfig(
-                all_statuses=status_list,
+                all_statuses=sorted(list(all_statuses)),
                 suggested_flow=suggested_flow,
-                initial_statuses=sorted(list(initial_statuses)),  # Using normalized and deduplicated initial_statuses
+                initial_statuses=sorted(list(initial_statuses)),
                 final_statuses=sorted(list(final_statuses)),
                 transitions={k: sorted(list(v)) for k, v in transitions.items()}
             )
@@ -223,8 +212,8 @@ class JiraService:
                 'timespent',
                 'parent',
                 'subtasks',
-                'customfield_10014',  # Epic Link field (may need to adjust field ID)
-                'customfield_10015'   # Epic Name field (may need to adjust field ID)
+                'customfield_10014',  # Epic Link field
+                'customfield_10015'   # Epic Name field
             ]
             return self.client.search_issues(
                 jql_query,

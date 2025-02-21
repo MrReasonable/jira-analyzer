@@ -21,9 +21,10 @@ python-dotenv==1.0.0
 # Type hints
 typing-extensions==4.7.1
 
-# Testing
+# Testing and linting
 pytest==7.4.0
 pytest-cov==4.1.0
+flake8==7.0.0
 
 
 #Serialization

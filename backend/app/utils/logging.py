@@ -61,4 +61,12 @@ def get_logger(name: str) -> logging.Logger:
     Returns:
         Logger instance configured to write to stdout
     """
+    if not name:
+        # Create a new logger with empty name instead of returning root logger
+        logger = logging.Logger('')
+        # Copy handlers from root logger
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            logger.addHandler(handler)
+        return logger
     return logging.getLogger(name)

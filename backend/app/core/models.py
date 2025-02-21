@@ -126,11 +126,21 @@ class TeamConfig(db.Model):
     end_states = db.Column(db.Text)  # JSON string of end states
     active_statuses = db.Column(db.Text)  # JSON string of active statuses
     flow_efficiency_method = db.Column(db.Text)  # 'active_statuses' or 'time_logged'
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime(timezone=True), default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.created_at:
+            self.created_at = datetime.now(timezone.utc)
+        if not self.updated_at:
+            self.updated_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> Dict:
         """Convert to dictionary, parsing JSON fields"""
+        created_at = self.created_at.astimezone(timezone.utc) if self.created_at else None
+        updated_at = self.updated_at.astimezone(timezone.utc) if self.updated_at else None
+        
         return {
             'id': self.id,
             'name': self.name,
@@ -144,8 +154,8 @@ class TeamConfig(db.Model):
             'endStates': json.loads(self.end_states) if self.end_states else [],
             'activeStatuses': json.loads(self.active_statuses) if self.active_statuses else [],
             'flowEfficiencyMethod': self.flow_efficiency_method or 'active_statuses',
-            'createdAt': self.created_at.isoformat(),
-            'updatedAt': self.updated_at.isoformat()
+            'createdAt': created_at.isoformat() if created_at else None,
+            'updatedAt': updated_at.isoformat() if updated_at else None
         }
 
     @staticmethod

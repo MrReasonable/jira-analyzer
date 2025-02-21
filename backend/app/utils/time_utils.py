@@ -8,7 +8,7 @@ class JQLParser:
     
     # Patterns for different JQL components
     DATE_PATTERN = r'(created|updated|resolved)\s*(?:>=|<=|=|>|<)\s*["\']?\d{4}-\d{2}-\d{2}["\']?'
-    ORDER_BY_PATTERN = r'\s+ORDER\s+BY\s+.*$'
+    ORDER_BY_PATTERN = r'\s*ORDER\s+BY\s+.*$'
     
     def __init__(self, query: str):
         self.original_query = query.strip()
@@ -22,8 +22,8 @@ class JQLParser:
         # Extract ORDER BY clause
         order_match = re.search(self.ORDER_BY_PATTERN, self.original_query, re.IGNORECASE)
         if order_match:
-            main_query = self.original_query[:order_match.start()]
-            self.order_by = self.original_query[order_match.start():]
+            main_query = self.original_query[:order_match.start()].strip()
+            self.order_by = order_match.group().strip()
         else:
             main_query = self.original_query
             self.order_by = ''
@@ -93,7 +93,7 @@ class JQLParser:
                 f'(updated >= "{start_date.strftime("%Y-%m-%d")}" OR ' +
                 f'status changed AFTER "{start_date.strftime("%Y-%m-%d")}" OR ' +
                 f'created >= "{start_date.strftime("%Y-%m-%d")}")'
-            )
+           )
         if end_date:
             date_conditions.append(
                 f'(updated <= "{end_date.strftime("%Y-%m-%d")}" OR ' +
@@ -107,18 +107,25 @@ class JQLParser:
     def build_query(self) -> str:
         """Build the final JQL query"""
         if not self.conditions:
-            return ""
+            return self.order_by.strip()
         
-        return " AND ".join(self.conditions) + self.order_by
+        query = " AND ".join(self.conditions)
+        if self.order_by:
+            query = f"({query}){self.order_by}"
+        return query
 
 def get_date_range(time_range: TimeRange) -> tuple[Optional[datetime], Optional[datetime]]:
     """Get start and end dates based on time range configuration"""
     end_date = datetime.now(timezone.utc)
     
     if time_range.start_date and time_range.end_date:
-        # Use provided dates if they exist, but ensure proper time boundaries
-        start_date = time_range.start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = time_range.end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        # Use provided dates if they exist, but ensure proper time boundaries and UTC timezone
+        start_date = time_range.start_date.astimezone(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        end_date = time_range.end_date.astimezone(timezone.utc).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
         return start_date, end_date
     elif time_range.preset:
         # Calculate dates based on preset
@@ -133,7 +140,7 @@ def get_date_range(time_range: TimeRange) -> tuple[Optional[datetime], Optional[
         else:
             return None, None
         
-        # Set time to start/end of day
+        # Set time to start/end of day in UTC
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
         

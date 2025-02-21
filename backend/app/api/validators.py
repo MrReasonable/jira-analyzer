@@ -13,21 +13,38 @@ def validate_time_range(time_range: TimeRange) -> Tuple[bool, Optional[str]]:
     Returns:
         Tuple of (is_valid, error_message)
     """
+    if not time_range:
+        return False, "Time range configuration is required"
+
     # Check if either preset or custom range is provided
     has_custom_range = time_range.start_date is not None or time_range.end_date is not None
     has_preset = time_range.preset is not None
+    
+    if not has_custom_range and not has_preset:
+        return False, "Either a preset or custom date range must be provided"
     
     if has_custom_range and has_preset:
         return False, "Cannot specify both custom date range and preset"
     
     if has_custom_range:
-        if time_range.start_date and time_range.end_date:
-            if time_range.start_date > time_range.end_date:
-                return False, "Start date must be before end date"
-            if time_range.end_date > datetime.now(timezone.utc):
-                return False, "End date cannot be in the future"
-        else:
+        if not time_range.start_date or not time_range.end_date:
             return False, "Both start and end dates must be provided for custom range"
+
+        # Validate timezone awareness
+        if time_range.start_date.tzinfo is None:
+            return False, "Start date must have timezone information"
+        if time_range.end_date.tzinfo is None:
+            return False, "End date must have timezone information"
+        
+        # Convert to UTC for comparison
+        start_utc = time_range.start_date.astimezone(timezone.utc)
+        end_utc = time_range.end_date.astimezone(timezone.utc)
+        now_utc = datetime.now(timezone.utc)
+        
+        if start_utc > end_utc:
+            return False, "Start date must be before end date"
+        if end_utc > now_utc:
+            return False, "End date cannot be in the future"
     
     if has_preset:
         valid_presets = ['two_weeks', 'quarter', 'half_year', 'year']
@@ -40,7 +57,7 @@ def validate_jira_config(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """Validate the Jira configuration data."""
     required_fields = ['jiraUrl', 'username', 'apiToken', 'statuses', 'expectedPath']
     
-    # Check if all required fields are present
+    # Check if all required fields are present and non-empty
     for field in required_fields:
         if field not in data:
             return False, f"Missing required field: {field}"
@@ -55,11 +72,11 @@ def validate_jira_config(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     try:
         result = urlparse(data['jiraUrl'])
         if not all([result.scheme, result.netloc]):
-            return False, "Invalid Jira URL format"
+            return False, "Invalid Jira URL"
         if result.scheme not in ['http', 'https']:
-            return False, "Jira URL must use http or https protocol"
+            return False, "Invalid Jira URL"
     except Exception:
-        return False, "Invalid Jira URL format"
+        return False, "Invalid Jira URL"
     
     # Validate arrays
     if not isinstance(data['statuses'], list):
@@ -97,9 +114,10 @@ def validate_team_config(data: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
             return False, f"Field cannot be empty: {field}"
     
     # Validate name format
-    if not data['name'].strip():
+    name = data['name'].strip()
+    if not name:
         return False, "Name cannot be empty"
-    if len(data['name']) > 100:
+    if len(name) > 100:
         return False, "Name cannot be longer than 100 characters"
     
     # Reuse Jira config validation
@@ -120,10 +138,10 @@ def validate_connection_request(data: Dict[str, Any]) -> Tuple[bool, Optional[st
     try:
         result = urlparse(data['jiraUrl'])
         if not all([result.scheme, result.netloc]):
-            return False, "Invalid Jira URL format"
+            return False, "Invalid Jira URL"
         if result.scheme not in ['http', 'https']:
-            return False, "Jira URL must use http or https protocol"
+            return False, "Invalid Jira URL"
     except Exception:
-        return False, "Invalid Jira URL format"
+        return False, "Invalid Jira URL"
     
     return True, None

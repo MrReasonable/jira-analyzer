@@ -1,8 +1,9 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
+from datetime import datetime, timezone
 from app.core.models import JiraConfig, AnalysisResult, IssueData
 from app.core.interfaces import IssueTrackingSystem
-from app.services.issue_tracking import JiraIssueTracker
+from app.services.jira_service import JiraService
 from app.core.analysis.factory import AnalysisComponentFactory
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 class CycleTimeAnalyzer:
     """Main analyzer class that orchestrates the analysis process"""
     
-    def __init__(self, config: JiraConfig, issue_tracker: IssueTrackingSystem = None):
+    def __init__(self, config: JiraConfig, issue_tracker: Optional[IssueTrackingSystem] = None):
         """
         Initialize the analyzer with configuration and optional issue tracker
         
@@ -19,7 +20,7 @@ class CycleTimeAnalyzer:
             issue_tracker: Optional issue tracking system implementation
         """
         self.config = config
-        self.issue_tracker = issue_tracker or JiraIssueTracker(config)
+        self.issue_tracker = issue_tracker or JiraService(config)
         self.components = AnalysisComponentFactory.create_all(config.__dict__)
 
     def analyze_issues(self, jql_query: str) -> AnalysisResult:
@@ -33,6 +34,19 @@ class CycleTimeAnalyzer:
             Analysis result containing metrics and issue data
         """
         issues = self._fetch_all_issues(jql_query)
+        if not issues:
+            return AnalysisResult(
+                total_issues=0,
+                flow_metrics={},
+                workflow_compliance={},
+                bottlenecks=[],
+                cycle_time_stats={},
+                status_distribution={},
+                end_states=self.config.end_states,
+                issues=[],
+                workflow=self.config.workflow
+            )
+
         processed_issues = [self.issue_tracker.process_issue(issue) for issue in issues]
         return self._generate_report(processed_issues)
 
@@ -71,21 +85,38 @@ class CycleTimeAnalyzer:
         status_distribution = results.get("status_distribution", {})
         cfd_data = results.get("cfd_data", None)
         flow_efficiency_data = results.get("flow_efficiency_data", [])
+        epic_data = results.get("epic_data", [])
 
         # Create standardized issue data
-        issue_data = [{
-            "key": issue.key,
-            "summary": issue.summary,
-            "cycleTime": float(issue.total_cycle_time),
-            "statusTimes": {k: float(v) for k, v in issue.cycle_times.items()},
-            "currentStatus": issue.current_status,
-            "created": issue.created_date.isoformat(),
-            "timeSpent": issue.time_spent,
-            "originalEstimate": issue.original_estimate,
-            "epicKey": issue.epic_key,
-            "parentKey": issue.parent_key,
-            "subtaskKeys": issue.subtask_keys
-        } for issue in issues]
+        issue_data = []
+        for issue in issues:
+            data = {
+                "key": issue.key,
+                "summary": issue.summary,
+                "cycleTime": float(issue.total_cycle_time),
+                "statusTimes": {k: float(v) for k, v in issue.cycle_times.items()},
+                "currentStatus": issue.current_status,
+                "created": issue.created_date.isoformat().replace('+00:00', 'Z'),
+                "timeSpent": issue.time_spent,
+                "originalEstimate": issue.original_estimate,
+                "epicKey": issue.epic_key,
+                "parentKey": issue.parent_key,
+                "subtaskKeys": issue.subtask_keys
+            }
+
+            # Add completion date if available
+            if issue.end_time:
+                data["completed"] = issue.end_time.isoformat().replace('+00:00', 'Z')
+
+            # Add transitions if available
+            if issue.transitions:
+                data["transitions"] = [{
+                    "from_status": t.from_status,
+                    "to_status": t.to_status,
+                    "timestamp": t.timestamp.isoformat().replace('+00:00', 'Z')
+                } for t in issue.transitions]
+
+            issue_data.append(data)
 
         return AnalysisResult(
             total_issues=len(issues),
@@ -96,10 +127,10 @@ class CycleTimeAnalyzer:
             status_distribution=status_distribution,
             end_states=self.config.end_states,
             issues=issue_data,
-            workflow=self.config.workflow,  # Include the workflow configuration
+            workflow=self.config.workflow,
             cfd_data=cfd_data,
             flow_efficiency_data=flow_efficiency_data,
-            epic_data=results.get("epic_data", [])
+            epic_data=epic_data
         )
 
     def register_component(self, name: str, component_class: Any) -> None:
