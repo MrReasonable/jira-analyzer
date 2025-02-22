@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503
+exclude = .git,__pycache__,build,dist,*.egg-info,venv
+max-complexity = 10
+docstring-convention = google
+import-order-style = google
+application-import-names = app
+per-file-ignores =
+    # Ignore unused imports in __init__.py files
+    __init__.py:F401
+    # Ignore missing docstrings in tests
+    tests/*:D100,D101,D102,D103
+    # Ignore line length in migrations
+    migrations/*:E501

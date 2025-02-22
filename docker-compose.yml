@@ -1,0 +1,53 @@
+services:
+  backend:
+    build: ./backend
+    container_name: jira-analyzer-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-80}"]
+      - JIRA_SERVER=${JIRA_SERVER:-https://your-domain.atlassian.net}
+      - JIRA_EMAIL=${JIRA_EMAIL:-your-email@example.com}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-your-api-token}
+      - JQL_QUERY=${JQL_QUERY:-"project = PROJ AND type = Story"}
+      - WORKFLOW_STATES=${WORKFLOW_STATES:-'["Backlog", "In Progress", "Done"]'}
+      - LEAD_TIME_START_STATE=${LEAD_TIME_START_STATE:-Backlog}
+      - LEAD_TIME_END_STATE=${LEAD_TIME_END_STATE:-Done}
+      - CYCLE_TIME_START_STATE=${CYCLE_TIME_START_STATE:-"In Progress"}
+      - CYCLE_TIME_END_STATE=${CYCLE_TIME_END_STATE:-Done}
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/tests:/app/tests
+      - jira-analyzer-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: jira-analyzer-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  jira-analyzer-data:
+
+networks:
+  default:
+    name: jira-analyzer-network
