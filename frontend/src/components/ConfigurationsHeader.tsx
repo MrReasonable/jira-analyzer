@@ -2,6 +2,7 @@ import { Component, Accessor } from 'solid-js';
 import { Button } from '@kobalte/core';
 import { ConfigurationList } from './ConfigurationList';
 import { JiraConfigurationList } from '../api/jiraApi';
+import { logger } from '../utils/logger';
 
 interface ConfigurationsHeaderProps {
   configurations: Accessor<JiraConfigurationList[]>;
@@ -24,7 +25,10 @@ export const ConfigurationsHeader: Component<ConfigurationsHeaderProps> = props 
       />
       <Button.Root
         class="btn btn-primary"
-        onClick={props.onAddClick}
+        onClick={() => {
+          logger.info('User clicked Add Configuration button');
+          props.onAddClick();
+        }}
         data-testid="add-config-button"
       >
         Add Configuration

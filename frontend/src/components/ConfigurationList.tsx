@@ -1,5 +1,6 @@
 import { Component, For, Show, Accessor } from 'solid-js';
 import { JiraConfigurationList } from '../api/jiraApi';
+import { logger } from '../utils/logger';
 
 interface Props {
   configurations: Accessor<JiraConfigurationList[]>;
@@ -48,7 +49,10 @@ export const ConfigurationList: Component<Props> = props => {
                     <div class="flex gap-2">
                       <button
                         class="btn btn-secondary"
-                        onClick={() => props.onSelect(config.name)}
+                        onClick={() => {
+                          logger.info('User selected configuration', { name: config.name });
+                          props.onSelect(config.name);
+                        }}
                         data-testid={`select-${config.name}`}
                       >
                         Select
@@ -56,12 +60,20 @@ export const ConfigurationList: Component<Props> = props => {
                       <button
                         class="btn btn-danger"
                         onClick={() => {
+                          logger.debug('User clicked delete configuration', { name: config.name });
                           if (
                             window.confirm(
                               `Are you sure you want to delete configuration "${config.name}"?`
                             )
                           ) {
+                            logger.info('User confirmed configuration deletion', {
+                              name: config.name,
+                            });
                             props.onDelete(config.name);
+                          } else {
+                            logger.debug('User cancelled configuration deletion', {
+                              name: config.name,
+                            });
                           }
                         }}
                         data-testid={`delete-${config.name}`}

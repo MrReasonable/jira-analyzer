@@ -24,7 +24,9 @@ RUN pip install --no-cache-dir \
     ruff \
     pre-commit \
     debugpy \
-    httpx
+    httpx \
+    mypy \
+    bandit
 
 # Copy application code
 COPY . .

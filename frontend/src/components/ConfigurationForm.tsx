@@ -1,5 +1,6 @@
 import { Component, createSignal } from 'solid-js';
 import { jiraApi, JiraConfiguration } from '../api/jiraApi';
+import { logger } from '../utils/logger';
 
 interface Props {
   initialConfig?: JiraConfiguration;
@@ -51,10 +52,14 @@ export const ConfigurationForm: Component<Props> = props => {
         await jiraApi.createConfiguration(config);
       }
       props.onConfigurationSaved();
-    } catch (error) {
-      console.error('Failed to save configuration:', error);
-      setError('Failed to save configuration');
-      return; // Important: prevent onConfigurationSaved from being called
+    } catch (err) {
+      // Ensure we're handling the error properly
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save configuration';
+
+      // Log the error using our logger utility
+      logger.error('Failed to save configuration:', err);
+
+      setError(errorMessage);
     }
   };
 

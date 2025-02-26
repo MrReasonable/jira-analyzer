@@ -1,5 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest';
 import { server } from './mocks/server';
+import { logger, LogLevel } from './utils/logger';
+
+// Set logger level to NONE for tests
+logger.setLevel(LogLevel.NONE);
 
 // Auto mock the axios module
 vi.mock('axios');

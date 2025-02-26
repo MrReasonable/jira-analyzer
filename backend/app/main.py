@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import Settings, get_settings
 from .database import get_session, init_db
+from .logger import get_logger
 from .metrics import (
     calculate_cfd,
     calculate_cycle_time,
@@ -31,6 +32,9 @@ from .schemas import (
     JiraConfigurationUpdate,
 )
 
+# Create module-level logger
+logger = get_logger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -40,10 +44,12 @@ async def lifespan(app: FastAPI):
     On startup, it initializes the database by creating all required tables.
     """
     # Startup: Initialize the database
+    logger.info('Starting application, initializing database')
     await init_db()
+    logger.info('Database initialized successfully')
     yield
     # Shutdown: Add any cleanup code here if needed
-    pass
+    logger.info('Shutting down application')
 
 
 # Use the lifespan context manager
@@ -52,6 +58,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Enable CORS
 settings = get_settings()
+logger.info(f'CORS configured with origins: {settings.cors_origins}')
 
 app.add_middleware(
     CORSMiddleware,
@@ -79,22 +86,33 @@ async def get_jira_client(
         HTTPException: If connection fails or named configuration is not found.
     """
     if not config_name:
+        logger.warning('JIRA client request missing configuration name')
         raise HTTPException(
             status_code=400,
             detail='A configuration name is required. Please provide a valid configuration name.',
         )
 
+    logger.debug(f'Creating JIRA client using configuration: {config_name}')
     try:
         # Use named configuration
         stmt = select(JiraConfiguration).where(JiraConfiguration.name == config_name)
         result = await session.execute(stmt)
         config = result.scalar_one_or_none()
         if not config:
+            logger.warning(f'Configuration not found: {config_name}')
             raise HTTPException(status_code=404, detail=f"Configuration '{config_name}' not found")
-        return JIRA(
+
+        logger.debug(f'Connecting to JIRA server: {config.jira_server}')
+        jira_client = JIRA(
             server=config.jira_server, basic_auth=(config.jira_email, config.jira_api_token)
         )
+        logger.info(f'Successfully connected to JIRA using configuration: {config_name}')
+        return jira_client
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
+        logger.error(f'Failed to connect to JIRA: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=f'Failed to connect to Jira: {str(e)}')
 
 
@@ -115,14 +133,17 @@ async def create_configuration(
     Raises:
         HTTPException: If configuration creation fails.
     """
+    logger.info(f'Creating new configuration: {config.name}')
     db_config = JiraConfiguration(**config.model_dump())
     session.add(db_config)
     try:
         await session.commit()
         await session.refresh(db_config)
+        logger.info(f'Configuration created successfully: {config.name}')
         return db_config
     except Exception as e:
         await session.rollback()
+        logger.error(f'Failed to create configuration: {str(e)}', exc_info=True)
         raise HTTPException(status_code=400, detail=f'Could not create configuration: {str(e)}')
 
 
@@ -136,9 +157,12 @@ async def list_configurations(session: AsyncSession = Depends(get_session)):
     Returns:
         List[JiraConfigurationList]: List of all stored configurations.
     """
+    logger.info('Listing all configurations')
     stmt = select(JiraConfiguration)
     result = await session.execute(stmt)
-    return result.scalars().all()
+    configs = result.scalars().all()
+    logger.debug(f'Found {len(configs)} configurations')
+    return configs
 
 
 @app.get('/api/configurations/{name}', response_model=JiraConfigSchema)
@@ -155,11 +179,14 @@ async def get_configuration(name: str, session: AsyncSession = Depends(get_sessi
     Raises:
         HTTPException: If configuration is not found.
     """
+    logger.info(f'Getting configuration: {name}')
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     config = result.scalar_one_or_none()
     if not config:
+        logger.warning(f'Configuration not found: {name}')
         raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
+    logger.debug(f'Configuration found: {name}')
     return config
 
 
@@ -180,10 +207,12 @@ async def update_configuration(
     Raises:
         HTTPException: If configuration is not found or update fails.
     """
+    logger.info(f'Updating configuration: {name}')
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     db_config = result.scalar_one_or_none()
     if not db_config:
+        logger.warning(f'Configuration not found: {name}')
         raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
 
     for key, value in config.model_dump().items():
@@ -192,9 +221,11 @@ async def update_configuration(
     try:
         await session.commit()
         await session.refresh(db_config)
+        logger.info(f'Configuration updated successfully: {name}')
         return db_config
     except Exception as e:
         await session.rollback()
+        logger.error(f'Failed to update configuration: {str(e)}', exc_info=True)
         raise HTTPException(status_code=400, detail=f'Could not update configuration: {str(e)}')
 
 
@@ -209,17 +240,21 @@ async def delete_configuration(name: str, session: AsyncSession = Depends(get_se
     Raises:
         HTTPException: If configuration is not found or deletion fails.
     """
+    logger.info(f'Deleting configuration: {name}')
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     db_config = result.scalar_one_or_none()
     if not db_config:
+        logger.warning(f'Configuration not found: {name}')
         raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
 
     try:
         await session.delete(db_config)
         await session.commit()
+        logger.info(f'Configuration deleted successfully: {name}')
     except Exception as e:
         await session.rollback()
+        logger.error(f'Failed to delete configuration: {str(e)}', exc_info=True)
         raise HTTPException(status_code=400, detail=f'Could not delete configuration: {str(e)}')
 
 
@@ -239,11 +274,20 @@ async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
     Raises:
         HTTPException: If the JIRA API request fails.
     """
+    logger.info(f'Calculating lead time metrics with JQL: {jql}')
     try:
+        logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(jql, maxResults=1000, fields=['created', 'resolutiondate'])
+        logger.debug(f'Found {len(issues)} issues')
+
+        logger.debug('Calculating lead time metrics')
         result = calculate_lead_time(issues)
+        logger.info(
+            f"Lead time calculation complete: avg={result.get('average')}, median={result.get('median')}"
+        )
         return result
     except Exception as e:
+        logger.error(f'Failed to calculate lead time: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -263,13 +307,20 @@ async def get_throughput(jql: str, jira: JIRA = Depends(get_jira_client)):
     Raises:
         HTTPException: If the JIRA API request fails.
     """
+    logger.info(f'Calculating throughput metrics with JQL: {jql}')
     try:
+        logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(
             jql, maxResults=1000, fields=['created', 'resolutiondate', 'status']
         )
+        logger.debug(f'Found {len(issues)} issues')
+
+        logger.debug('Calculating throughput metrics')
         result = calculate_throughput(issues)
+        logger.info(f"Throughput calculation complete: avg={result.get('average')}")
         return result
     except Exception as e:
+        logger.error(f'Failed to calculate throughput: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -292,12 +343,21 @@ async def get_wip(
     Raises:
         HTTPException: If the JIRA API request fails.
     """
+    logger.info(f'Calculating WIP metrics with JQL: {jql}')
     try:
+        logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(jql, maxResults=1000, fields=['status'])
+        logger.debug(f'Found {len(issues)} issues')
+
         workflow_states = settings.workflow_states if hasattr(settings, 'workflow_states') else None
+        logger.debug(f'Using workflow states: {workflow_states}')
+
+        logger.debug('Calculating WIP metrics')
         result = calculate_wip(issues, workflow_states)
+        logger.info(f"WIP calculation complete: total={result.get('total')}")
         return result
     except Exception as e:
+        logger.error(f'Failed to calculate WIP: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -321,13 +381,16 @@ async def get_cycle_time(
     Raises:
         HTTPException: If the JIRA API request fails.
     """
+    logger.info(f'Calculating cycle time metrics with JQL: {jql}')
     try:
+        logger.debug('Fetching issues from JIRA with changelog')
         issues = jira.search_issues(
             jql,
             maxResults=1000,
             fields=['created', 'resolutiondate', 'status', 'changelog'],
             expand='changelog',
         )
+        logger.debug(f'Found {len(issues)} issues')
 
         start_state = (
             settings.cycle_time_start_state
@@ -337,19 +400,26 @@ async def get_cycle_time(
         end_state = (
             settings.cycle_time_end_state if hasattr(settings, 'cycle_time_end_state') else 'Done'
         )
+        logger.debug(f'Using cycle time states: start={start_state}, end={end_state}')
 
+        logger.debug('Calculating cycle time metrics')
         result = calculate_cycle_time(issues, start_state, end_state)
 
         # Add state information to the result
         if 'error' not in result:
             result['start_state'] = start_state
             result['end_state'] = end_state
+            logger.info(
+                f"Cycle time calculation complete: avg={result.get('average')}, median={result.get('median')}"
+            )
         else:
             result['start_state'] = start_state
             result['end_state'] = end_state
+            logger.warning(f"Cycle time calculation returned error: {result.get('error')}")
 
         return result
     except Exception as e:
+        logger.error(f'Failed to calculate cycle time: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -374,16 +444,21 @@ async def get_cfd(
     Raises:
         HTTPException: If the JIRA API request fails.
     """
+    logger.info(f'Generating CFD data with JQL: {jql}')
     try:
+        logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(
             jql,
             maxResults=1000,
             fields=['status', 'created', 'resolutiondate'],
         )
+        logger.debug(f'Found {len(issues)} issues')
 
         workflow_states = settings.workflow_states if hasattr(settings, 'workflow_states') else None
         period_days = 30  # Default to 30 days
+        logger.debug(f'Using workflow states: {workflow_states}, period: {period_days} days')
 
+        logger.debug('Calculating CFD data')
         result = calculate_cfd(issues, workflow_states, period_days)
 
         # Convert to the expected format for the frontend
@@ -397,10 +472,15 @@ async def get_cfd(
                     data_point[status] = result['data'][i][status]
                 cumulative_data.append(data_point)
 
+            logger.info(
+                f"CFD calculation complete: {len(statuses)} statuses, {len(result['dates'])} dates"
+            )
             return {'statuses': statuses, 'data': cumulative_data}
 
+        logger.warning('CFD calculation returned unexpected format')
         return result
     except Exception as e:
+        logger.error(f'Failed to generate CFD: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -408,4 +488,5 @@ if __name__ == '__main__':
     import uvicorn
 
     settings = get_settings()
+    logger.info(f'Starting server on {settings.host}:{settings.port}')
     uvicorn.run(app, host=settings.host, port=settings.port)

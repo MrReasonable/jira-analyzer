@@ -72,7 +72,6 @@ class TestInputValidation:
                 response = test_client.get(
                     '/api/metrics/lead-time?jql=project=TEST&config_name=test_config'
                 )
-                assert response.status_code == 500  # Now returns 500 instead of 401
                 # The actual error message is different, so we'll just check for a 500 status code
                 assert response.status_code == 500
 
@@ -224,8 +223,8 @@ class TestInputValidation:
 
             assert 'detail' in error_data
             assert isinstance(error_data['detail'], str)
-            # The actual status code is 500, not 404
-            assert response.status_code == 500
+            # The actual status code is 404 for configuration not found
+            assert response.status_code == 404
             assert (
                 'not found' in error_data['detail'].lower()
                 or 'no such table' in error_data['detail'].lower()

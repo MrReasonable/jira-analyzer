@@ -117,11 +117,11 @@ frontend-lint-ci: ## Run frontend linting in CI mode (non-interactive)
 
 backend-lint: ## Run backend linting only
 	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -ti -v $(PWD)/backend:/app backend-dev ruff check app tests
+	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 backend-lint-ci: ## Run backend linting in CI mode (non-interactive)
 	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -v $(PWD)/backend:/app backend-dev ruff check app tests
+	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 frontend-format: ## Format frontend code only
 	docker build -t frontend-dev -f frontend/Dockerfile.dev frontend
@@ -153,11 +153,11 @@ backend-format-ci: ## Format backend code in CI mode (non-interactive)
 
 backend-lint-fix: ## Auto-fix backend linting issues
 	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests"
+	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 backend-lint-fix-ci: ## Auto-fix backend linting issues in CI mode (non-interactive)
 	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests"
+	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 lint-fix: frontend-lint-fix backend-lint-fix ## Auto-fix linting issues in both frontend and backend
 

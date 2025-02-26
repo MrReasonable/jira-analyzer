@@ -47,3 +47,7 @@ known-first-party = ["app"]
 [tool.ruff.lint.flake8-quotes]
 docstring-quotes = "double"
 inline-quotes = "single"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]

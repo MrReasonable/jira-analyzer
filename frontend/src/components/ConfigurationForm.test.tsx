@@ -120,10 +120,9 @@ describe('ConfigurationForm', () => {
   });
 
   it('displays error message when API call fails', async () => {
-    // Mock API to reject
-    vi.mocked(jiraApi.createConfiguration).mockRejectedValueOnce(
-      new Error('Failed to save configuration')
-    );
+    const errorMessage = 'API connection failed';
+    // Mock API to reject with a specific error message
+    vi.mocked(jiraApi.createConfiguration).mockRejectedValueOnce(new Error(errorMessage));
 
     render(() => <ConfigurationForm onConfigurationSaved={mockOnSaved} />);
 
@@ -131,10 +130,14 @@ describe('ConfigurationForm', () => {
     fillForm(sampleConfig);
     fireEvent.click(screen.getByRole('button', { name: 'Create Configuration' }));
 
-    // Verify error is displayed
-    const errorElement = await screen.findByTestId('error-message');
-    expect(errorElement).toBeInTheDocument();
-    expect(errorElement.textContent).toBe('Failed to save configuration');
+    // Verify error is displayed - use waitFor for more robust waiting
+    await vi.waitFor(() => {
+      const errorElement = screen.getByTestId('error-message');
+      expect(errorElement).toBeInTheDocument();
+      expect(errorElement.textContent).toBe(errorMessage);
+    });
+
+    // Verify callback wasn't called
     expect(mockOnSaved).not.toHaveBeenCalled();
   });
 

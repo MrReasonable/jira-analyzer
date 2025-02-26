@@ -1,5 +1,6 @@
 import { Component, Accessor } from 'solid-js';
 import { TextField, Button } from '@kobalte/core';
+import { logger } from '../utils/logger';
 
 interface JqlInputProps {
   jql: Accessor<string>;
@@ -9,6 +10,16 @@ interface JqlInputProps {
 }
 
 export const JqlInput: Component<JqlInputProps> = props => {
+  const handleJqlChange = (value: string) => {
+    logger.debug('JQL input changed by user', { jql: value });
+    props.onJqlChange(value);
+  };
+
+  const handleAnalyzeClick = () => {
+    logger.info('User clicked Analyze button', { jql: props.jql() });
+    props.onAnalyze();
+  };
+
   return (
     <div class="flex items-center gap-4">
       <TextField.Root class="flex-1">
@@ -17,13 +28,13 @@ export const JqlInput: Component<JqlInputProps> = props => {
           placeholder="Enter JQL Query"
           value={props.jql()}
           // Remove the onChange prop as it's not compatible with the expected type
-          onInput={e => props.onJqlChange(e.currentTarget.value)}
+          onInput={e => handleJqlChange(e.currentTarget.value)}
           data-testid="jql-input"
         />
       </TextField.Root>
       <Button.Root
         class="btn btn-primary"
-        onClick={props.onAnalyze}
+        onClick={handleAnalyzeClick}
         disabled={props.loading()}
         data-testid="analyze-button"
         aria-label="Analyze"
