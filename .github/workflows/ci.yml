@@ -1,0 +1,230 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3
+        with:
+          version: '10.5.0'
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install system dependencies for canvas
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install pkg-config cairo pango libpng jpeg giflib librsvg
+          fi
+        shell: bash
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: pnpm install --no-optional || pnpm install --no-optional --ignore-scripts
+
+      - name: Lint frontend
+        working-directory: ./frontend
+        run: |
+          # When running in act (local testing), use fix mode
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, using lint:fix instead of lint"
+            pnpm run lint:fix || echo "Linting with fixes completed with warnings"
+          else
+            echo "Running in GitHub Actions, checking linting"
+            pnpm run lint
+          fi
+
+      - name: Check frontend formatting
+        working-directory: ./frontend
+        run: |
+          # When running in act (local testing), use format instead of format:check
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, formatting files instead of checking"
+            pnpm run format
+          else
+            echo "Running in GitHub Actions, checking formatting"
+            pnpm run format:check
+          fi
+
+      - name: Type check frontend
+        working-directory: ./frontend
+        run: pnpm run type-check
+
+      - name: Test frontend
+        working-directory: ./frontend
+        run: |
+          # When running in act (local testing), skip tests if canvas fails to build
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, attempting to run tests with fallback"
+            pnpm run test || echo "Tests failed, but continuing in local environment"
+          else
+            echo "Running in GitHub Actions, running tests"
+            pnpm run test
+          fi
+
+  backend-checks:
+    name: Backend Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint backend with Ruff
+        working-directory: ./backend
+        run: |
+          pip install ruff
+          ruff check app tests
+
+      - name: Format check backend with Ruff
+        working-directory: ./backend
+        run: |
+          pip install ruff
+          # When running in act (local testing), don't use --check to avoid failing on formatting issues
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, formatting files instead of checking"
+            ruff format app tests
+          else
+            echo "Running in GitHub Actions, checking formatting"
+            ruff format --check app tests
+          fi
+
+      - name: Type check backend with MyPy
+        working-directory: ./backend
+        run: |
+          pip install mypy
+          # When running in act (local testing), skip errors
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, skipping type checking errors"
+            mypy app --exclude=app/migrations --ignore-missing-imports || echo "Type checking errors found, but continuing in local environment"
+          else
+            echo "Running in GitHub Actions, using strict type checking"
+            mypy app --exclude=app/migrations
+          fi
+
+      - name: Security check with Bandit
+        working-directory: ./backend
+        run: |
+          pip install bandit[toml]
+          bandit -c pyproject.toml -r app
+
+      - name: Run backend unit tests
+        working-directory: ./backend
+        run: |
+          # When running in act (local testing), use a more lenient approach
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, running tests with -v flag"
+            pytest tests/unit -v
+          else
+            echo "Running in GitHub Actions, running tests normally"
+            pytest tests/unit
+          fi
+
+      - name: Run backend integration tests
+        working-directory: ./backend
+        run: |
+          # When running in act (local testing), skip integration tests
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, skipping integration tests for faster local testing"
+            echo "Integration tests will be run in the actual GitHub Actions environment"
+          else
+            echo "Running in GitHub Actions, running integration tests"
+            pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py
+          fi
+
+  docker-build-test:
+    name: Test Docker Build
+    runs-on: ubuntu-latest
+    needs: [frontend-checks, backend-checks]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if running in act
+        id: check-act
+        run: |
+          if [ -n "$ACT" ]; then
+            echo "Running in act environment, will use simplified Docker build"
+            echo "is_act=true" >> $GITHUB_OUTPUT
+          else
+            echo "Running in GitHub Actions, will use full Docker build"
+            echo "is_act=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Docker Buildx
+        if: steps.check-act.outputs.is_act != 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Simplified Docker build check (for act)
+        if: steps.check-act.outputs.is_act == 'true'
+        run: |
+          echo "Skipping actual Docker builds in act environment to avoid Docker-in-Docker issues"
+          echo "Checking Dockerfiles for syntax errors instead"
+          docker run --rm -v $(pwd)/frontend/Dockerfile:/Dockerfile replicated/dockerfilelint /Dockerfile || echo "Frontend Dockerfile has warnings but continuing"
+          docker run --rm -v $(pwd)/backend/Dockerfile:/Dockerfile replicated/dockerfilelint /Dockerfile || echo "Backend Dockerfile has warnings but continuing"
+
+      - name: Build frontend Docker image
+        if: steps.check-act.outputs.is_act != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          load: true
+          tags: jira-analyzer-frontend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build backend Docker image
+        if: steps.check-act.outputs.is_act != 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          load: true
+          tags: jira-analyzer-backend:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
