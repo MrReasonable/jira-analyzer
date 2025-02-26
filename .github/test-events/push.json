@@ -1,0 +1,64 @@
+{
+  "ref": "refs/heads/main",
+  "before": "0000000000000000000000000000000000000000",
+  "after": "1111111111111111111111111111111111111111",
+  "repository": {
+    "id": 123456789,
+    "node_id": "R_kgDOG7Nh_Q",
+    "name": "jira-analyzer",
+    "full_name": "username/jira-analyzer",
+    "private": false,
+    "owner": {
+      "name": "username",
+      "email": "user@example.com",
+      "login": "username",
+      "id": 12345678
+    },
+    "html_url": "https://github.com/username/jira-analyzer",
+    "description": "Jira Analyzer project",
+    "fork": false,
+    "url": "https://github.com/username/jira-analyzer",
+    "created_at": 1677427200,
+    "updated_at": "2025-02-26T22:00:00Z",
+    "pushed_at": 1677427200,
+    "default_branch": "main"
+  },
+  "pusher": {
+    "name": "username",
+    "email": "user@example.com"
+  },
+  "commits": [
+    {
+      "id": "1111111111111111111111111111111111111111",
+      "message": "Test commit for GitHub Actions",
+      "timestamp": "2025-02-26T22:00:00Z",
+      "author": {
+        "name": "Test User",
+        "email": "user@example.com"
+      },
+      "committer": {
+        "name": "Test User",
+        "email": "user@example.com"
+      },
+      "added": ["file1.txt"],
+      "removed": [],
+      "modified": ["file2.txt"]
+    }
+  ],
+  "head_commit": {
+    "id": "1111111111111111111111111111111111111111",
+    "message": "Test commit for GitHub Actions",
+    "timestamp": "2025-02-26T22:00:00Z",
+    "author": {
+      "name": "Test User",
+      "email": "user@example.com"
+    },
+    "committer": {
+      "name": "Test User",
+      "email": "user@example.com"
+    },
+    "added": ["file1.txt"],
+    "removed": [],
+    "modified": ["file2.txt"]
+  }
+}
