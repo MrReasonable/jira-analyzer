@@ -225,7 +225,9 @@ describe('App', () => {
     const error = new Error('API Error');
     vi.mocked(jiraApi.getLeadTime).mockRejectedValue(error);
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation((..._args: unknown[]) => {});
+    // Import and mock the logger directly
+    const { logger } = await import('./utils/logger');
+    const loggerSpy = vi.spyOn(logger, 'error').mockImplementation((..._args: unknown[]) => {});
 
     render(() => <App />);
 
@@ -238,8 +240,8 @@ describe('App', () => {
       window.setTimeout(resolve, 0);
     });
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch metrics:', error);
-    consoleSpy.mockRestore();
+    expect(loggerSpy).toHaveBeenCalledWith('Failed to fetch metrics:', error);
+    loggerSpy.mockRestore();
   });
 
   it('allows manual JQL input when no configuration is selected', async () => {

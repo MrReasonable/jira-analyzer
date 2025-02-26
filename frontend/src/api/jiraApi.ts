@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from '../utils/logger';
 
 // Export for testing
 export const api = axios.create({
@@ -69,56 +70,126 @@ export interface JiraConfigurationList {
 
 export const jiraApi = {
   getLeadTime: async (jql: string): Promise<LeadTimeMetrics> => {
-    const response = await api.get('/metrics/lead-time', { params: { jql } });
-    return response.data;
+    try {
+      logger.debug('Fetching lead time metrics', { jql });
+      const response = await api.get('/metrics/lead-time', { params: { jql } });
+      logger.info('Lead time metrics fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch lead time metrics', err);
+      throw err;
+    }
   },
 
   getThroughput: async (jql: string): Promise<ThroughputMetrics> => {
-    const response = await api.get('/metrics/throughput', { params: { jql } });
-    return response.data;
+    try {
+      logger.debug('Fetching throughput metrics', { jql });
+      const response = await api.get('/metrics/throughput', { params: { jql } });
+      logger.info('Throughput metrics fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch throughput metrics', err);
+      throw err;
+    }
   },
 
   getWip: async (jql: string): Promise<WipMetrics> => {
-    const response = await api.get('/metrics/wip', { params: { jql } });
-    return response.data;
+    try {
+      logger.debug('Fetching WIP metrics', { jql });
+      const response = await api.get('/metrics/wip', { params: { jql } });
+      logger.info('WIP metrics fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch WIP metrics', err);
+      throw err;
+    }
   },
 
   getCycleTime: async (jql: string): Promise<CycleTimeMetrics> => {
-    const response = await api.get('/metrics/cycle-time', { params: { jql } });
-    return response.data;
+    try {
+      logger.debug('Fetching cycle time metrics', { jql });
+      const response = await api.get('/metrics/cycle-time', { params: { jql } });
+      logger.info('Cycle time metrics fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch cycle time metrics', err);
+      throw err;
+    }
   },
 
   getCfd: async (jql: string): Promise<CfdMetrics> => {
-    const response = await api.get('/metrics/cfd', { params: { jql } });
-    return response.data;
+    try {
+      logger.debug('Fetching CFD metrics', { jql });
+      const response = await api.get('/metrics/cfd', { params: { jql } });
+      logger.info('CFD metrics fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch CFD metrics', err);
+      throw err;
+    }
   },
 
   // Configuration endpoints
   createConfiguration: async (config: JiraConfiguration): Promise<JiraConfiguration> => {
-    const response = await api.post('/configurations', config);
-    return response.data;
+    try {
+      logger.debug('Creating Jira configuration', { name: config.name });
+      const response = await api.post('/configurations', config);
+      logger.info('Jira configuration created successfully', { name: config.name });
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to create Jira configuration', err);
+      throw err;
+    }
   },
 
   listConfigurations: async (): Promise<JiraConfigurationList[]> => {
-    const response = await api.get('/configurations');
-    return response.data;
+    try {
+      logger.debug('Fetching Jira configurations list');
+      const response = await api.get('/configurations');
+      logger.info('Jira configurations list fetched successfully');
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch Jira configurations list', err);
+      throw err;
+    }
   },
 
   getConfiguration: async (name: string): Promise<JiraConfiguration> => {
-    const response = await api.get(`/configurations/${name}`);
-    return response.data;
+    try {
+      logger.debug('Fetching Jira configuration', { name });
+      const response = await api.get(`/configurations/${name}`);
+      logger.info('Jira configuration fetched successfully', { name });
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to fetch Jira configuration', err);
+      throw err;
+    }
   },
 
   updateConfiguration: async (
     name: string,
     config: JiraConfiguration
   ): Promise<JiraConfiguration> => {
-    const response = await api.put(`/configurations/${name}`, config);
-    return response.data;
+    try {
+      logger.debug('Updating Jira configuration', { name });
+      const response = await api.put(`/configurations/${name}`, config);
+      logger.info('Jira configuration updated successfully', { name });
+      return response.data;
+    } catch (err) {
+      logger.error('Failed to update Jira configuration', err);
+      throw err;
+    }
   },
 
   deleteConfiguration: async (name: string): Promise<void> => {
-    await api.delete(`/configurations/${name}`);
+    try {
+      logger.debug('Deleting Jira configuration', { name });
+      await api.delete(`/configurations/${name}`);
+      logger.info('Jira configuration deleted successfully', { name });
+    } catch (err) {
+      logger.error('Failed to delete Jira configuration', err);
+      throw err;
+    }
   },
 };
 

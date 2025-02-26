@@ -1,4 +1,4 @@
-import { Component } from 'solid-js';
+import { Component, onMount } from 'solid-js';
 import { Dialog } from '@kobalte/core';
 import './index.css';
 import { ConfigurationForm } from './components/ConfigurationForm';
@@ -7,12 +7,20 @@ import { useJiraConfigurations } from './hooks/useJiraConfigurations';
 import { JqlInput } from './components/JqlInput';
 import { MetricsSection } from './components/MetricsSection';
 import { ConfigurationsHeader } from './components/ConfigurationsHeader';
+import { logger } from './utils/logger';
 
 const App: Component = () => {
+  logger.info('Initializing Jira Metrics application');
+
   // Use our custom hooks for state management
   const metricsState = useJiraMetrics();
   const configState = useJiraConfigurations(jql => {
+    logger.debug('JQL updated from configuration', { jql });
     metricsState.setJql(jql);
+  });
+
+  onMount(() => {
+    logger.info('Application mounted');
   });
 
   return (

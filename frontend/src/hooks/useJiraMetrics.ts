@@ -7,6 +7,7 @@ import {
   CfdMetrics,
   CycleTimeMetrics,
 } from '../api/jiraApi';
+import { logger } from '../utils/logger';
 
 export function useJiraMetrics(initialJql = 'project = "DEMO" AND type = Story') {
   const [jql, setJql] = createSignal(initialJql);
@@ -22,6 +23,7 @@ export function useJiraMetrics(initialJql = 'project = "DEMO" AND type = Story')
     setLoading(true);
     setError(null);
 
+    logger.info('Fetching all Jira metrics', { jql: jql() });
     try {
       const results = await Promise.all([
         jiraApi.getLeadTime(jql()),
@@ -36,8 +38,17 @@ export function useJiraMetrics(initialJql = 'project = "DEMO" AND type = Story')
       setWipData(results[2]);
       setCfdData(results[3]);
       setCycleTimeData(results[4]);
+
+      logger.info('All Jira metrics fetched successfully');
+      logger.debug('Metrics summary', {
+        leadTimeAvg: results[0].average,
+        throughputAvg: results[1].average,
+        wipTotal: results[2].total,
+        cfdStatuses: results[3].statuses.length,
+        cycleTimeAvg: results[4].average,
+      });
     } catch (err) {
-      console.error('Failed to fetch metrics:', err);
+      logger.error('Failed to fetch metrics:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);

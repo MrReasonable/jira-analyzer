@@ -1,5 +1,6 @@
 import { createSignal, createEffect } from 'solid-js';
 import { jiraApi, JiraConfigurationList } from '../api/jiraApi';
+import { logger } from '../utils/logger';
 
 export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
   const [configurations, setConfigurations] = createSignal<JiraConfigurationList[]>([]);
@@ -12,11 +13,13 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
     setLoading(true);
     setError(null);
 
+    logger.debug('Loading Jira configurations');
     try {
       const configs = await jiraApi.listConfigurations();
       setConfigurations(configs);
+      logger.debug('Jira configurations loaded', { count: configs.length });
     } catch (err) {
-      console.error('Failed to load configurations:', err);
+      logger.error('Failed to load configurations:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoading(false);
@@ -24,31 +27,37 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
   };
 
   const handleConfigSelect = async (name: string) => {
+    logger.debug('Selecting Jira configuration', { name });
     try {
       const config = await jiraApi.getConfiguration(name);
       setSelectedConfig(name);
       onJqlChange(config.jql_query);
+      logger.info('Jira configuration selected', { name });
     } catch (err) {
-      console.error('Failed to load configuration:', err);
+      logger.error('Failed to load configuration:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
   const handleConfigDelete = async (name: string) => {
+    logger.debug('Deleting Jira configuration', { name });
     try {
       await jiraApi.deleteConfiguration(name);
       if (selectedConfig() === name) {
         setSelectedConfig(undefined);
+        logger.debug('Cleared selected configuration');
       }
       // Refresh the configurations list
       await loadConfigurations();
+      logger.info('Jira configuration deleted', { name });
     } catch (err) {
-      console.error('Failed to delete configuration:', err);
+      logger.error('Failed to delete configuration:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
   const handleConfigSaved = () => {
+    logger.debug('Configuration saved, refreshing list');
     setShowConfigForm(false);
     // Refresh the configurations list
     loadConfigurations();

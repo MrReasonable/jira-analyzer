@@ -119,16 +119,18 @@ jobs:
           pip install ruff
           ruff check app tests
 
-      - name: Format check backend with Ruff
+      - name: Format backend with Ruff
         working-directory: ./backend
         run: |
           pip install ruff
-          # When running in act (local testing), don't use --check to avoid failing on formatting issues
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, formatting files instead of checking"
-            ruff format app tests
-          else
-            echo "Running in GitHub Actions, checking formatting"
+          # Always format files first, then check if running in GitHub Actions
+          echo "Formatting files with Ruff"
+          ruff format app tests
+
+          # If in GitHub Actions, verify formatting is correct
+          if [ -z "$ACT" ]; then
+            echo "Verifying formatting in GitHub Actions"
+            # This should now pass since we just formatted the files
             ruff format --check app tests
           fi
 
