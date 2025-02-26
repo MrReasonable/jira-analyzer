@@ -49,7 +49,7 @@ jobs:
         run: pnpm run test:coverage
 
       - name: Upload frontend coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: ./frontend/coverage
           flags: frontend
@@ -84,7 +84,7 @@ jobs:
           pytest --cov=app --cov-report=xml:coverage.xml tests/
 
       - name: Upload backend coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: ./backend
           file: ./backend/coverage.xml
