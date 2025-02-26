@@ -1,4 +1,4 @@
-import { Component, createEffect, onCleanup } from 'solid-js';
+import { Component, createEffect, onCleanup, createMemo } from 'solid-js';
 import Chart from 'chart.js/auto';
 import { ThroughputMetrics } from '../api/jiraApi';
 
@@ -7,16 +7,22 @@ interface Props {
   loading: boolean;
 }
 
-export const ThroughputChart: Component<Props> = (props) => {
+export const ThroughputChart: Component<Props> = props => {
   let chartRef: HTMLCanvasElement | undefined;
   let chartInstance: Chart | undefined;
 
-  const createChart = () => {
-    if (!props.data || !chartRef) return;
+  // Helper functions to handle props consistently
+  const getData = createMemo(() => props.data);
+  const isLoading = createMemo(() => props.loading);
 
-    // Cleanup previous instance
+  const createChart = () => {
+    const data = getData();
+    if (!data || !chartRef) return;
+
+    // Always destroy previous instance
     if (chartInstance) {
       chartInstance.destroy();
+      chartInstance = undefined;
     }
 
     const ctx = chartRef.getContext('2d');
@@ -25,44 +31,51 @@ export const ThroughputChart: Component<Props> = (props) => {
     chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: props.data.dates,
-        datasets: [{
-          label: 'Completed Issues',
-          data: props.data.counts,
-          fill: false,
-          borderColor: 'rgb(75, 192, 192)',
-          tension: 0.1
-        }]
+        labels: data.dates,
+        datasets: [
+          {
+            label: 'Completed Issues',
+            data: data.counts,
+            fill: false,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+          },
+        ],
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Throughput Over Time'
-          }
+            text: 'Throughput Over Time',
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Number of Issues'
-            }
+              text: 'Number of Issues',
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Date'
-            }
-          }
-        }
-      }
+              text: 'Date',
+            },
+          },
+        },
+      },
     });
   };
 
   createEffect(() => {
-    if (!props.loading) {
+    // Trigger effect on both loading and data changes
+    const data = getData();
+    const loading = isLoading();
+
+    if (!loading && data) {
+      // Create chart directly in the effect
       createChart();
     }
   });
@@ -70,6 +83,7 @@ export const ThroughputChart: Component<Props> = (props) => {
   onCleanup(() => {
     if (chartInstance) {
       chartInstance.destroy();
+      chartInstance = undefined;
     }
   });
 
@@ -77,13 +91,13 @@ export const ThroughputChart: Component<Props> = (props) => {
     <div class="card">
       <div class="space-y-4">
         <h2 class="text-xl font-bold">Throughput Analysis</h2>
-        {props.loading ? (
+        {isLoading() ? (
           <p>Loading...</p>
-        ) : props.data ? (
+        ) : getData() ? (
           <>
-            <canvas ref={chartRef} />
+            <canvas ref={el => (chartRef = el)} />
             <div>
-              <p>Average Throughput: {props.data.average.toFixed(1)} issues per day</p>
+              <p>Average Throughput: {getData()?.average.toFixed(1)} issues per day</p>
             </div>
           </>
         ) : (

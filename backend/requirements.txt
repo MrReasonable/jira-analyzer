@@ -1,24 +1,27 @@
-fastapi==0.109.0
-uvicorn==0.27.0
-python-dotenv==1.0.0
-jira==3.5.2
-atlassian-python-api==3.41.4
-pandas==2.2.0
-pydantic==2.6.0
-pydantic-settings==2.1.0
-python-multipart==0.0.6
-sqlalchemy==2.0.25
-alembic==1.13.1
-aiosqlite==0.19.0
+fastapi==0.115.8
+uvicorn==0.34.0
+python-dotenv==1.0.1
+jira==3.8.0
+atlassian-python-api==3.41.19
+pandas==2.2.3
+pyarrow==19.0.1
+pydantic==2.10.6
+pydantic-settings==2.8.0
+python-multipart==0.0.20
+# starlette is automatically installed as a dependency of fastapi
+sqlalchemy==2.0.38
+alembic==1.14.1
+aiosqlite==0.21.0
+httpx==0.28.1
 
 # Development dependencies
-black==24.1.1
-flake8==7.0.0
+black==25.1.0
+flake8==7.1.2
 flake8-docstrings==1.7.0
 flake8-import-order==0.18.2
-flake8-quotes==3.3.2
-isort==5.13.2
-pytest==7.4.4
-pytest-asyncio==0.23.4
-pytest-cov==4.1.0
-pre-commit==3.6.0
+flake8-quotes==3.4.0
+isort==6.0.1
+pytest==8.3.4
+pytest-asyncio==0.25.3
+pytest-cov==6.0.0
+pre-commit==4.1.0

@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`
+// Export for testing
+export const api = axios.create({
+  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api`,
 });
 
 export interface MetricResponse {
@@ -108,12 +109,20 @@ export const jiraApi = {
     return response.data;
   },
 
-  updateConfiguration: async (name: string, config: JiraConfiguration): Promise<JiraConfiguration> => {
+  updateConfiguration: async (
+    name: string,
+    config: JiraConfiguration
+  ): Promise<JiraConfiguration> => {
     const response = await api.put(`/configurations/${name}`, config);
     return response.data;
   },
 
   deleteConfiguration: async (name: string): Promise<void> => {
     await api.delete(`/configurations/${name}`);
-  }
+  },
+};
+
+// Add for testing
+export const resetJiraApi = () => {
+  // Reset any internal state if needed
 };

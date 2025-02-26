@@ -1,91 +1,73 @@
-import { Component, createSignal, createEffect, For, Show } from 'solid-js';
-import { Button } from '@kobalte/core';
-import { JiraConfigurationList, jiraApi } from '../api/jiraApi';
+import { Component, For, Show, Accessor } from 'solid-js';
+import { JiraConfigurationList } from '../api/jiraApi';
 
 interface Props {
+  configurations: Accessor<JiraConfigurationList[]>;
+  loading: Accessor<boolean>;
+  error?: Accessor<Error | null>;
   onSelect: (name: string) => void;
   onDelete: (name: string) => void;
-  selectedName?: string;
+  selectedName?: Accessor<string | undefined>;
 }
 
-export const ConfigurationList: Component<Props> = (props) => {
-  const [configurations, setConfigurations] = createSignal<JiraConfigurationList[]>([]);
-  const [loading, setLoading] = createSignal(true);
-  const [error, setError] = createSignal<string>();
-
-  const loadConfigurations = async () => {
-    try {
-      setLoading(true);
-      setError(undefined);
-      const configs = await jiraApi.listConfigurations();
-      setConfigurations(configs);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load configurations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  createEffect(() => {
-    loadConfigurations();
-  });
-
-  const handleDelete = async (name: string) => {
-    if (!confirm(`Are you sure you want to delete configuration "${name}"?`)) {
-      return;
-    }
-
-    try {
-      await jiraApi.deleteConfiguration(name);
-      props.onDelete(name);
-      await loadConfigurations();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete configuration');
-    }
-  };
-
+export const ConfigurationList: Component<Props> = props => {
   return (
     <div class="space-y-4">
       <h2 class="text-xl font-bold">Saved Configurations</h2>
 
-      <Show when={error()}>
-        <p class="text-red-500">{error()}</p>
+      <Show when={props.error && props.error()}>
+        <p class="text-red-500">{props.error?.()?.message}</p>
       </Show>
 
       <Show
-        when={!loading()}
+        when={!props.loading()}
         fallback={
-          <div class="flex justify-center">
-            <div class="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+          <div class="flex justify-center" role="status" aria-label="Loading configurations">
+            <div class="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
           </div>
         }
       >
         <Show
-          when={configurations().length > 0}
+          when={props.configurations().length > 0}
           fallback={<p class="text-gray-500">No configurations saved yet</p>}
         >
           <div class="space-y-2">
-            <For each={configurations()}>
-              {(config) => (
-                <div class={`p-4 rounded-lg border ${props.selectedName === config.name ? 'border-primary' : 'border-gray-200'}`}>
-                  <div class="flex justify-between items-center">
+            <For each={props.configurations()}>
+              {config => (
+                <div
+                  data-testid={`config-${config.name}`}
+                  class={`rounded-lg border p-4 ${props.selectedName && props.selectedName() === config.name ? 'border-primary' : 'border-gray-200'}`}
+                >
+                  <div class="flex items-center justify-between">
                     <div>
                       <h3 class="font-semibold">{config.name}</h3>
-                      <p class="text-sm text-gray-500">{config.jira_email} @ {config.jira_server}</p>
+                      <p class="text-sm text-gray-500">
+                        {config.jira_email} @ {config.jira_server}
+                      </p>
                     </div>
                     <div class="flex gap-2">
-                      <Button.Root
+                      <button
                         class="btn btn-secondary"
                         onClick={() => props.onSelect(config.name)}
+                        data-testid={`select-${config.name}`}
                       >
                         Select
-                      </Button.Root>
-                      <Button.Root
+                      </button>
+                      <button
                         class="btn btn-danger"
-                        onClick={() => handleDelete(config.name)}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Are you sure you want to delete configuration "${config.name}"?`
+                            )
+                          ) {
+                            props.onDelete(config.name);
+                          }
+                        }}
+                        data-testid={`delete-${config.name}`}
                       >
                         Delete
-                      </Button.Root>
+                      </button>
                     </div>
                   </div>
                 </div>

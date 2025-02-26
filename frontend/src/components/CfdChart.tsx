@@ -7,7 +7,7 @@ interface Props {
   loading: boolean;
 }
 
-export const CfdChart: Component<Props> = (props) => {
+export const CfdChart: Component<Props> = props => {
   let chartRef: HTMLCanvasElement | undefined;
   let chartInstance: Chart | undefined;
 
@@ -39,16 +39,16 @@ export const CfdChart: Component<Props> = (props) => {
           fill: true,
           backgroundColor: colors[index % colors.length],
           borderColor: colors[index % colors.length].replace('0.5', '1'),
-          tension: 0.4
-        }))
+          tension: 0.4,
+        })),
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Cumulative Flow Diagram'
-          }
+            text: 'Cumulative Flow Diagram',
+          },
         },
         scales: {
           y: {
@@ -56,17 +56,17 @@ export const CfdChart: Component<Props> = (props) => {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Number of Issues'
-            }
+              text: 'Number of Issues',
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Date'
-            }
-          }
-        }
-      }
+              text: 'Date',
+            },
+          },
+        },
+      },
     });
   };
 

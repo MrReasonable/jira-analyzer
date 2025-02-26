@@ -6,10 +6,15 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ['./src/setupTests.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     deps: {
-      inline: [/solid-js/],
+      optimizer: {
+        web: {
+          include: ['solid-js']
+        }
+      }
     },
+    css: false,
   },
 });
