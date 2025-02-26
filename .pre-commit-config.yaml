@@ -1,0 +1,79 @@
+repos:
+  # Standard pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Backend Python hooks (reusing the existing backend configuration)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.2.1
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
+        exclude: ^backend/(tests|app/migrations)/
+      - id: ruff-format
+        files: ^backend/
+        exclude: ^backend/(tests|app/migrations)/
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        files: ^backend/
+        exclude: ^backend/(tests|app/migrations)/
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: ["-c", "backend/pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+        files: ^backend/
+        exclude: ^backend/(tests|app/migrations)/
+
+  # Frontend hooks
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: Frontend ESLint
+        entry: make frontend-lint-fix-ci
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: frontend-format
+        name: Frontend Prettier
+        entry: make frontend-format-ci
+        language: system
+        files: ^frontend/.*\.(ts|tsx|css|json)$
+        pass_filenames: false
+
+      - id: frontend-type-check
+        name: Frontend TypeScript
+        entry: make frontend-type-check-ci
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: frontend-test
+        name: Frontend Tests
+        entry: make frontend-test-ci
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: backend-test
+        name: Backend Unit Tests
+        entry: make backend-unit-test-ci
+        language: system
+        files: ^backend/.*\.py$
+        exclude: ^backend/app/migrations/
+        pass_filenames: false

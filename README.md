@@ -82,6 +82,7 @@ The backend service will use these values for its initial configuration, and the
 
 - Docker
 - Docker Compose
+- Python 3.x (for pre-commit hooks)
 
 ### Local Development
 
@@ -110,6 +111,47 @@ Frontend tests:
 ```bash
 docker-compose exec frontend pnpm test
 ```
+
+### Pre-commit Hooks
+
+This project uses pre-commit hooks to ensure code quality and consistency. Pre-commit hooks run automatically when you attempt to commit changes, checking for issues like code formatting, linting errors, and failing tests.
+
+#### Setup Pre-commit Hooks
+
+1. Install pre-commit and set up the hooks:
+   ```bash
+   make install
+   make setup-pre-commit
+   ```
+
+2. The pre-commit hooks will now run automatically on `git commit`. They include:
+   - Code formatting (with auto-fix for both frontend and backend)
+   - Linting for Python and TypeScript
+   - Type checking
+   - Security checks
+   - Tests
+
+3. To manually run all pre-commit hooks on all files:
+   ```bash
+   make pre-commit-run
+   ```
+
+4. If a pre-commit hook fails, the commit will be aborted. Fix the issues and try committing again.
+
+5. To format all frontend files manually:
+   ```bash
+   cd frontend && pnpm run format
+   ```
+
+6. To format all backend files manually:
+   ```bash
+   cd backend && ruff format app tests
+   ```
+
+7. If you need to bypass pre-commit hooks temporarily (not recommended):
+   ```bash
+   git commit -m "Your message" --no-verify
+   ```
 
 ## Production Deployment
 
@@ -164,5 +206,5 @@ docker-compose exec frontend pnpm test
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
-4. Ensure all tests pass
+4. Ensure all tests pass and pre-commit hooks succeed
 5. Create a Pull Request

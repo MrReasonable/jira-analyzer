@@ -1,15 +1,15 @@
 # Version control
-.git
+.git/
 .gitignore
 .gitattributes
 
 # Node
-node_modules
+node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
 .pnpm-store
-coverage
+coverage/
 
 # Python
 __pycache__

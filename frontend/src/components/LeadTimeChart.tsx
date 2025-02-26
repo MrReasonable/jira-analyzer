@@ -1,27 +1,44 @@
-import { Component, createEffect, onCleanup } from 'solid-js';
+import { Component, createEffect, onCleanup, Accessor, createMemo } from 'solid-js';
 import Chart from 'chart.js/auto';
 import { LeadTimeMetrics } from '../api/jiraApi';
 
 interface Props {
-  data: LeadTimeMetrics | null;
-  loading: boolean;
+  data: Accessor<LeadTimeMetrics | null> | LeadTimeMetrics | null;
+  loading: Accessor<boolean> | boolean;
 }
 
-export const LeadTimeChart: Component<Props> = (props) => {
+export const LeadTimeChart: Component<Props> = props => {
   let chartRef: HTMLCanvasElement | undefined;
   let chartInstance: Chart | undefined;
 
-  const createChart = () => {
-    if (!props.data || !chartRef) return;
+  // Helper functions to handle both accessor and non-accessor props
+  const getData = createMemo(() => {
+    if (typeof props.data === 'function') {
+      return props.data();
+    }
+    return props.data;
+  });
 
-    // Cleanup previous instance
+  const isLoading = createMemo(() => {
+    if (typeof props.loading === 'function') {
+      return props.loading();
+    }
+    return props.loading;
+  });
+
+  const createChart = () => {
+    const data = getData();
+    if (!data || !chartRef) return;
+
+    // Always destroy previous instance
     if (chartInstance) {
       chartInstance.destroy();
+      chartInstance = undefined;
     }
 
     const binSize = 5; // 5-day bins
     const bins: { [key: string]: number } = {};
-    props.data.data.forEach(days => {
+    data.data.forEach((days: number) => {
       const binIndex = Math.floor(days / binSize) * binSize;
       const binLabel = `${binIndex}-${binIndex + binSize}`;
       bins[binLabel] = (bins[binLabel] || 0) + 1;
@@ -40,39 +57,44 @@ export const LeadTimeChart: Component<Props> = (props) => {
             data: Object.values(bins),
             backgroundColor: 'rgba(54, 162, 235, 0.5)',
             borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-          }
-        ]
+            borderWidth: 1,
+          },
+        ],
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Lead Time Distribution'
-          }
+            text: 'Lead Time Distribution',
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Number of Issues'
-            }
+              text: 'Number of Issues',
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Days'
-            }
-          }
-        }
-      }
+              text: 'Days',
+            },
+          },
+        },
+      },
     });
   };
 
   createEffect(() => {
-    if (!props.loading) {
+    // Trigger effect on both loading and data changes
+    const data = getData();
+    const loading = isLoading();
+
+    if (!loading && data) {
+      // Create chart directly in the effect
       createChart();
     }
   });
@@ -80,6 +102,7 @@ export const LeadTimeChart: Component<Props> = (props) => {
   onCleanup(() => {
     if (chartInstance) {
       chartInstance.destroy();
+      chartInstance = undefined;
     }
   });
 
@@ -87,15 +110,17 @@ export const LeadTimeChart: Component<Props> = (props) => {
     <div class="card">
       <div class="space-y-4">
         <h2 class="text-xl font-bold">Lead Time Analysis</h2>
-        {props.loading ? (
+        {isLoading() ? (
           <p>Loading...</p>
-        ) : props.data ? (
+        ) : getData() ? (
           <>
-            <canvas ref={chartRef} />
+            <canvas ref={el => (chartRef = el)} />
             <div class="space-y-1">
-              <p>Average: {props.data.average.toFixed(1)} days</p>
-              <p>Median: {props.data.median} days</p>
-              <p>Range: {props.data.min}-{props.data.max} days</p>
+              <p>Average: {getData()?.average.toFixed(1)} days</p>
+              <p>Median: {getData()?.median} days</p>
+              <p>
+                Range: {getData()?.min}-{getData()?.max} days
+              </p>
             </div>
           </>
         ) : (

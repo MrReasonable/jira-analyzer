@@ -1,187 +1,210 @@
-import { Component, createSignal, Show } from 'solid-js';
-import { TextField, Button } from '@kobalte/core';
-import { JiraConfiguration, jiraApi } from '../api/jiraApi';
+import { Component, createSignal } from 'solid-js';
+import { jiraApi, JiraConfiguration } from '../api/jiraApi';
 
 interface Props {
-  onConfigurationSaved: () => void;
   initialConfig?: JiraConfiguration;
+  onConfigurationSaved: () => void;
 }
 
-export const ConfigurationForm: Component<Props> = (props) => {
-  const [name, setName] = createSignal(props.initialConfig?.name || '');
-  const [jiraServer, setJiraServer] = createSignal(props.initialConfig?.jira_server || '');
-  const [jiraEmail, setJiraEmail] = createSignal(props.initialConfig?.jira_email || '');
-  const [jiraApiToken, setJiraApiToken] = createSignal(props.initialConfig?.jira_api_token || '');
-  const [jqlQuery, setJqlQuery] = createSignal(props.initialConfig?.jql_query || '');
-  const [workflowStates, setWorkflowStates] = createSignal(props.initialConfig?.workflow_states.join('\n') || '');
-  const [leadTimeStartState, setLeadTimeStartState] = createSignal(props.initialConfig?.lead_time_start_state || '');
-  const [leadTimeEndState, setLeadTimeEndState] = createSignal(props.initialConfig?.lead_time_end_state || '');
-  const [cycleTimeStartState, setCycleTimeStartState] = createSignal(props.initialConfig?.cycle_time_start_state || '');
-  const [cycleTimeEndState, setCycleTimeEndState] = createSignal(props.initialConfig?.cycle_time_end_state || '');
-  const [error, setError] = createSignal<string>();
-  const [saving, setSaving] = createSignal(false);
+export const ConfigurationForm: Component<Props> = props => {
+  const [error, setError] = createSignal<string | null>(null);
+  const [formData, setFormData] = createSignal({
+    name: props.initialConfig?.name || '',
+    jira_server: props.initialConfig?.jira_server || '',
+    jira_email: props.initialConfig?.jira_email || '',
+    jira_api_token: props.initialConfig?.jira_api_token || '',
+    jql_query: props.initialConfig?.jql_query || '',
+    workflow_states: props.initialConfig?.workflow_states.join('\n') || '',
+    lead_time_start_state: props.initialConfig?.lead_time_start_state || '',
+    lead_time_end_state: props.initialConfig?.lead_time_end_state || '',
+    cycle_time_start_state: props.initialConfig?.cycle_time_start_state || '',
+    cycle_time_end_state: props.initialConfig?.cycle_time_end_state || '',
+  });
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
-    setSaving(true);
-    setError(undefined);
+    setError(null);
+
+    // Validate all fields are filled
+    if (Object.values(formData()).some(value => !value)) {
+      setError('All fields are required');
+      return;
+    }
+
+    const config: JiraConfiguration = {
+      name: formData().name,
+      jira_server: formData().jira_server,
+      jira_email: formData().jira_email,
+      jira_api_token: formData().jira_api_token,
+      jql_query: formData().jql_query,
+      workflow_states: formData().workflow_states.split('\n').filter(Boolean),
+      lead_time_start_state: formData().lead_time_start_state,
+      lead_time_end_state: formData().lead_time_end_state,
+      cycle_time_start_state: formData().cycle_time_start_state,
+      cycle_time_end_state: formData().cycle_time_end_state,
+    };
 
     try {
-      const config: JiraConfiguration = {
-        name: name(),
-        jira_server: jiraServer(),
-        jira_email: jiraEmail(),
-        jira_api_token: jiraApiToken(),
-        jql_query: jqlQuery(),
-        workflow_states: workflowStates().split('\n').filter(s => s.trim()),
-        lead_time_start_state: leadTimeStartState(),
-        lead_time_end_state: leadTimeEndState(),
-        cycle_time_start_state: cycleTimeStartState(),
-        cycle_time_end_state: cycleTimeEndState()
-      };
-
       if (props.initialConfig) {
-        await jiraApi.updateConfiguration(props.initialConfig.name, config);
+        await jiraApi.updateConfiguration(config.name, config);
       } else {
         await jiraApi.createConfiguration(config);
       }
-
       props.onConfigurationSaved();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save configuration');
-    } finally {
-      setSaving(false);
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+      setError('Failed to save configuration');
+      return; // Important: prevent onConfigurationSaved from being called
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} class="space-y-4">
-      <TextField.Root>
-        <TextField.Label>Configuration Name</TextField.Label>
-        <TextField.Input
-          class="input"
-          value={name()}
-          onChange={setName}
-          required
-          disabled={!!props.initialConfig}
-        />
-      </TextField.Root>
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
-      <TextField.Root>
-        <TextField.Label>Jira Server URL</TextField.Label>
-        <TextField.Input
+  return (
+    <form class="space-y-4" onSubmit={handleSubmit}>
+      {/* Name field */}
+      <div role="group">
+        <label for="name">Configuration Name</label>
+        <input
+          id="name"
+          type="text"
           class="input"
-          value={jiraServer()}
-          onChange={setJiraServer}
+          value={formData().name}
+          disabled={!!props.initialConfig}
+          onInput={e => updateField('name', e.currentTarget.value)}
+          required
+        />
+      </div>
+
+      {/* Jira Server URL field */}
+      <div role="group">
+        <label for="jira_server">Jira Server URL</label>
+        <input
+          id="jira_server"
+          type="text"
+          class="input"
+          value={formData().jira_server}
+          onInput={e => updateField('jira_server', e.currentTarget.value)}
           required
           placeholder="https://your-domain.atlassian.net"
         />
-      </TextField.Root>
+      </div>
 
-      <TextField.Root>
-        <TextField.Label>Jira Email</TextField.Label>
-        <TextField.Input
-          class="input"
-          value={jiraEmail()}
-          onChange={setJiraEmail}
-          required
+      {/* Jira Email field */}
+      <div role="group">
+        <label for="jira_email">Jira Email</label>
+        <input
+          id="jira_email"
           type="email"
-        />
-      </TextField.Root>
-
-      <TextField.Root>
-        <TextField.Label>Jira API Token</TextField.Label>
-        <TextField.Input
           class="input"
-          value={jiraApiToken()}
-          onChange={setJiraApiToken}
+          value={formData().jira_email}
+          onInput={e => updateField('jira_email', e.currentTarget.value)}
           required
-          type="password"
         />
-      </TextField.Root>
+      </div>
 
-      <TextField.Root>
-        <TextField.Label>JQL Query</TextField.Label>
-        <TextField.TextArea
+      {/* Jira API Token field */}
+      <div role="group">
+        <label for="jira_api_token">Jira API Token</label>
+        <input
+          id="jira_api_token"
+          type="password"
           class="input"
-          value={jqlQuery()}
-          onChange={setJqlQuery}
+          value={formData().jira_api_token}
+          onInput={e => updateField('jira_api_token', e.currentTarget.value)}
+          required
+        />
+      </div>
+
+      {/* JQL Query field */}
+      <div role="group">
+        <label for="jql_query">JQL Query</label>
+        <textarea
+          id="jql_query"
+          class="input"
+          value={formData().jql_query}
+          onInput={e => updateField('jql_query', e.currentTarget.value)}
           required
           placeholder="project = PROJ AND type = Story"
         />
-      </TextField.Root>
+      </div>
 
-      <TextField.Root>
-        <TextField.Label>Workflow States (one per line)</TextField.Label>
-        <TextField.TextArea
+      {/* Workflow States field */}
+      <div role="group">
+        <label for="workflow_states">Workflow States (one per line)</label>
+        <textarea
+          id="workflow_states"
           class="input"
-          value={workflowStates()}
-          onChange={setWorkflowStates}
+          value={formData().workflow_states}
+          onInput={e => updateField('workflow_states', e.currentTarget.value)}
           required
           placeholder="Backlog&#10;In Progress&#10;Done"
         />
-      </TextField.Root>
-
-      <div class="grid grid-cols-2 gap-4">
-        <TextField.Root>
-          <TextField.Label>Lead Time Start State</TextField.Label>
-          <TextField.Input
-            class="input"
-            value={leadTimeStartState()}
-            onChange={setLeadTimeStartState}
-            required
-          />
-        </TextField.Root>
-
-        <TextField.Root>
-          <TextField.Label>Lead Time End State</TextField.Label>
-          <TextField.Input
-            class="input"
-            value={leadTimeEndState()}
-            onChange={setLeadTimeEndState}
-            required
-          />
-        </TextField.Root>
-
-        <TextField.Root>
-          <TextField.Label>Cycle Time Start State</TextField.Label>
-          <TextField.Input
-            class="input"
-            value={cycleTimeStartState()}
-            onChange={setCycleTimeStartState}
-            required
-          />
-        </TextField.Root>
-
-        <TextField.Root>
-          <TextField.Label>Cycle Time End State</TextField.Label>
-          <TextField.Input
-            class="input"
-            value={cycleTimeEndState()}
-            onChange={setCycleTimeEndState}
-            required
-          />
-        </TextField.Root>
       </div>
 
-      <Show when={error()}>
-        <p class="text-red-500">{error()}</p>
-      </Show>
+      {/* Lead Time Start State field */}
+      <div role="group">
+        <label for="lead_time_start_state">Lead Time Start State</label>
+        <input
+          id="lead_time_start_state"
+          type="text"
+          class="input"
+          value={formData().lead_time_start_state}
+          onInput={e => updateField('lead_time_start_state', e.currentTarget.value)}
+          required
+        />
+      </div>
 
-      <Button.Root
-        class="btn btn-primary w-full"
-        type="submit"
-        disabled={saving()}
-      >
-        {saving() ? (
-          <div class="flex items-center gap-2">
-            <div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-            <span>Saving...</span>
-          </div>
-        ) : (
-          props.initialConfig ? 'Update Configuration' : 'Create Configuration'
-        )}
-      </Button.Root>
+      {/* Lead Time End State field */}
+      <div role="group">
+        <label for="lead_time_end_state">Lead Time End State</label>
+        <input
+          id="lead_time_end_state"
+          type="text"
+          class="input"
+          value={formData().lead_time_end_state}
+          onInput={e => updateField('lead_time_end_state', e.currentTarget.value)}
+          required
+        />
+      </div>
+
+      {/* Cycle Time Start State field */}
+      <div role="group">
+        <label for="cycle_time_start_state">Cycle Time Start State</label>
+        <input
+          id="cycle_time_start_state"
+          type="text"
+          class="input"
+          value={formData().cycle_time_start_state}
+          onInput={e => updateField('cycle_time_start_state', e.currentTarget.value)}
+          required
+        />
+      </div>
+
+      {/* Cycle Time End State field */}
+      <div role="group">
+        <label for="cycle_time_end_state">Cycle Time End State</label>
+        <input
+          id="cycle_time_end_state"
+          type="text"
+          class="input"
+          value={formData().cycle_time_end_state}
+          onInput={e => updateField('cycle_time_end_state', e.currentTarget.value)}
+          required
+        />
+      </div>
+
+      {error() && (
+        <p class="text-red-500" data-testid="error-message">
+          {error()}
+        </p>
+      )}
+
+      <button type="submit" class="btn btn-primary w-full">
+        {props.initialConfig ? 'Update Configuration' : 'Create Configuration'}
+      </button>
     </form>
   );
 };

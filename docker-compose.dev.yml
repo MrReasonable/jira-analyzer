@@ -1,0 +1,69 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: jira-analyzer-backend-dev
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+      - "5678:5678"  # Python debugger port
+    environment:
+      # Server Configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-5173}"]
+      # Development Configuration
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend:/app
+      - jira-analyzer-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: jira-analyzer-frontend-dev
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+      - "9229:9229"  # Node.js debugger port
+    environment:
+      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: jira-analyzer-caddy-dev
+    ports:
+      - "443:443"  # For HTTPS development if needed
+    volumes:
+      - ./frontend/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  jira-analyzer-data:
+  caddy_data:    # Persistent volume for Caddy SSL certificates
+  caddy_config:  # Persistent volume for Caddy configuration
+
+networks:
+  default:
+    name: jira-analyzer-network-dev

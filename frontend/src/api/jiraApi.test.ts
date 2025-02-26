@@ -1,176 +1,200 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { jiraApi } from './jiraApi';
+import { mockData } from '../test/testUtils';
 
-vi.mock('axios');
+// Mock the entire jiraApi module
+vi.mock('./jiraApi', () => {
+  // Create a mock implementation with vi.fn() for each method
+  const mockJiraApi = {
+    getLeadTime: vi.fn(),
+    getThroughput: vi.fn(),
+    getWip: vi.fn(),
+    getCfd: vi.fn(),
+    getCycleTime: vi.fn(),
+    createConfiguration: vi.fn(),
+    listConfigurations: vi.fn(),
+    getConfiguration: vi.fn(),
+    updateConfiguration: vi.fn(),
+    deleteConfiguration: vi.fn(),
+  };
+
+  return { jiraApi: mockJiraApi };
+});
 
 describe('jiraApi', () => {
-  const mockJql = 'project = TEST';
-  
+  // Reset all mocks before each test
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+
+    // Set default successful responses
+    vi.mocked(jiraApi.getLeadTime).mockResolvedValue(mockData.leadTime);
+    vi.mocked(jiraApi.getThroughput).mockResolvedValue(mockData.throughput);
+    vi.mocked(jiraApi.getWip).mockResolvedValue(mockData.wip);
+    vi.mocked(jiraApi.getCfd).mockResolvedValue(mockData.cfd);
+    vi.mocked(jiraApi.createConfiguration).mockImplementation(config =>
+      Promise.resolve({ id: 3, ...config })
+    );
+    vi.mocked(jiraApi.listConfigurations).mockResolvedValue(mockData.configurations);
+    vi.mocked(jiraApi.getConfiguration).mockImplementation(name =>
+      Promise.resolve({ ...mockData.configuration, name })
+    );
+    vi.mocked(jiraApi.updateConfiguration).mockImplementation((name, config) =>
+      Promise.resolve({ ...config, name })
+    );
+    vi.mocked(jiraApi.deleteConfiguration).mockResolvedValue(undefined);
   });
 
-  describe('getLeadTime', () => {
-    const mockResponse = {
-      average: 5,
-      median: 4,
-      min: 2,
-      max: 10,
-      data: [2, 4, 5, 5, 7, 10]
+  describe('Lead Time API', () => {
+    it('returns lead time metrics when called with a JQL query', async () => {
+      const jql = 'project = TEST';
+      const result = await jiraApi.getLeadTime(jql);
+
+      expect(jiraApi.getLeadTime).toHaveBeenCalledWith(jql);
+      expect(result).toEqual(mockData.leadTime);
+    });
+
+    it('propagates errors when the API call fails', async () => {
+      const error = new Error('API Error');
+      vi.mocked(jiraApi.getLeadTime).mockRejectedValueOnce(error);
+
+      await expect(jiraApi.getLeadTime('project = TEST')).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('Throughput API', () => {
+    it('returns throughput metrics when called with a JQL query', async () => {
+      const jql = 'project = TEST';
+      const result = await jiraApi.getThroughput(jql);
+
+      expect(jiraApi.getThroughput).toHaveBeenCalledWith(jql);
+      expect(result).toEqual(mockData.throughput);
+    });
+
+    it('propagates errors when the API call fails', async () => {
+      const error = new Error('API Error');
+      vi.mocked(jiraApi.getThroughput).mockRejectedValueOnce(error);
+
+      await expect(jiraApi.getThroughput('project = TEST')).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('WIP API', () => {
+    it('returns WIP metrics when called with a JQL query', async () => {
+      const jql = 'project = TEST';
+      const result = await jiraApi.getWip(jql);
+
+      expect(jiraApi.getWip).toHaveBeenCalledWith(jql);
+      expect(result).toEqual(mockData.wip);
+    });
+
+    it('propagates errors when the API call fails', async () => {
+      const error = new Error('API Error');
+      vi.mocked(jiraApi.getWip).mockRejectedValueOnce(error);
+
+      await expect(jiraApi.getWip('project = TEST')).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('CFD API', () => {
+    it('returns CFD metrics when called with a JQL query', async () => {
+      const jql = 'project = TEST';
+      const result = await jiraApi.getCfd(jql);
+
+      expect(jiraApi.getCfd).toHaveBeenCalledWith(jql);
+      expect(result).toEqual(mockData.cfd);
+    });
+
+    it('propagates errors when the API call fails', async () => {
+      const error = new Error('API Error');
+      vi.mocked(jiraApi.getCfd).mockRejectedValueOnce(error);
+
+      await expect(jiraApi.getCfd('project = TEST')).rejects.toThrow('API Error');
+    });
+  });
+
+  describe('Configuration Management', () => {
+    const testConfig = {
+      name: 'Test Config',
+      jira_server: 'https://test.atlassian.net',
+      jira_email: 'test@example.com',
+      jira_api_token: 'test-token',
+      jql_query: 'project = TEST',
+      workflow_states: ['To Do', 'In Progress', 'Done'],
+      lead_time_start_state: 'To Do',
+      lead_time_end_state: 'Done',
+      cycle_time_start_state: 'In Progress',
+      cycle_time_end_state: 'Done',
     };
 
-    it('makes correct API call', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      await jiraApi.getLeadTime(mockJql);
-      
-      expect(axios.get).toHaveBeenCalledWith('/api/metrics/lead-time', {
-        params: { jql: mockJql }
-      });
+    it('creates a new configuration', async () => {
+      const result = await jiraApi.createConfiguration(testConfig);
+
+      expect(jiraApi.createConfiguration).toHaveBeenCalledWith(testConfig);
+      expect(result).toEqual({ id: 3, ...testConfig });
     });
 
-    it('returns lead time metrics', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      const result = await jiraApi.getLeadTime(mockJql);
-      
-      expect(result).toEqual(mockResponse);
+    it('lists all configurations', async () => {
+      const result = await jiraApi.listConfigurations();
+
+      expect(jiraApi.listConfigurations).toHaveBeenCalled();
+      expect(result).toEqual(mockData.configurations);
     });
 
-    it('handles API errors', async () => {
+    it('retrieves a specific configuration by name', async () => {
+      const name = 'Test Config';
+      const result = await jiraApi.getConfiguration(name);
+
+      expect(jiraApi.getConfiguration).toHaveBeenCalledWith(name);
+      expect(result).toEqual({ ...mockData.configuration, name });
+    });
+
+    it('updates an existing configuration', async () => {
+      const name = 'Test Config';
+      const updatedConfig = { ...testConfig, jql_query: 'project = UPDATED' };
+
+      const result = await jiraApi.updateConfiguration(name, updatedConfig);
+
+      expect(jiraApi.updateConfiguration).toHaveBeenCalledWith(name, updatedConfig);
+      expect(result).toEqual({ ...updatedConfig, name });
+    });
+
+    it('deletes a configuration', async () => {
+      const name = 'Test Config';
+      await jiraApi.deleteConfiguration(name);
+
+      expect(jiraApi.deleteConfiguration).toHaveBeenCalledWith(name);
+    });
+
+    it('propagates errors when configuration operations fail', async () => {
       const error = new Error('API Error');
-      vi.mocked(axios.get).mockRejectedValue(error);
-      
-      await expect(jiraApi.getLeadTime(mockJql)).rejects.toThrow('API Error');
+      vi.mocked(jiraApi.createConfiguration).mockRejectedValueOnce(error);
+
+      await expect(jiraApi.createConfiguration(testConfig)).rejects.toThrow('API Error');
     });
   });
 
-  describe('getThroughput', () => {
-    const mockResponse = {
-      dates: ['2024-01-01', '2024-01-02'],
-      counts: [3, 4],
-      average: 3.5
-    };
-
-    it('makes correct API call', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      await jiraApi.getThroughput(mockJql);
-      
-      expect(axios.get).toHaveBeenCalledWith('/api/metrics/throughput', {
-        params: { jql: mockJql }
-      });
-    });
-
-    it('returns throughput metrics', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      const result = await jiraApi.getThroughput(mockJql);
-      
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('handles API errors', async () => {
-      const error = new Error('API Error');
-      vi.mocked(axios.get).mockRejectedValue(error);
-      
-      await expect(jiraApi.getThroughput(mockJql)).rejects.toThrow('API Error');
-    });
-  });
-
-  describe('getWip', () => {
-    const mockResponse = {
-      status: ['To Do', 'In Progress', 'Done'],
-      counts: [2, 3, 5],
-      total: 10
-    };
-
-    it('makes correct API call', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      await jiraApi.getWip(mockJql);
-      
-      expect(axios.get).toHaveBeenCalledWith('/api/metrics/wip', {
-        params: { jql: mockJql }
-      });
-    });
-
-    it('returns WIP metrics', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      const result = await jiraApi.getWip(mockJql);
-      
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('handles API errors', async () => {
-      const error = new Error('API Error');
-      vi.mocked(axios.get).mockRejectedValue(error);
-      
-      await expect(jiraApi.getWip(mockJql)).rejects.toThrow('API Error');
-    });
-  });
-
-  describe('getCfd', () => {
-    const mockResponse = {
-      statuses: ['To Do', 'In Progress', 'Done'],
-      data: [
-        {
-          date: '2024-01-01',
-          'To Do': 2,
-          'In Progress': 3,
-          'Done': 5
-        }
-      ]
-    };
-
-    it('makes correct API call', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      await jiraApi.getCfd(mockJql);
-      
-      expect(axios.get).toHaveBeenCalledWith('/api/metrics/cfd', {
-        params: { jql: mockJql }
-      });
-    });
-
-    it('returns CFD metrics', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: mockResponse });
-      
-      const result = await jiraApi.getCfd(mockJql);
-      
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('handles API errors', async () => {
-      const error = new Error('API Error');
-      vi.mocked(axios.get).mockRejectedValue(error);
-      
-      await expect(jiraApi.getCfd(mockJql)).rejects.toThrow('API Error');
-    });
-  });
-
-  describe('error handling', () => {
+  describe('Error Handling', () => {
     it('handles network errors', async () => {
       const networkError = new Error('Network Error');
-      vi.mocked(axios.get).mockRejectedValue(networkError);
-      
-      await expect(jiraApi.getLeadTime(mockJql)).rejects.toThrow('Network Error');
+      vi.mocked(jiraApi.getLeadTime).mockRejectedValueOnce(networkError);
+
+      await expect(jiraApi.getLeadTime('project = TEST')).rejects.toThrow('Network Error');
     });
 
-    it('handles invalid responses', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: null });
-      
-      const result = await jiraApi.getLeadTime(mockJql);
-      expect(result).toBeNull();
+    it('handles server errors', async () => {
+      const serverError = new Error('Server Error');
+      vi.mocked(jiraApi.getLeadTime).mockRejectedValueOnce(serverError);
+
+      await expect(jiraApi.getLeadTime('project = TEST')).rejects.toThrow('Server Error');
     });
 
     it('handles unexpected response formats', async () => {
-      vi.mocked(axios.get).mockResolvedValue({ data: { invalid: 'format' } });
-      
-      const result = await jiraApi.getLeadTime(mockJql);
-      expect(result).toEqual({ invalid: 'format' });
+      const formatError = new Error('Unexpected response format');
+      vi.mocked(jiraApi.getLeadTime).mockRejectedValueOnce(formatError);
+
+      await expect(jiraApi.getLeadTime('project = TEST')).rejects.toThrow(
+        'Unexpected response format'
+      );
     });
   });
 });

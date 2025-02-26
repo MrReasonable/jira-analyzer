@@ -1,27 +1,54 @@
- from fastapi import FastAPI, HTTPException, Depends, status
+"""FastAPI application for the Jira Analyzer.
+
+This module implements the REST API endpoints for the Jira Analyzer application.
+It provides functionality for managing Jira configurations and calculating various
+metrics like lead time, cycle time, throughput, and cumulative flow diagrams.
+"""
+
+from contextlib import asynccontextmanager
+from typing import List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from jira import JIRA
-from datetime import datetime, timedelta
-import pandas as pd
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from .config import get_settings, Settings
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .config import Settings, get_settings
 from .database import get_session, init_db
+from .metrics import (
+    calculate_cfd,
+    calculate_cycle_time,
+    calculate_lead_time,
+    calculate_throughput,
+    calculate_wip,
+)
 from .models import JiraConfiguration
+from .schemas import JiraConfiguration as JiraConfigSchema
 from .schemas import (
     JiraConfigurationCreate,
+    JiraConfigurationList,
     JiraConfigurationUpdate,
-    JiraConfiguration as JiraConfigSchema,
-    JiraConfigurationList
 )
-from typing import List, Dict, Any
-import json
 
-app = FastAPI()
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for the FastAPI application.
+
+    This handles startup and shutdown events for the application.
+    On startup, it initializes the database by creating all required tables.
+    """
+    # Startup: Initialize the database
     await init_db()
+    yield
+    # Shutdown: Add any cleanup code here if needed
+    pass
+
+
+# Use the lifespan context manager
+app = FastAPI(lifespan=lifespan)
+
 
 # Enable CORS
 settings = get_settings()
@@ -30,45 +57,64 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
+
 async def get_jira_client(
-    settings: Settings = Depends(get_settings),
     session: AsyncSession = Depends(get_session),
-    config_name: str = None
+    config_name: Optional[str] = None,
 ) -> JIRA:
+    """Create a JIRA client instance using a named configuration from the database.
+
+    Args:
+        session: Database session for retrieving named configurations.
+        config_name: Name of a stored Jira configuration to use.
+
+    Returns:
+        JIRA: Authenticated JIRA client instance.
+
+    Raises:
+        HTTPException: If connection fails or named configuration is not found.
+    """
+    if not config_name:
+        raise HTTPException(
+            status_code=400,
+            detail='A configuration name is required. Please provide a valid configuration name.',
+        )
+
     try:
-        if config_name:
-            # Use named configuration
-            stmt = select(JiraConfiguration).where(JiraConfiguration.name == config_name)
-            result = await session.execute(stmt)
-            config = result.scalar_one_or_none()
-            if not config:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Configuration '{config_name}' not found"
-                )
-            return JIRA(
-                server=config.jira_server,
-                basic_auth=(config.jira_email, config.jira_api_token)
-            )
-        else:
-            # Use default settings
-            return JIRA(
-                server=settings.jira_server,
-                basic_auth=(settings.jira_email, settings.jira_api_token)
-            )
+        # Use named configuration
+        stmt = select(JiraConfiguration).where(JiraConfiguration.name == config_name)
+        result = await session.execute(stmt)
+        config = result.scalar_one_or_none()
+        if not config:
+            raise HTTPException(status_code=404, detail=f"Configuration '{config_name}' not found")
+        return JIRA(
+            server=config.jira_server, basic_auth=(config.jira_email, config.jira_api_token)
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to connect to Jira: {str(e)}")
+        raise HTTPException(status_code=500, detail=f'Failed to connect to Jira: {str(e)}')
+
 
 # Configuration endpoints
-@app.post("/api/configurations", response_model=JiraConfigSchema)
+@app.post('/api/configurations', response_model=JiraConfigSchema)
 async def create_configuration(
-    config: JiraConfigurationCreate,
-    session: AsyncSession = Depends(get_session)
+    config: JiraConfigurationCreate, session: AsyncSession = Depends(get_session)
 ):
+    """Create a new Jira configuration.
+
+    Args:
+        config: Configuration data to create.
+        session: Database session for the operation.
+
+    Returns:
+        JiraConfigSchema: The created configuration.
+
+    Raises:
+        HTTPException: If configuration creation fails.
+    """
     db_config = JiraConfiguration(**config.model_dump())
     session.add(db_config)
     try:
@@ -77,256 +123,289 @@ async def create_configuration(
         return db_config
     except Exception as e:
         await session.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Could not create configuration: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f'Could not create configuration: {str(e)}')
 
-@app.get("/api/configurations", response_model=List[JiraConfigurationList])
+
+@app.get('/api/configurations', response_model=List[JiraConfigurationList])
 async def list_configurations(session: AsyncSession = Depends(get_session)):
+    """List all Jira configurations.
+
+    Args:
+        session: Database session for the operation.
+
+    Returns:
+        List[JiraConfigurationList]: List of all stored configurations.
+    """
     stmt = select(JiraConfiguration)
     result = await session.execute(stmt)
     return result.scalars().all()
 
-@app.get("/api/configurations/{name}", response_model=JiraConfigSchema)
+
+@app.get('/api/configurations/{name}', response_model=JiraConfigSchema)
 async def get_configuration(name: str, session: AsyncSession = Depends(get_session)):
+    """Retrieve a specific Jira configuration by name.
+
+    Args:
+        name: Name of the configuration to retrieve.
+        session: Database session for the operation.
+
+    Returns:
+        JiraConfigSchema: The requested configuration.
+
+    Raises:
+        HTTPException: If configuration is not found.
+    """
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     config = result.scalar_one_or_none()
     if not config:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Configuration '{name}' not found"
-        )
+        raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
     return config
 
-@app.put("/api/configurations/{name}", response_model=JiraConfigSchema)
+
+@app.put('/api/configurations/{name}', response_model=JiraConfigSchema)
 async def update_configuration(
-    name: str,
-    config: JiraConfigurationUpdate,
-    session: AsyncSession = Depends(get_session)
+    name: str, config: JiraConfigurationUpdate, session: AsyncSession = Depends(get_session)
 ):
+    """Update an existing Jira configuration.
+
+    Args:
+        name: Name of the configuration to update.
+        config: New configuration data.
+        session: Database session for the operation.
+
+    Returns:
+        JiraConfigSchema: The updated configuration.
+
+    Raises:
+        HTTPException: If configuration is not found or update fails.
+    """
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     db_config = result.scalar_one_or_none()
     if not db_config:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Configuration '{name}' not found"
-        )
-    
+        raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
+
     for key, value in config.model_dump().items():
         setattr(db_config, key, value)
-    
+
     try:
         await session.commit()
         await session.refresh(db_config)
         return db_config
     except Exception as e:
         await session.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Could not update configuration: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f'Could not update configuration: {str(e)}')
 
-@app.delete("/api/configurations/{name}", status_code=status.HTTP_204_NO_CONTENT)
+
+@app.delete('/api/configurations/{name}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_configuration(name: str, session: AsyncSession = Depends(get_session)):
+    """Delete a Jira configuration.
+
+    Args:
+        name: Name of the configuration to delete.
+        session: Database session for the operation.
+
+    Raises:
+        HTTPException: If configuration is not found or deletion fails.
+    """
     stmt = select(JiraConfiguration).where(JiraConfiguration.name == name)
     result = await session.execute(stmt)
     db_config = result.scalar_one_or_none()
     if not db_config:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Configuration '{name}' not found"
-        )
-    
+        raise HTTPException(status_code=404, detail=f"Configuration '{name}' not found")
+
     try:
         await session.delete(db_config)
         await session.commit()
     except Exception as e:
         await session.rollback()
-        raise HTTPException(
-            status_code=400,
-            detail=f"Could not delete configuration: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f'Could not delete configuration: {str(e)}')
 
-@app.get("/api/metrics/lead-time")
+
+@app.get('/api/metrics/lead-time')
 async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
+    """Calculate lead time metrics for issues matching the JQL query.
+
+    Lead time is measured from issue creation to resolution.
+
+    Args:
+        jql: JQL query to select issues.
+        jira: JIRA client instance.
+
+    Returns:
+        dict: Lead time statistics including average, median, min, max, and raw data.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
     try:
         issues = jira.search_issues(jql, maxResults=1000, fields=['created', 'resolutiondate'])
-        lead_times = []
-        
-        for issue in issues:
-            if hasattr(issue.fields, 'resolutiondate') and issue.fields.resolutiondate:
-                created = datetime.strptime(issue.fields.created[:10], '%Y-%m-%d')
-                resolved = datetime.strptime(issue.fields.resolutiondate[:10], '%Y-%m-%d')
-                lead_time = (resolved - created).days
-                lead_times.append(lead_time)
-        
-        if lead_times:
-            return {
-                "average": sum(lead_times) / len(lead_times),
-                "median": sorted(lead_times)[len(lead_times)//2],
-                "min": min(lead_times),
-                "max": max(lead_times),
-                "data": lead_times
-            }
-        return {"error": "No completed issues found"}
+        result = calculate_lead_time(issues)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/metrics/throughput")
+
+@app.get('/api/metrics/throughput')
 async def get_throughput(jql: str, jira: JIRA = Depends(get_jira_client)):
+    """Calculate throughput metrics for issues matching the JQL query.
+
+    Throughput is measured as the number of issues completed per day.
+
+    Args:
+        jql: JQL query to select issues.
+        jira: JIRA client instance.
+
+    Returns:
+        dict: Throughput data including dates, counts, and average.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
     try:
-        issues = jira.search_issues(jql, maxResults=1000, fields=['resolutiondate'])
-        dates = {}
-        
-        for issue in issues:
-            if hasattr(issue.fields, 'resolutiondate') and issue.fields.resolutiondate:
-                date = issue.fields.resolutiondate[:10]
-                dates[date] = dates.get(date, 0) + 1
-        
-        # Convert to time series
-        df = pd.Series(dates).sort_index()
-        return {
-            "dates": list(df.index),
-            "counts": list(df.values),
-            "average": df.mean()
-        }
+        issues = jira.search_issues(
+            jql, maxResults=1000, fields=['created', 'resolutiondate', 'status']
+        )
+        result = calculate_throughput(issues)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/metrics/wip")
-async def get_wip(jql: str, jira: JIRA = Depends(get_jira_client)):
+
+@app.get('/api/metrics/wip')
+async def get_wip(
+    jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
+):
+    """Calculate Work in Progress (WIP) metrics for issues matching the JQL query.
+
+    WIP is counted as the number of issues in each status.
+
+    Args:
+        jql: JQL query to select issues.
+        jira: JIRA client instance.
+        settings: Application settings for workflow state configuration.
+
+    Returns:
+        dict: WIP data including status counts and total.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
     try:
         issues = jira.search_issues(jql, maxResults=1000, fields=['status'])
-        status_counts = {}
-        
-        for issue in issues:
-            status = issue.fields.status.name
-            status_counts[status] = status_counts.get(status, 0) + 1
-            
-        return {
-            "status": list(status_counts.keys()),
-            "counts": list(status_counts.values()),
-            "total": sum(status_counts.values())
-        }
+        workflow_states = settings.workflow_states if hasattr(settings, 'workflow_states') else None
+        result = calculate_wip(issues, workflow_states)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/metrics/cycle-time")
-async def get_cycle_time(jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)):
+
+@app.get('/api/metrics/cycle-time')
+async def get_cycle_time(
+    jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
+):
+    """Calculate cycle time metrics for issues matching the JQL query.
+
+    Cycle time is measured from when work begins (entering start state)
+    to completion (entering end state).
+
+    Args:
+        jql: JQL query to select issues.
+        jira: JIRA client instance.
+        settings: Application settings for cycle time state configuration.
+
+    Returns:
+        dict: Cycle time statistics including average, median, min, max, and raw data.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
     try:
         issues = jira.search_issues(
             jql,
             maxResults=1000,
             fields=['created', 'resolutiondate', 'status', 'changelog'],
-            expand='changelog'
+            expand='changelog',
         )
-        cycle_times = []
-        
-        for issue in issues:
-            if not hasattr(issue.fields, 'resolutiondate') or not issue.fields.resolutiondate:
-                continue
-                
-            # Get all status changes from changelog
-            status_changes = []
-            for history in issue.changelog.histories:
-                for item in history.items:
-                    if item.field == 'status':
-                        status_changes.append({
-                            'date': datetime.strptime(history.created[:19], '%Y-%m-%dT%H:%M:%S'),
-                            'from_status': item.fromString,
-                            'to_status': item.toString
-                        })
-            
-            # Sort changes by date
-            status_changes.sort(key=lambda x: x['date'])
-            
-            # Find when the issue entered start state and end state
-            start_date = None
-            end_date = None
-            
-            for change in status_changes:
-                if change['to_status'] == settings.cycle_time_start_state and not start_date:
-                    start_date = change['date']
-                elif change['to_status'] == settings.cycle_time_end_state and start_date:
-                    end_date = change['date']
-                    break
-            
-            # If we found both dates, calculate cycle time
-            if start_date and end_date:
-                cycle_time = (end_date - start_date).days
-                if cycle_time >= 0:  # Only include valid cycle times
-                    cycle_times.append(cycle_time)
-        
-        if cycle_times:
-            return {
-                "average": sum(cycle_times) / len(cycle_times),
-                "median": sorted(cycle_times)[len(cycle_times)//2],
-                "min": min(cycle_times),
-                "max": max(cycle_times),
-                "data": cycle_times,
-                "start_state": settings.cycle_time_start_state,
-                "end_state": settings.cycle_time_end_state
-            }
-        return {
-            "error": "No completed issues found",
-            "start_state": settings.cycle_time_start_state,
-            "end_state": settings.cycle_time_end_state
-        }
+
+        start_state = (
+            settings.cycle_time_start_state
+            if hasattr(settings, 'cycle_time_start_state')
+            else 'In Progress'
+        )
+        end_state = (
+            settings.cycle_time_end_state if hasattr(settings, 'cycle_time_end_state') else 'Done'
+        )
+
+        result = calculate_cycle_time(issues, start_state, end_state)
+
+        # Add state information to the result
+        if 'error' not in result:
+            result['start_state'] = start_state
+            result['end_state'] = end_state
+        else:
+            result['start_state'] = start_state
+            result['end_state'] = end_state
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/metrics/cfd")
-async def get_cfd(jql: str, jira: JIRA = Depends(get_jira_client)):
+
+@app.get('/api/metrics/cfd')
+async def get_cfd(
+    jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
+):
+    """Generate Cumulative Flow Diagram (CFD) data for issues matching the JQL query.
+
+    The CFD shows the number of issues in each status over time, with a 30-day
+    window. The data is cumulative, showing the total number of issues that have
+    passed through each status.
+
+    Args:
+        jql: JQL query to select issues.
+        jira: JIRA client instance.
+        settings: Application settings for workflow state configuration.
+
+    Returns:
+        dict: CFD data including status list and cumulative counts per date.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
     try:
         issues = jira.search_issues(
             jql,
             maxResults=1000,
-            fields=['status', 'created', 'resolutiondate', 'statuscategorychangedate']
+            fields=['status', 'created', 'resolutiondate'],
         )
-        
-        # Create date range
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=30)
-        date_range = pd.date_range(start=start_date, end=end_date, freq='D')
-        
-        # Initialize status tracking
-        status_data = {date.strftime('%Y-%m-%d'): {} for date in date_range}
-        
-        for issue in issues:
-            created_date = datetime.strptime(issue.fields.created[:10], '%Y-%m-%d')
-            resolved_date = None
-            if hasattr(issue.fields, 'resolutiondate') and issue.fields.resolutiondate:
-                resolved_date = datetime.strptime(issue.fields.resolutiondate[:10], '%Y-%m-%d')
-            
-            for date in date_range:
-                date_str = date.strftime('%Y-%m-%d')
-                if created_date <= date:
-                    status = 'Done' if (resolved_date and resolved_date <= date) else issue.fields.status.name
-                    status_data[date_str][status] = status_data[date_str].get(status, 0) + 1
-        
-        # Convert to cumulative data
-        statuses = list(set([status for day in status_data.values() for status in day.keys()]))
-        cumulative_data = []
-        
-        for date, counts in status_data.items():
-            data_point = {'date': date}
-            cumulative = 0
-            for status in statuses:
-                cumulative += counts.get(status, 0)
-                data_point[status] = cumulative
-            cumulative_data.append(data_point)
-        
-        return {
-            "statuses": statuses,
-            "data": cumulative_data
-        }
+
+        workflow_states = settings.workflow_states if hasattr(settings, 'workflow_states') else None
+        period_days = 30  # Default to 30 days
+
+        result = calculate_cfd(issues, workflow_states, period_days)
+
+        # Convert to the expected format for the frontend
+        if 'data' in result and 'dates' in result:
+            statuses = list(result['data'][0].keys()) if result['data'] else []
+            cumulative_data = []
+
+            for i, date in enumerate(result['dates']):
+                data_point = {'date': date}
+                for status in statuses:
+                    data_point[status] = result['data'][i][status]
+                cumulative_data.append(data_point)
+
+            return {'statuses': statuses, 'data': cumulative_data}
+
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     import uvicorn
+
     settings = get_settings()
     uvicorn.run(app, host=settings.host, port=settings.port)

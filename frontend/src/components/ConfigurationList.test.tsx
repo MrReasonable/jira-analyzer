@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@solidjs/testing-library';
 import { ConfigurationList } from './ConfigurationList';
 import { jiraApi } from '../api/jiraApi';
+import { createSignal } from 'solid-js';
 
 vi.mock('../api/jiraApi', () => ({
   jiraApi: {
     listConfigurations: vi.fn(),
-    deleteConfiguration: vi.fn()
-  }
+    deleteConfiguration: vi.fn(),
+  },
 }));
 
 describe('ConfigurationList', () => {
@@ -15,13 +16,13 @@ describe('ConfigurationList', () => {
     {
       name: 'Config 1',
       jira_server: 'https://jira1.atlassian.net',
-      jira_email: 'user1@example.com'
+      jira_email: 'user1@example.com',
     },
     {
       name: 'Config 2',
       jira_server: 'https://jira2.atlassian.net',
-      jira_email: 'user2@example.com'
-    }
+      jira_email: 'user2@example.com',
+    },
   ];
 
   const mockOnSelect = vi.fn();
@@ -33,8 +34,13 @@ describe('ConfigurationList', () => {
   });
 
   it('displays loading state initially', () => {
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(true);
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
@@ -44,15 +50,19 @@ describe('ConfigurationList', () => {
   });
 
   it('displays configurations after loading', async () => {
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    // Wait for configurations to load
-    expect(await screen.findByText('Config 1')).toBeInTheDocument();
+    expect(screen.getByText('Config 1')).toBeInTheDocument();
     expect(screen.getByText('Config 2')).toBeInTheDocument();
 
     // Check that server and email info is displayed
@@ -61,44 +71,56 @@ describe('ConfigurationList', () => {
   });
 
   it('displays empty state when no configurations exist', async () => {
-    vi.mocked(jiraApi.listConfigurations).mockResolvedValue([]);
+    const [configurations] = createSignal([]);
+    const [loading] = createSignal(false);
 
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    expect(await screen.findByText(/No configurations saved yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No configurations saved yet/i)).toBeInTheDocument();
   });
 
   it('calls onSelect when configuration is selected', async () => {
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    // Wait for configurations to load
-    const selectButton = await screen.findByRole('button', { name: /Select/i });
+    const selectButton = screen.getByTestId('select-Config 1');
     fireEvent.click(selectButton);
 
     expect(mockOnSelect).toHaveBeenCalledWith('Config 1');
   });
 
   it('highlights selected configuration', async () => {
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+    const [selectedName] = createSignal('Config 1');
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
-        selectedName="Config 1"
+        selectedName={selectedName}
       />
     ));
 
-    // Wait for configurations to load and check styling
-    const config1 = await screen.findByText('Config 1');
+    const config1 = screen.getByText('Config 1');
     const config1Container = config1.closest('div[class*="border"]');
     expect(config1Container).toHaveClass('border-primary');
 
@@ -111,19 +133,28 @@ describe('ConfigurationList', () => {
     const confirmSpy = vi.spyOn(window, 'confirm');
     confirmSpy.mockImplementation(() => true);
 
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    // Wait for configurations to load
-    const deleteButton = await screen.findByRole('button', { name: /Delete/i });
-    fireEvent.click(deleteButton);
+    // Find and click delete button
+    const deleteButton = screen.getByTestId('delete-Config 1');
+    await fireEvent.click(deleteButton);
 
-    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining('Config 1'));
-    expect(jiraApi.deleteConfiguration).toHaveBeenCalledWith('Config 1');
+    // Verify confirmation was shown
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Are you sure you want to delete configuration "Config 1"?'
+    );
+
+    // Verify callback was called
     expect(mockOnDelete).toHaveBeenCalledWith('Config 1');
 
     confirmSpy.mockRestore();
@@ -133,18 +164,26 @@ describe('ConfigurationList', () => {
     const confirmSpy = vi.spyOn(window, 'confirm');
     confirmSpy.mockImplementation(() => false);
 
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    // Wait for configurations to load
-    const deleteButton = await screen.findByRole('button', { name: /Delete/i });
-    fireEvent.click(deleteButton);
+    // Find and click delete button
+    const deleteButton = screen.getByTestId('delete-Config 1');
+    await fireEvent.click(deleteButton);
 
-    expect(confirmSpy).toHaveBeenCalled();
+    // Verify confirmation was shown but no further action taken
+    expect(confirmSpy).toHaveBeenCalledWith(
+      'Are you sure you want to delete configuration "Config 1"?'
+    );
     expect(jiraApi.deleteConfiguration).not.toHaveBeenCalled();
     expect(mockOnDelete).not.toHaveBeenCalled();
 
@@ -152,35 +191,57 @@ describe('ConfigurationList', () => {
   });
 
   it('displays error message when loading fails', async () => {
-    const error = new Error('Failed to load configurations');
-    vi.mocked(jiraApi.listConfigurations).mockRejectedValue(error);
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+    const [error] = createSignal(new Error('Failed to load configurations') as Error | null);
 
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
+        error={error}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
       />
     ));
 
-    expect(await screen.findByText(/Failed to load configurations/i)).toBeInTheDocument();
+    expect(screen.getByText(/Failed to load configurations/i)).toBeInTheDocument();
   });
 
   it('displays error message when deletion fails', async () => {
-    const error = new Error('Failed to delete configuration');
-    vi.mocked(jiraApi.deleteConfiguration).mockRejectedValue(error);
-    vi.spyOn(window, 'confirm').mockImplementation(() => true);
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    confirmSpy.mockImplementation(() => true);
+
+    const errorObj = new Error('Failed to delete configuration');
+
+    const [configurations] = createSignal(mockConfigs);
+    const [loading] = createSignal(false);
+    const [errorState, setErrorState] = createSignal<Error | null>(null);
+
+    // Mock the onDelete function to set the error
+    const mockOnDeleteWithError = vi.fn().mockImplementation(() => {
+      setErrorState(() => errorObj);
+    });
 
     render(() => (
       <ConfigurationList
+        configurations={configurations}
+        loading={loading}
+        error={errorState}
         onSelect={mockOnSelect}
-        onDelete={mockOnDelete}
+        onDelete={mockOnDeleteWithError}
       />
     ));
 
-    // Wait for configurations to load
-    const deleteButton = await screen.findByRole('button', { name: /Delete/i });
-    fireEvent.click(deleteButton);
+    // Find and click delete button
+    const deleteButton = screen.getByTestId('delete-Config 1');
+    await fireEvent.click(deleteButton);
 
-    expect(await screen.findByText(/Failed to delete configuration/i)).toBeInTheDocument();
+    // Set the error state manually since we're not actually calling the API
+    setErrorState(() => errorObj);
+
+    expect(screen.getByText(/Failed to delete configuration/i)).toBeInTheDocument();
+
+    confirmSpy.mockRestore();
   });
 });

@@ -3,11 +3,11 @@ import Chart from 'chart.js/auto';
 import { CycleTimeMetrics } from '../api/jiraApi';
 
 interface Props {
-  data: CycleTimeMetrics | null;
+  data: (CycleTimeMetrics & { error?: string }) | null;
   loading: boolean;
 }
 
-export const CycleTimeChart: Component<Props> = (props) => {
+export const CycleTimeChart: Component<Props> = props => {
   let chartRef: HTMLCanvasElement | undefined;
   let chartInstance: Chart | undefined;
 
@@ -40,34 +40,34 @@ export const CycleTimeChart: Component<Props> = (props) => {
             data: Object.values(bins),
             backgroundColor: 'rgba(75, 192, 192, 0.5)',
             borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-          }
-        ]
+            borderWidth: 1,
+          },
+        ],
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Cycle Time Distribution'
-          }
+            text: 'Cycle Time Distribution',
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Number of Issues'
-            }
+              text: 'Number of Issues',
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Days'
-            }
-          }
-        }
-      }
+              text: 'Days',
+            },
+          },
+        },
+      },
     });
   };
 
@@ -89,13 +89,17 @@ export const CycleTimeChart: Component<Props> = (props) => {
         <h2 class="text-xl font-bold">Cycle Time Analysis</h2>
         {props.loading ? (
           <p>Loading...</p>
+        ) : props.data?.error ? (
+          <p>No data available</p>
         ) : props.data ? (
           <>
             <canvas ref={chartRef} />
             <div class="space-y-1">
               <p>Average: {props.data.average.toFixed(1)} days</p>
               <p>Median: {props.data.median} days</p>
-              <p>Range: {props.data.min}-{props.data.max} days</p>
+              <p>
+                Range: {props.data.min}-{props.data.max} days
+              </p>
               <p class="text-sm text-gray-600">
                 From {props.data.start_state} to {props.data.end_state}
               </p>

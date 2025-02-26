@@ -7,7 +7,7 @@ interface Props {
   loading: boolean;
 }
 
-export const WipChart: Component<Props> = (props) => {
+export const WipChart: Component<Props> = props => {
   let chartRef: HTMLCanvasElement | undefined;
   let chartInstance: Chart | undefined;
 
@@ -26,44 +26,50 @@ export const WipChart: Component<Props> = (props) => {
       type: 'bar',
       data: {
         labels: props.data.status,
-        datasets: [{
-          label: 'Issues',
-          data: props.data.counts,
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.5)',
-            'rgba(54, 162, 235, 0.5)',
-            'rgba(255, 206, 86, 0.5)',
-            'rgba(75, 192, 192, 0.5)',
-            'rgba(153, 102, 255, 0.5)',
-          ],
-          borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-            'rgba(255, 206, 86, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(153, 102, 255, 1)',
-          ],
-          borderWidth: 1
-        }]
+        datasets: [
+          {
+            label: 'Issues',
+            data: props.data.counts,
+            backgroundColor: props.data.status.map(
+              (_, i) =>
+                [
+                  'rgba(255, 99, 132, 0.5)',
+                  'rgba(54, 162, 235, 0.5)',
+                  'rgba(255, 206, 86, 0.5)',
+                  'rgba(75, 192, 192, 0.5)',
+                ][i % 4]
+            ),
+            borderColor: props.data.status.map(
+              (_, i) =>
+                [
+                  'rgba(255, 99, 132, 1)',
+                  'rgba(54, 162, 235, 1)',
+                  'rgba(255, 206, 86, 1)',
+                  'rgba(75, 192, 192, 1)',
+                ][i % 4]
+            ),
+            borderWidth: 1,
+          },
+        ],
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Work in Progress by Status'
-          }
+            text: 'Work in Progress by Status',
+          },
         },
         scales: {
           y: {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Number of Issues'
-            }
-          }
-        }
-      }
+              text: 'Number of Issues',
+            },
+          },
+        },
+      },
     });
   };
 
