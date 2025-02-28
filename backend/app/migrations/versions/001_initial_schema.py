@@ -6,6 +6,7 @@ Create Date: 2025-02-26
 
 This migration creates the initial database schema for storing Jira configurations.
 """
+
 import sqlalchemy as sa
 from alembic import op
 

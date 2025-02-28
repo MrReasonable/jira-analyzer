@@ -5,6 +5,7 @@ It provides functionality for managing Jira configurations and calculating vario
 metrics like lead time, cycle time, throughput, and cumulative flow diagrams.
 """
 
+import re
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
@@ -104,7 +105,8 @@ async def get_jira_client(
 
         logger.debug(f'Connecting to JIRA server: {config.jira_server}')
         jira_client = JIRA(
-            server=config.jira_server, basic_auth=(config.jira_email, config.jira_api_token)
+            server=str(config.jira_server),
+            basic_auth=(str(config.jira_email), str(config.jira_api_token)),
         )
         logger.info(f'Successfully connected to JIRA using configuration: {config_name}')
         return jira_client
@@ -258,6 +260,62 @@ async def delete_configuration(name: str, session: AsyncSession = Depends(get_se
         raise HTTPException(status_code=400, detail=f'Could not delete configuration: {str(e)}')
 
 
+def validate_jql_query(jql: str) -> str:
+    """Validate and sanitize a JQL query to prevent injection attacks and handle invalid syntax.
+
+    Args:
+        jql: The JQL query to validate.
+
+    Returns:
+        str: The sanitized JQL query.
+
+    Raises:
+        HTTPException: If the JQL query is invalid or contains disallowed patterns.
+    """
+    # Handle empty queries
+    if not jql or jql.strip() == '':
+        logger.warning('Empty JQL query provided')
+        return jql  # Return as is, will be handled by the metrics calculation
+
+    # Check for semicolons which could be used for injection
+    if ';' in jql:
+        logger.warning(f'JQL injection attempt detected: {jql}')
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid JQL query: Semicolons (;) are not allowed in JQL queries.',
+        )
+
+    # Check for other suspicious patterns that might indicate injection attempts
+    suspicious_patterns = [
+        r'DROP\s+TABLE',
+        r'DELETE\s+FROM',
+        r'INSERT\s+INTO',
+        r'UPDATE\s+.*\s+SET',
+        r'UNION\s+SELECT',
+        r"'\s*OR\s*'\s*[0-9a-zA-Z]+\s*'='",  # Pattern like ' OR '1'='1
+    ]
+
+    for pattern in suspicious_patterns:
+        if re.search(pattern, jql, re.IGNORECASE):
+            logger.warning(f'JQL injection attempt detected: {jql}')
+            raise HTTPException(
+                status_code=400,
+                detail='Invalid JQL query: The query contains suspicious patterns that are not allowed.',
+            )
+
+    # Basic syntax validation for common JQL errors
+    # Check for incomplete expressions like "project = " without a value
+    incomplete_expr_pattern = r'=\s*$'
+    if re.search(incomplete_expr_pattern, jql):
+        logger.warning(f'Invalid JQL syntax detected: {jql}')
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid JQL query: Incomplete expression. Expected a value after the operator.',
+        )
+
+    return jql
+
+
 @app.get('/api/metrics/lead-time')
 async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
     """Calculate lead time metrics for issues matching the JQL query.
@@ -276,16 +334,24 @@ async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
     """
     logger.info(f'Calculating lead time metrics with JQL: {jql}')
     try:
+        # Validate and sanitize the JQL query
+        sanitized_jql = validate_jql_query(jql)
+
         logger.debug('Fetching issues from JIRA')
-        issues = jira.search_issues(jql, maxResults=1000, fields=['created', 'resolutiondate'])
+        issues = jira.search_issues(
+            sanitized_jql, maxResults=1000, fields=['created', 'resolutiondate']
+        )
         logger.debug(f'Found {len(issues)} issues')
 
         logger.debug('Calculating lead time metrics')
-        result = calculate_lead_time(issues)
+        result = calculate_lead_time(list(issues))
         logger.info(
-            f"Lead time calculation complete: avg={result.get('average')}, median={result.get('median')}"
+            f'Lead time calculation complete: avg={result.get("average")}, median={result.get("median")}'
         )
         return result
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f'Failed to calculate lead time: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -309,16 +375,22 @@ async def get_throughput(jql: str, jira: JIRA = Depends(get_jira_client)):
     """
     logger.info(f'Calculating throughput metrics with JQL: {jql}')
     try:
+        # Validate and sanitize the JQL query
+        sanitized_jql = validate_jql_query(jql)
+
         logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(
-            jql, maxResults=1000, fields=['created', 'resolutiondate', 'status']
+            sanitized_jql, maxResults=1000, fields=['created', 'resolutiondate', 'status']
         )
         logger.debug(f'Found {len(issues)} issues')
 
         logger.debug('Calculating throughput metrics')
-        result = calculate_throughput(issues)
-        logger.info(f"Throughput calculation complete: avg={result.get('average')}")
+        result = calculate_throughput(list(issues))
+        logger.info(f'Throughput calculation complete: avg={result.get("average")}')
         return result
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f'Failed to calculate throughput: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -345,17 +417,23 @@ async def get_wip(
     """
     logger.info(f'Calculating WIP metrics with JQL: {jql}')
     try:
+        # Validate and sanitize the JQL query
+        sanitized_jql = validate_jql_query(jql)
+
         logger.debug('Fetching issues from JIRA')
-        issues = jira.search_issues(jql, maxResults=1000, fields=['status'])
+        issues = jira.search_issues(sanitized_jql, maxResults=1000, fields=['status'])
         logger.debug(f'Found {len(issues)} issues')
 
         workflow_states = settings.workflow_states if hasattr(settings, 'workflow_states') else None
         logger.debug(f'Using workflow states: {workflow_states}')
 
         logger.debug('Calculating WIP metrics')
-        result = calculate_wip(issues, workflow_states)
-        logger.info(f"WIP calculation complete: total={result.get('total')}")
+        result = calculate_wip(list(issues), workflow_states)
+        logger.info(f'WIP calculation complete: total={result.get("total")}')
         return result
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f'Failed to calculate WIP: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -383,9 +461,12 @@ async def get_cycle_time(
     """
     logger.info(f'Calculating cycle time metrics with JQL: {jql}')
     try:
+        # Validate and sanitize the JQL query
+        sanitized_jql = validate_jql_query(jql)
+
         logger.debug('Fetching issues from JIRA with changelog')
         issues = jira.search_issues(
-            jql,
+            sanitized_jql,
             maxResults=1000,
             fields=['created', 'resolutiondate', 'status', 'changelog'],
             expand='changelog',
@@ -403,21 +484,24 @@ async def get_cycle_time(
         logger.debug(f'Using cycle time states: start={start_state}, end={end_state}')
 
         logger.debug('Calculating cycle time metrics')
-        result = calculate_cycle_time(issues, start_state, end_state)
+        result = calculate_cycle_time(list(issues), start_state, end_state)
 
         # Add state information to the result
         if 'error' not in result:
             result['start_state'] = start_state
             result['end_state'] = end_state
             logger.info(
-                f"Cycle time calculation complete: avg={result.get('average')}, median={result.get('median')}"
+                f'Cycle time calculation complete: avg={result.get("average")}, median={result.get("median")}'
             )
         else:
             result['start_state'] = start_state
             result['end_state'] = end_state
-            logger.warning(f"Cycle time calculation returned error: {result.get('error')}")
+            logger.warning(f'Cycle time calculation returned error: {result.get("error")}')
 
         return result
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f'Failed to calculate cycle time: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -446,9 +530,12 @@ async def get_cfd(
     """
     logger.info(f'Generating CFD data with JQL: {jql}')
     try:
+        # Validate and sanitize the JQL query
+        sanitized_jql = validate_jql_query(jql)
+
         logger.debug('Fetching issues from JIRA')
         issues = jira.search_issues(
-            jql,
+            sanitized_jql,
             maxResults=1000,
             fields=['status', 'created', 'resolutiondate'],
         )
@@ -459,7 +546,7 @@ async def get_cfd(
         logger.debug(f'Using workflow states: {workflow_states}, period: {period_days} days')
 
         logger.debug('Calculating CFD data')
-        result = calculate_cfd(issues, workflow_states, period_days)
+        result = calculate_cfd(list(issues), workflow_states, period_days)
 
         # Convert to the expected format for the frontend
         if 'data' in result and 'dates' in result:
@@ -473,12 +560,15 @@ async def get_cfd(
                 cumulative_data.append(data_point)
 
             logger.info(
-                f"CFD calculation complete: {len(statuses)} statuses, {len(result['dates'])} dates"
+                f'CFD calculation complete: {len(statuses)} statuses, {len(result["dates"])} dates'
             )
             return {'statuses': statuses, 'data': cumulative_data}
 
         logger.warning('CFD calculation returned unexpected format')
         return result
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f'Failed to generate CFD: {str(e)}', exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

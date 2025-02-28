@@ -1,20 +1,33 @@
+# Simple Caddyfile configuration for local development
+
 :80 {
     root * /usr/share/caddy
-    encode gzip
     try_files {path} /index.html
     file_server
 
-    # Security headers
+    # Reverse proxy for API requests
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy backend:8000
+    }
+
+    # Enable gzip compression
+    encode gzip
+
+    # Add security headers
     header {
-        # Enable HSTS
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-        # Prevent browsers from incorrectly detecting non-scripts as scripts
+        # Enable HTTP Strict Transport Security (HSTS)
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Disable content-type sniffing
         X-Content-Type-Options "nosniff"
-        # Block pages from loading when they detect reflected XSS attacks
+        # Enable XSS protection
         X-XSS-Protection "1; mode=block"
-        # Only allow being loaded in an iframe on our own domain
-        X-Frame-Options "SAMEORIGIN"
-        # Disable browser features that could be security risks
-        Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+        # Prevent clickjacking
+        X-Frame-Options "DENY"
+    }
+
+    # Basic logging
+    log {
+        output stdout
     }
 }

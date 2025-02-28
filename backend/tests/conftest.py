@@ -162,6 +162,37 @@ def test_client():
 
 
 @pytest.fixture
+def mock_jira_client_dependency():
+    """Mock the get_jira_client dependency in the FastAPI app.
+
+    This fixture patches the get_jira_client dependency in the FastAPI app
+    to return a mock JIRA client. This is necessary because the TestClient
+    will use the real get_jira_client function otherwise.
+
+    Returns:
+        Mock: A mock JIRA client.
+    """
+    from app.main import app, get_jira_client
+
+    # Create a mock JIRA client
+    mock_client = Mock()
+
+    # Store the original dependency
+    original_dependency = app.dependency_overrides.get(get_jira_client)
+
+    # Override the dependency
+    app.dependency_overrides[get_jira_client] = lambda: mock_client
+
+    yield mock_client
+
+    # Restore the original dependency after the test
+    if original_dependency:
+        app.dependency_overrides[get_jira_client] = original_dependency
+    else:
+        del app.dependency_overrides[get_jira_client]
+
+
+@pytest.fixture
 def mock_jira_issue_factory():
     """Factory fixture to create mock Jira issues with customizable fields.
 

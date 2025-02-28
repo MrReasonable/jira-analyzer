@@ -43,15 +43,21 @@ def get_logger(name: str, level: Optional[LogLevel] = None) -> logging.Logger:
     Returns:
         logging.Logger: Configured logger instance.
     """
-    # Determine log level from environment or use INFO as default
-    env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
-    # Ensure env_level is a valid LogLevel
-    env_level = (
-        LogLevel(env_level_str) if env_level_str in [e.value for e in LogLevel] else LogLevel.INFO
-    )
-    effective_level: LogLevel = level or env_level
-    # Use explicit cast to avoid mypy errors
-    log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
+    # If running tests, use CRITICAL level to suppress most logs
+    if os.environ.get('PYTEST_CURRENT_TEST') is not None:
+        log_level = logging.CRITICAL
+    else:
+        # Determine log level from environment or use INFO as default
+        env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
+        # Ensure env_level is a valid LogLevel
+        env_level = (
+            LogLevel(env_level_str)
+            if env_level_str in [e.value for e in LogLevel]
+            else LogLevel.INFO
+        )
+        effective_level: LogLevel = level or env_level
+        # Use explicit cast to avoid mypy errors
+        log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
 
     # Create logger
     logger = logging.getLogger(name)
@@ -85,15 +91,21 @@ def configure_logging(level: Optional[LogLevel] = None) -> None:
     Args:
         level: Optional log level to set for all loggers.
     """
-    # Determine log level from parameter or environment
-    env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
-    # Ensure env_level is a valid LogLevel
-    env_level = (
-        LogLevel(env_level_str) if env_level_str in [e.value for e in LogLevel] else LogLevel.INFO
-    )
-    effective_level: LogLevel = level or env_level
-    # Use explicit cast to avoid mypy errors
-    log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
+    # If running tests, use CRITICAL level to suppress most logs
+    if os.environ.get('PYTEST_CURRENT_TEST') is not None:
+        log_level = logging.CRITICAL
+    else:
+        # Determine log level from parameter or environment
+        env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
+        # Ensure env_level is a valid LogLevel
+        env_level = (
+            LogLevel(env_level_str)
+            if env_level_str in [e.value for e in LogLevel]
+            else LogLevel.INFO
+        )
+        effective_level: LogLevel = level or env_level
+        # Use explicit cast to avoid mypy errors
+        log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
 
     # Configure root logger
     root_logger = logging.getLogger()

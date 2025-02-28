@@ -11,17 +11,16 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
 
-  # Backend Python hooks (reusing the existing backend configuration)
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.1
+  # Backend Python hooks
+  - repo: local
     hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-        files: ^backend/
-        exclude: ^backend/app/migrations/versions/
-      - id: ruff-format
-        files: ^backend/
-        # No exclusions for formatting - we want all Python files to be properly formatted
+      - id: backend-lint-fix
+        name: Backend Lint Fix
+        entry: make backend-lint-fix-ci
+        language: system
+        files: ^backend/.*\.py$
+        exclude: ^backend/app/migrations/
+        pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
@@ -45,14 +44,14 @@ repos:
     hooks:
       - id: frontend-lint
         name: Frontend ESLint
-        entry: make frontend-lint-fix-ci
+        entry: cd frontend && pnpm run lint:fix
         language: system
         files: ^frontend/.*\.(ts|tsx)$
         pass_filenames: false
 
       - id: frontend-format
         name: Frontend Prettier
-        entry: make frontend-format-ci
+        entry: cd frontend && pnpm run format
         language: system
         files: ^frontend/.*\.(ts|tsx|css|json)$
         pass_filenames: false

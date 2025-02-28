@@ -30,8 +30,8 @@ clean: ## Clean up build artifacts and cache
 	cd backend && find . -type f -name "*.pyc" -delete
 
 build: ## Build the production version of the application
-	docker build -t jira-analyzer-frontend -f frontend/Dockerfile frontend
-	docker build -t jira-analyzer-backend -f backend/Dockerfile backend
+	docker build -t jira-analyzer-frontend -f frontend/Dockerfile --target nginx frontend
+	docker build -t jira-analyzer-backend -f backend/Dockerfile --target production backend
 
 docker-build: ## Build production Docker images
 	docker-compose build
@@ -43,7 +43,7 @@ frontend-test: ## Run frontend tests only (run once and exit)
 	docker build -t frontend-dev \
 		--build-arg USER_ID=$(shell id -u) \
 		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile.dev frontend
+		-f frontend/Dockerfile --target development-nonroot frontend
 	docker run --rm -ti \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -57,7 +57,7 @@ frontend-test: ## Run frontend tests only (run once and exit)
 		frontend-dev pnpm test
 
 frontend-test-ci: ## Run frontend tests in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile.ci frontend
+	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
 	docker run --rm \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -74,7 +74,7 @@ frontend-test-watch: ## Run frontend tests in watch mode
 	docker build -t frontend-dev \
 		--build-arg USER_ID=$(shell id -u) \
 		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile.dev frontend
+		-f frontend/Dockerfile --target development-nonroot frontend
 	docker run --rm -ti \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -88,76 +88,85 @@ frontend-test-watch: ## Run frontend tests in watch mode
 		frontend-dev pnpm test:watch
 
 backend-test: ## Run backend tests only
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest
 
 backend-unit-test: ## Run backend unit tests only
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest tests/unit
 
 backend-unit-test-ci: ## Run backend unit tests in CI mode (non-interactive)
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev pytest tests/unit
 
 backend-integration-test: ## Run backend integration tests only
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py
 
 backend-fast-test: ## Run backend tests with optimizations
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest -xvs --no-header
 
 frontend-lint: ## Run frontend linting only
-	docker build -t frontend-dev -f frontend/Dockerfile.dev frontend
+	docker build -t frontend-dev \
+		--build-arg USER_ID=$(shell id -u) \
+		--build-arg GROUP_ID=$(shell id -g) \
+		-f frontend/Dockerfile --target development-nonroot frontend
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint
 
 frontend-lint-ci: ## Run frontend linting in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile.ci frontend
+	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint
 
 backend-lint: ## Run backend linting only
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 backend-lint-ci: ## Run backend linting in CI mode (non-interactive)
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
+	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 frontend-format: ## Format frontend code only
-	docker build -t frontend-dev -f frontend/Dockerfile.dev frontend
+	docker build -t frontend-dev \
+		--build-arg USER_ID=$(shell id -u) \
+		--build-arg GROUP_ID=$(shell id -g) \
+		-f frontend/Dockerfile --target development-nonroot frontend
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run format
 
 frontend-format-ci: ## Format frontend code in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile.ci frontend
+	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run format
 
 frontend-lint-fix: ## Auto-fix frontend linting issues
-	docker build -t frontend-dev -f frontend/Dockerfile.dev frontend
+	docker build -t frontend-dev \
+		--build-arg USER_ID=$(shell id -u) \
+		--build-arg GROUP_ID=$(shell id -g) \
+		-f frontend/Dockerfile --target development-nonroot frontend
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint:fix
 
 frontend-lint-fix-ci: ## Auto-fix frontend linting issues in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile.ci frontend
+	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint:fix
 
 frontend-type-check-ci: ## Run TypeScript type checking in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile.ci frontend
+	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run type-check
 
 backend-format: ## Format backend code only
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -ti -v $(PWD)/backend:/app backend-dev ruff format app tests
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
+	docker run --rm -ti -v $(PWD)/backend:/app backend-dev ruff format app tests --exclude app/migrations/versions/
 
 backend-format-ci: ## Format backend code in CI mode (non-interactive)
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -v $(PWD)/backend:/app backend-dev ruff format app tests
+	docker build -t backend-dev -f backend/Dockerfile --target ci backend
+	docker run --rm -v $(PWD)/backend:/app backend-dev ruff format app tests --exclude app/migrations/versions/
 
 backend-lint-fix: ## Auto-fix backend linting issues
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
+	docker run --rm -ti -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --exit-non-zero-on-fix app tests && ruff format app tests --exclude app/migrations/versions/ && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 backend-lint-fix-ci: ## Auto-fix backend linting issues in CI mode (non-interactive)
-	docker build -t backend-dev -f backend/Dockerfile.dev backend
-	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --unsafe-fixes app tests && ruff format app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
+	docker build -t backend-dev -f backend/Dockerfile --target ci backend
+	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --exit-non-zero-on-fix app tests && ruff format app tests --exclude app/migrations/versions/ && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
 lint-fix: frontend-lint-fix backend-lint-fix ## Auto-fix linting issues in both frontend and backend
 
