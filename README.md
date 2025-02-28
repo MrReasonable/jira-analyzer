@@ -105,11 +105,25 @@ The backend service will use these values for its initial configuration, and the
 Backend tests:
 ```bash
 docker-compose exec backend pytest
+# or
+make backend-test
 ```
 
 Frontend tests:
 ```bash
 docker-compose exec frontend pnpm test
+# or
+make frontend-test
+```
+
+End-to-end tests:
+```bash
+make e2e-test
+```
+
+Run all tests:
+```bash
+make test
 ```
 
 ### Pre-commit Hooks
@@ -164,6 +178,52 @@ This project uses pre-commit hooks to ensure code quality and consistency. Pre-c
    ```bash
    docker-compose -f docker-compose.yml up --build -d
    ```
+
+## Testing
+
+### Unit Tests
+
+The project includes comprehensive unit tests for both frontend and backend components:
+
+- **Backend Tests**: Using pytest to test API endpoints, metric calculations, and configuration management.
+- **Frontend Tests**: Using Vitest to test components, hooks, and API interactions.
+
+### End-to-End Tests
+
+The project includes end-to-end tests using Playwright that validate the full application workflow:
+
+- Creating and managing Jira configurations
+- Entering JQL queries
+- Analyzing metrics
+- Displaying charts and data
+
+To run the end-to-end tests:
+
+```bash
+# Install dependencies (first time only)
+cd e2e-tests && npm install && npm run install:browsers
+
+# Run the tests
+make e2e-test
+
+# Run with visible browser
+make e2e-test-headed
+
+# Run with debug mode (step-by-step debugging)
+make e2e-test-debug
+```
+
+The end-to-end tests:
+- Automatically start the backend using Docker Compose with a mock Jira server
+- Start the frontend development server
+- Run the tests against the running services
+- Automatically shut down all services after completion
+
+**Mock Jira Server:** The end-to-end tests use a mock implementation of the Jira API that provides predefined sample data. This eliminates the need for actual Jira credentials and makes the tests more reliable and faster. The mock server is automatically enabled when running the tests by setting the `USE_MOCK_JIRA` environment variable to `true`.
+
+**Improved Test Runner:** The tests use a custom shell script (`run-tests.sh`) that handles starting the servers, waiting for them to be ready, running the tests, and cleaning up afterward. This makes the tests more reliable and provides better error output.
+
+**Note:** Make sure Docker is running before executing the end-to-end tests, as they rely on Docker Compose to start the backend services.
 
 ## Architecture
 

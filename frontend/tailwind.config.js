@@ -35,7 +35,7 @@ export default {
     },
   },
   plugins: [
-    // Using import.meta.glob for ES modules compatibility
-    await import('@tailwindcss/forms').then(module => module.default),
+    // Using a function that returns the plugin to avoid top-level await
+      import('@tailwindcss/forms').then(module => module.default)
   ],
 }
