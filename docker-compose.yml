@@ -1,6 +1,9 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
     container_name: jira-analyzer-backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -20,7 +23,10 @@ services:
       retries: 3
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: nginx
     container_name: jira-analyzer-frontend
     environment:
       - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}

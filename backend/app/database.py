@@ -6,11 +6,11 @@ support through aiosqlite and Alembic for database migrations.
 """
 
 import os
+from typing import AsyncGenerator
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from .logger import get_logger
 
@@ -23,7 +23,7 @@ logger.info(f'Using database: {DATABASE_URL}')
 
 # Set echo=False in production to reduce log noise
 engine = create_async_engine(DATABASE_URL, echo=False)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
 logger.debug('Database engine and session factory created')
 
 
@@ -51,7 +51,7 @@ async def init_db():
         raise
 
 
-async def get_session() -> AsyncSession:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Create and yield a new database session.
 
     This is an async context manager that provides a database session

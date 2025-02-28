@@ -42,6 +42,8 @@ coverage.xml
 .venv
 venv/
 ENV/
+.ruff_cache/
+.mypy_cache/
 
 
 # Node
@@ -63,3 +65,4 @@ Thumbs.db
 # Project specific
 *.log
 tmp/
+.aider*
