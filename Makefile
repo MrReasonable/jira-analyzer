@@ -7,9 +7,10 @@ help:
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install all dependencies for both frontend and backend
+install: ## Install all dependencies for frontend, backend, and e2e-tests
 	cd frontend && pnpm install
 	cd backend && pip install -r requirements.txt
+	cd e2e-tests && npm install && pnpm run install:browsers
 	pip install pre-commit
 
 setup-pre-commit: ## Install pre-commit hooks
@@ -18,16 +19,17 @@ setup-pre-commit: ## Install pre-commit hooks
 dev: ## Start development servers for both frontend and backend
 	docker-compose -f docker-compose.dev.yml up --build
 
-test: frontend-test backend-test ## Run all tests (frontend and backend)
+test: frontend-test backend-test e2e-test ## Run all tests (frontend, backend, and end-to-end)
 
-lint: frontend-lint backend-lint ## Run linting for both frontend and backend
+lint: frontend-lint backend-lint e2e-lint ## Run linting for both frontend, backend, and e2e-tests
 
-format: frontend-format backend-format ## Format code in both frontend and backend
+format: frontend-format backend-format e2e-format ## Format code in both frontend, backend, and e2e-tests
 
 clean: ## Clean up build artifacts and cache
 	cd frontend && rm -rf dist node_modules
 	cd backend && find . -type d -name "__pycache__" -exec rm -rf {} +
 	cd backend && find . -type f -name "*.pyc" -delete
+	cd e2e-tests && rm -rf node_modules test-results playwright-report blob-report playwright/.cache
 
 build: ## Build the production version of the application
 	docker build -t jira-analyzer-frontend -f frontend/Dockerfile --target nginx frontend
@@ -168,7 +170,34 @@ backend-lint-fix-ci: ## Auto-fix backend linting issues in CI mode (non-interact
 	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --exit-non-zero-on-fix app tests && ruff format app tests --exclude app/migrations/versions/ && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
-lint-fix: frontend-lint-fix backend-lint-fix ## Auto-fix linting issues in both frontend and backend
+lint-fix: frontend-lint-fix backend-lint-fix e2e-lint-fix ## Auto-fix linting issues in frontend, backend, and e2e-tests
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
+
+e2e-test: ## Run end-to-end tests
+	cd e2e-tests && pnpm run run-tests
+
+e2e-test-ui: ## Run end-to-end tests with UI mode
+	cd e2e-tests && pnpm run test:ui
+
+e2e-test-headed: ## Run end-to-end tests in headed mode (visible browser)
+	cd e2e-tests && pnpm run run-tests:headed
+
+e2e-test-debug: ## Run end-to-end tests with debug output
+	cd e2e-tests && pnpm run run-tests:debug
+
+e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
+	cd e2e-tests && CI=true pnpm run run-tests
+
+e2e-lint: ## Run linting for e2e-tests
+	cd e2e-tests && npm run lint
+
+e2e-lint-fix: ## Auto-fix linting issues in e2e-tests
+	cd e2e-tests && npm run lint:fix
+
+e2e-format: ## Format e2e-tests code
+	cd e2e-tests && npm run format
+
+e2e-format-check: ## Check e2e-tests code formatting
+	cd e2e-tests && npm run format:check

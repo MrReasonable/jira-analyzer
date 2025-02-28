@@ -5,6 +5,7 @@ It provides functionality for managing Jira configurations and calculating vario
 metrics like lead time, cycle time, throughput, and cumulative flow diagrams.
 """
 
+import os
 import re
 from contextlib import asynccontextmanager
 from typing import List, Optional
@@ -25,6 +26,9 @@ from .metrics import (
     calculate_throughput,
     calculate_wip,
 )
+
+# Import the mock Jira client
+from .mock_jira import get_mock_jira_client
 from .models import JiraConfiguration
 from .schemas import JiraConfiguration as JiraConfigSchema
 from .schemas import (
@@ -32,6 +36,10 @@ from .schemas import (
     JiraConfigurationList,
     JiraConfigurationUpdate,
 )
+
+# Check if we're running in test mode
+USE_MOCK_JIRA = os.environ.get('USE_MOCK_JIRA', 'false').lower() == 'true'
+
 
 # Create module-level logger
 logger = get_logger(__name__)
@@ -76,12 +84,15 @@ async def get_jira_client(
 ) -> JIRA:
     """Create a JIRA client instance using a named configuration from the database.
 
+    If USE_MOCK_JIRA environment variable is set to 'true', this will return a mock
+    Jira client instead of connecting to the actual Jira API.
+
     Args:
         session: Database session for retrieving named configurations.
         config_name: Name of a stored Jira configuration to use.
 
     Returns:
-        JIRA: Authenticated JIRA client instance.
+        JIRA: Authenticated JIRA client instance or MockJira instance.
 
     Raises:
         HTTPException: If connection fails or named configuration is not found.
@@ -94,6 +105,12 @@ async def get_jira_client(
         )
 
     logger.debug(f'Creating JIRA client using configuration: {config_name}')
+
+    # Use mock Jira client if in test mode
+    if USE_MOCK_JIRA:
+        logger.info(f'Using mock JIRA client for configuration: {config_name}')
+        return await get_mock_jira_client(session, config_name)
+
     try:
         # Use named configuration
         stmt = select(JiraConfiguration).where(JiraConfiguration.name == config_name)

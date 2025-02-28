@@ -5,17 +5,21 @@ services:
       dockerfile: Dockerfile
       target: development-enhanced
     container_name: jira-analyzer-backend-dev
+    # Only expose debug port, API access should be through Caddy
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
       - "5678:5678"  # Python debugger port
+    expose:
+      - "8000"  # Expose to other containers, but not to host
     environment:
       # Server Configuration
       - HOST=0.0.0.0
       - PORT=8000
-      - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-5173}"]
+      - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-80}", "http://localhost:5173", "http://caddy:80"]
       # Development Configuration
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      # Mock Jira for testing
+      - USE_MOCK_JIRA=${USE_MOCK_JIRA:-true}
     volumes:
       - ./backend:/app
       - jira-analyzer-data:/app/data
@@ -34,11 +38,13 @@ services:
         USER_ID: ${USER_ID:-1000}
         GROUP_ID: ${GROUP_ID:-1000}
     container_name: jira-analyzer-frontend-dev
+    # Only expose debug port, web access should be through Caddy
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
       - "9229:9229"  # Node.js debugger port
+    expose:
+      - "5173"  # Expose to other containers, but not to host
     environment:
-      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}
+      - VITE_API_URL=/api
       - NODE_ENV=development
     volumes:
       - ./frontend:/app
@@ -55,7 +61,8 @@ services:
     image: caddy:2-alpine
     container_name: jira-analyzer-caddy-dev
     ports:
-      - "443:443"  # For HTTPS development if needed
+      - "${FRONTEND_PORT:-80}:80"  # HTTP port
+      - "443:443"  # HTTPS port
     volumes:
       - ./frontend/Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
