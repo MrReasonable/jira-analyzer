@@ -56,7 +56,6 @@ jobs:
       - name: Lint frontend
         working-directory: ./frontend
         run: |
-          # When running in act (local testing), use fix mode
           if [ -n "$ACT" ]; then
             echo "Running in act environment, using lint:fix instead of lint"
             pnpm run lint:fix || echo "Linting with fixes completed with warnings"
@@ -68,7 +67,6 @@ jobs:
       - name: Check frontend formatting
         working-directory: ./frontend
         run: |
-          # When running in act (local testing), use format instead of format:check
           if [ -n "$ACT" ]; then
             echo "Running in act environment, formatting files instead of checking"
             pnpm run format
@@ -84,14 +82,12 @@ jobs:
       - name: Test frontend
         working-directory: ./frontend
         run: |
-          # When running in act (local testing), skip tests if canvas fails to build
           if [ -n "$ACT" ]; then
             echo "Running in act environment, attempting to run tests with fallback"
             pnpm run test || echo "Tests failed, but continuing in local environment"
           else
             echo "Running in GitHub Actions, running tests"
             pnpm run test
-          fi
 
   backend-checks:
     name: Backend Checks
@@ -123,14 +119,10 @@ jobs:
         working-directory: ./backend
         run: |
           pip install ruff
-          # Always format files first, then check if running in GitHub Actions
           echo "Formatting files with Ruff"
           ruff format app tests
-
-          # If in GitHub Actions, verify formatting is correct
           if [ -z "$ACT" ]; then
             echo "Verifying formatting in GitHub Actions"
-            # This should now pass since we just formatted the files
             ruff format --check app tests
           fi
 
@@ -138,14 +130,12 @@ jobs:
         working-directory: ./backend
         run: |
           pip install mypy
-          # When running in act (local testing), skip errors
           if [ -n "$ACT" ]; then
             echo "Running in act environment, skipping type checking errors"
             mypy app --exclude=app/migrations --ignore-missing-imports || echo "Type checking errors found, but continuing in local environment"
           else
             echo "Running in GitHub Actions, using strict type checking"
             mypy app --exclude=app/migrations
-          fi
 
       - name: Security check with Bandit
         working-directory: ./backend
@@ -156,26 +146,22 @@ jobs:
       - name: Run backend unit tests
         working-directory: ./backend
         run: |
-          # When running in act (local testing), use a more lenient approach
           if [ -n "$ACT" ]; then
             echo "Running in act environment, running tests with -v flag"
             pytest tests/unit -v
           else
             echo "Running in GitHub Actions, running tests normally"
             pytest tests/unit
-          fi
 
       - name: Run backend integration tests
         working-directory: ./backend
         run: |
-          # When running in act (local testing), skip integration tests
           if [ -n "$ACT" ]; then
             echo "Running in act environment, skipping integration tests for faster local testing"
             echo "Integration tests will be run in the actual GitHub Actions environment"
           else
             echo "Running in GitHub Actions, running integration tests"
             pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py
-          fi
 
   docker-build-test:
     name: Test Docker Build
@@ -195,7 +181,6 @@ jobs:
           else
             echo "Running in GitHub Actions, will use full Docker build"
             echo "is_act=false" >> $GITHUB_OUTPUT
-          fi
 
       - name: Set up Docker Buildx
         if: steps.check-act.outputs.is_act != 'true'
