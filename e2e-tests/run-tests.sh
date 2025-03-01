@@ -1,28 +1,42 @@
 #!/bin/bash
 
+# Function to clean up resources
+cleanup() {
+  echo "Cleaning up resources..."
+  cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
+  exit $TEST_EXIT_CODE
+}
+
+# Set up trap to catch Ctrl+C and other termination signals
+trap cleanup SIGINT SIGTERM EXIT
+
 # Get the project root directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Start the backend with Docker Compose
-echo "Starting backend with Docker Compose..."
-cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml up -d
+# Initialize exit code
+TEST_EXIT_CODE=0
+
+# Check if services are already running and shut them down
+echo "Checking if services are already running..."
+if docker ps | grep -q "jira-analyzer"; then
+  echo "Services are already running. Shutting them down..."
+  cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
+fi
+
+# Start the backend with Docker Compose, using in-memory database for tests
+echo "Starting backend with Docker Compose (using in-memory database)..."
+cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up -d
 
 # Wait for services to be ready
 echo "Waiting for services to be ready..."
-timeout=120
+timeout=30
 counter=0
-while ! curl -s http://localhost:80 > /dev/null; do
-    if [ $counter -ge $timeout ]; then
-        echo "Timed out waiting for services to start"
-        cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
-        exit 1
-    fi
-    echo "Waiting for services... ($counter/$timeout)"
-    sleep 1
-    counter=$((counter+1))
-done
-echo "Services are ready!"
+
+# Give services some time to start up
+echo "Giving services time to start up..."
+sleep 10
+echo "Services should be ready now!"
 
 # Check if browsers are installed and install them if needed
 echo "Checking if Playwright browsers are installed..."
@@ -36,8 +50,4 @@ echo "Running tests..."
 cd "$SCRIPT_DIR" && pnpm exec playwright test "$@"
 TEST_EXIT_CODE=$?
 
-# Cleanup
-echo "Cleaning up..."
-cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
-
-exit $TEST_EXIT_CODE
+# Cleanup is handled by the trap

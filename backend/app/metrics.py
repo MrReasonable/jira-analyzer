@@ -380,36 +380,47 @@ def calculate_cfd(
         logger.debug(f'Calculating CFD data for date: {date}')
 
         for issue in issues:
-            created_date_obj = parse_jira_datetime(issue.fields.created)
-            if created_date_obj is None:
+            try:
+                created_date_obj = parse_jira_datetime(issue.fields.created)
+                if created_date_obj is None:
+                    skipped_issues += 1
+                    continue
+
+                created_date = created_date_obj.date()
+
+                # Skip issues created after this date
+                if created_date > date:
+                    continue
+
+                # Determine the status of the issue on this date
+                status = issue.fields.status.name
+
+                # If the issue was resolved before this date, it's in the Done state
+                if issue.fields.resolutiondate:
+                    resolved_date_obj = parse_jira_datetime(issue.fields.resolutiondate)
+                    if resolved_date_obj is not None:
+                        resolved_date = resolved_date_obj.date()
+                        if resolved_date <= date:
+                            status = 'Done'
+
+                # Increment the count for this status
+                if status in date_data:
+                    date_data[status] += 1
+                else:
+                    # If status is not in our workflow states, add it to the first non-Done state
+                    for ws in workflow_states:
+                        if ws != 'Done':
+                            date_data[ws] += 1
+                            break
+            except Exception as e:
+                logger.error(f'Error processing issue for CFD: {str(e)}', exc_info=True)
                 skipped_issues += 1
                 continue
-
-            created_date = created_date_obj.date()
-
-            # Skip issues created after this date
-            if created_date > date:
-                continue
-
-            # Determine the status of the issue on this date
-            status = issue.fields.status.name
-
-            # If the issue was resolved before this date, it's in the Done state
-            if issue.fields.resolutiondate:
-                resolved_date_obj = parse_jira_datetime(issue.fields.resolutiondate)
-                if resolved_date_obj is not None:
-                    resolved_date = resolved_date_obj.date()
-                    if resolved_date <= date:
-                        status = 'Done'
-
-            # Increment the count for this status
-            if status in date_data:
-                date_data[status] += 1
 
         result['data'].append(date_data)
 
     if skipped_issues > 0:
-        logger.debug(f'Skipped {skipped_issues} issues due to invalid creation dates')
+        logger.debug(f'Skipped {skipped_issues} issues due to invalid creation dates or errors')
 
     logger.info(f'CFD calculation complete: {len(date_range)} days, {len(workflow_states)} states')
 

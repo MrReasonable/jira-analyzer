@@ -1,41 +1,31 @@
-import { Component, createEffect, onCleanup } from 'solid-js';
-import Chart from 'chart.js/auto';
-import { CfdMetrics } from '../api/jiraApi';
+import { Component, Accessor } from 'solid-js'
+import Chart from 'chart.js/auto'
+import { CfdMetrics } from '../api/jiraApi'
+import { withChart } from './withChart'
 
 interface Props {
-  data: CfdMetrics | null;
-  loading: boolean;
+  data: Accessor<CfdMetrics | null> | CfdMetrics | null
+  loading: Accessor<boolean> | boolean
 }
 
-export const CfdChart: Component<Props> = props => {
-  let chartRef: HTMLCanvasElement | undefined;
-  let chartInstance: Chart | undefined;
-
-  const createChart = () => {
-    // Cleanup previous instance
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-    if (!props.data || !chartRef) return;
-
-    const ctx = chartRef.getContext('2d');
-    if (!ctx) return;
-
+// Create a base chart component using the withChart HOC
+const CfdChartBase = withChart<CfdMetrics>({
+  createChartInstance: (ctx, data) => {
     const colors = [
       'rgba(255, 99, 132, 0.5)',
       'rgba(54, 162, 235, 0.5)',
       'rgba(255, 206, 86, 0.5)',
       'rgba(75, 192, 192, 0.5)',
       'rgba(153, 102, 255, 0.5)',
-    ];
+    ]
 
-    chartInstance = new Chart(ctx, {
+    return new Chart(ctx, {
       type: 'line',
       data: {
-        labels: props.data?.data.map(d => d.date),
-        datasets: props.data?.statuses.map((status, index) => ({
+        labels: data.data.map(d => d.date),
+        datasets: data.statuses.map((status, index) => ({
           label: status,
-          data: props.data?.data.map(d => d[status] as number) || [],
+          data: data.data.map(d => d[status] as number) || [],
           fill: true,
           backgroundColor: colors[index % colors.length],
           borderColor: colors[index % colors.length].replace('0.5', '1'),
@@ -67,33 +57,14 @@ export const CfdChart: Component<Props> = props => {
           },
         },
       },
-    });
-  };
+    })
+  },
+  // CFD doesn't need additional metrics display
+  renderMetrics: () => <></>,
+  handleError: data => !!data.error,
+})
 
-  createEffect(() => {
-    if (!props.loading) {
-      createChart();
-    }
-  });
-
-  onCleanup(() => {
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-  });
-
-  return (
-    <div class="card">
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold">Cumulative Flow Diagram</h2>
-        {props.loading ? (
-          <p>Loading...</p>
-        ) : props.data ? (
-          <canvas ref={chartRef} />
-        ) : (
-          <p>No data available</p>
-        )}
-      </div>
-    </div>
-  );
-};
+// Export the component with the expected interface
+export const CfdChart: Component<Props> = props => {
+  return <CfdChartBase {...props} title="Cumulative Flow Diagram" />
+}
