@@ -1,36 +1,25 @@
-import { Component, createEffect, onCleanup } from 'solid-js';
-import Chart from 'chart.js/auto';
-import { WipMetrics } from '../api/jiraApi';
+import { Component, Accessor } from 'solid-js'
+import Chart from 'chart.js/auto'
+import { WipMetrics } from '../api/jiraApi'
+import { withChart } from './withChart'
 
 interface Props {
-  data: WipMetrics | null;
-  loading: boolean;
+  data: Accessor<WipMetrics | null> | WipMetrics | null
+  loading: Accessor<boolean> | boolean
 }
 
-export const WipChart: Component<Props> = props => {
-  let chartRef: HTMLCanvasElement | undefined;
-  let chartInstance: Chart | undefined;
-
-  const createChart = () => {
-    if (!props.data || !chartRef) return;
-
-    // Cleanup previous instance
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-
-    const ctx = chartRef.getContext('2d');
-    if (!ctx) return;
-
-    chartInstance = new Chart(ctx, {
+// Create a base chart component using the withChart HOC
+const WipChartBase = withChart<WipMetrics>({
+  createChartInstance: (ctx, data) => {
+    return new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: props.data.status,
+        labels: data.status,
         datasets: [
           {
             label: 'Issues',
-            data: props.data.counts,
-            backgroundColor: props.data.status.map(
+            data: data.counts,
+            backgroundColor: data.status.map(
               (_, i) =>
                 [
                   'rgba(255, 99, 132, 0.5)',
@@ -39,7 +28,7 @@ export const WipChart: Component<Props> = props => {
                   'rgba(75, 192, 192, 0.5)',
                 ][i % 4]
             ),
-            borderColor: props.data.status.map(
+            borderColor: data.status.map(
               (_, i) =>
                 [
                   'rgba(255, 99, 132, 1)',
@@ -70,38 +59,17 @@ export const WipChart: Component<Props> = props => {
           },
         },
       },
-    });
-  };
-
-  createEffect(() => {
-    if (!props.loading) {
-      createChart();
-    }
-  });
-
-  onCleanup(() => {
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-  });
-
-  return (
-    <div class="card">
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold">Work in Progress</h2>
-        {props.loading ? (
-          <p>Loading...</p>
-        ) : props.data ? (
-          <>
-            <canvas ref={chartRef} />
-            <div>
-              <p>Total WIP: {props.data.total} issues</p>
-            </div>
-          </>
-        ) : (
-          <p>No data available</p>
-        )}
-      </div>
+    })
+  },
+  renderMetrics: data => (
+    <div>
+      <p>Total WIP: {data.total} issues</p>
     </div>
-  );
-};
+  ),
+  handleError: data => !!data.error,
+})
+
+// Export the component with the expected interface
+export const WipChart: Component<Props> = props => {
+  return <WipChartBase {...props} title="Work in Progress" />
+}

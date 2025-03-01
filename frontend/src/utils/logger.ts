@@ -17,10 +17,10 @@ const DEFAULT_LOG_LEVEL =
     ? LogLevel.NONE
     : import.meta.env.DEV
       ? LogLevel.DEBUG
-      : LogLevel.ERROR;
+      : LogLevel.ERROR
 
 // Current log level
-let currentLogLevel = DEFAULT_LOG_LEVEL;
+let currentLogLevel = DEFAULT_LOG_LEVEL
 
 // Logger functions
 export const logger = {
@@ -28,14 +28,14 @@ export const logger = {
    * Set the current log level
    */
   setLevel(level: LogLevel) {
-    currentLogLevel = level;
+    currentLogLevel = level
   },
 
   /**
    * Get the current log level
    */
   getLevel(): LogLevel {
-    return currentLogLevel;
+    return currentLogLevel
   },
 
   /**
@@ -43,7 +43,7 @@ export const logger = {
    */
   error(message: string, ...args: unknown[]) {
     if (currentLogLevel >= LogLevel.ERROR) {
-      console.error(`[ERROR] ${message}`, ...args);
+      console.error(`[ERROR] ${message}`, ...args)
     }
   },
 
@@ -52,7 +52,7 @@ export const logger = {
    */
   warn(message: string, ...args: unknown[]) {
     if (currentLogLevel >= LogLevel.WARN) {
-      console.warn(`[WARN] ${message}`, ...args);
+      console.warn(`[WARN] ${message}`, ...args)
     }
   },
 
@@ -61,7 +61,7 @@ export const logger = {
    */
   info(message: string, ...args: unknown[]) {
     if (currentLogLevel >= LogLevel.INFO) {
-      console.info(`[INFO] ${message}`, ...args);
+      console.info(`[INFO] ${message}`, ...args)
     }
   },
 
@@ -70,7 +70,7 @@ export const logger = {
    */
   debug(message: string, ...args: unknown[]) {
     if (currentLogLevel >= LogLevel.DEBUG) {
-      console.debug(`[DEBUG] ${message}`, ...args);
+      console.debug(`[DEBUG] ${message}`, ...args)
     }
   },
-};
+}

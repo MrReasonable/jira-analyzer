@@ -1,36 +1,28 @@
-import { Component, createEffect, onCleanup } from 'solid-js';
-import Chart from 'chart.js/auto';
-import { CycleTimeMetrics } from '../api/jiraApi';
+import { Component, Accessor } from 'solid-js'
+import Chart from 'chart.js/auto'
+import { CycleTimeMetrics } from '../api/jiraApi'
+import { withChart } from './withChart'
 
 interface Props {
-  data: (CycleTimeMetrics & { error?: string }) | null;
-  loading: boolean;
+  data:
+    | Accessor<(CycleTimeMetrics & { error?: string }) | null>
+    | (CycleTimeMetrics & { error?: string })
+    | null
+  loading: Accessor<boolean> | boolean
 }
 
-export const CycleTimeChart: Component<Props> = props => {
-  let chartRef: HTMLCanvasElement | undefined;
-  let chartInstance: Chart | undefined;
+// Create a base chart component using the withChart HOC
+const CycleTimeChartBase = withChart<CycleTimeMetrics>({
+  createChartInstance: (ctx, data) => {
+    const binSize = 5 // 5-day bins
+    const bins: { [key: string]: number } = {}
+    data.data.forEach(days => {
+      const binIndex = Math.floor(days / binSize) * binSize
+      const binLabel = `${binIndex}-${binIndex + binSize}`
+      bins[binLabel] = (bins[binLabel] || 0) + 1
+    })
 
-  const createChart = () => {
-    if (!props.data || !chartRef) return;
-
-    // Cleanup previous instance
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-
-    const binSize = 5; // 5-day bins
-    const bins: { [key: string]: number } = {};
-    props.data.data.forEach(days => {
-      const binIndex = Math.floor(days / binSize) * binSize;
-      const binLabel = `${binIndex}-${binIndex + binSize}`;
-      bins[binLabel] = (bins[binLabel] || 0) + 1;
-    });
-
-    const ctx = chartRef.getContext('2d');
-    if (!ctx) return;
-
-    chartInstance = new Chart(ctx, {
+    return new Chart(ctx, {
       type: 'bar',
       data: {
         labels: Object.keys(bins),
@@ -68,47 +60,24 @@ export const CycleTimeChart: Component<Props> = props => {
           },
         },
       },
-    });
-  };
-
-  createEffect(() => {
-    if (!props.loading) {
-      createChart();
-    }
-  });
-
-  onCleanup(() => {
-    if (chartInstance) {
-      chartInstance.destroy();
-    }
-  });
-
-  return (
-    <div class="card">
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold">Cycle Time Analysis</h2>
-        {props.loading ? (
-          <p>Loading...</p>
-        ) : props.data?.error ? (
-          <p>No data available</p>
-        ) : props.data ? (
-          <>
-            <canvas ref={chartRef} />
-            <div class="space-y-1">
-              <p>Average: {props.data.average.toFixed(1)} days</p>
-              <p>Median: {props.data.median} days</p>
-              <p>
-                Range: {props.data.min}-{props.data.max} days
-              </p>
-              <p class="text-sm text-gray-600">
-                From {props.data.start_state} to {props.data.end_state}
-              </p>
-            </div>
-          </>
-        ) : (
-          <p>No data available</p>
-        )}
-      </div>
+    })
+  },
+  renderMetrics: data => (
+    <div class="space-y-1">
+      <p>Average: {data.average.toFixed(1)} days</p>
+      <p>Median: {data.median} days</p>
+      <p>
+        Range: {data.min}-{data.max} days
+      </p>
+      <p class="text-sm text-gray-600">
+        From {data.start_state} to {data.end_state}
+      </p>
     </div>
-  );
-};
+  ),
+  handleError: data => !!data.error,
+})
+
+// Export the component with the expected interface
+export const CycleTimeChart: Component<Props> = props => {
+  return <CycleTimeChartBase {...props} title="Cycle Time Analysis" />
+}

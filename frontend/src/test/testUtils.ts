@@ -55,18 +55,18 @@ export const mockData = {
       jira_email: 'another@example.com',
     },
   ],
-};
+}
 
 // Setup mock functions for jiraApi
 export const setupJiraApiMocks = async () => {
   // Import the mocked jiraApi from handlers
-  const { mockHandlers } = await import('../mocks/handlers');
+  const { mockHandlers } = await import('../mocks/handlers')
 
   // Reset all mocks using the mockHandlers.resetMocks function
-  mockHandlers.resetMocks();
+  mockHandlers.resetMocks()
 
   // Import the mocked jiraApi
-  const { jiraApi } = await import('../api/jiraApi');
+  const { jiraApi } = await import('../api/jiraApi')
 
-  return jiraApi;
-};
+  return jiraApi
+}

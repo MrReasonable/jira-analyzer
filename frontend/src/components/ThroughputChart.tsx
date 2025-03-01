@@ -1,34 +1,17 @@
-import { Component, createEffect, onCleanup, createMemo } from 'solid-js';
-import Chart from 'chart.js/auto';
-import { ThroughputMetrics } from '../api/jiraApi';
+import { Component, Accessor } from 'solid-js'
+import Chart from 'chart.js/auto'
+import { ThroughputMetrics } from '../api/jiraApi'
+import { withChart } from './withChart'
 
 interface Props {
-  data: ThroughputMetrics | null;
-  loading: boolean;
+  data: Accessor<ThroughputMetrics | null> | ThroughputMetrics | null
+  loading: Accessor<boolean> | boolean
 }
 
-export const ThroughputChart: Component<Props> = props => {
-  let chartRef: HTMLCanvasElement | undefined;
-  let chartInstance: Chart | undefined;
-
-  // Helper functions to handle props consistently
-  const getData = createMemo(() => props.data);
-  const isLoading = createMemo(() => props.loading);
-
-  const createChart = () => {
-    const data = getData();
-    if (!data || !chartRef) return;
-
-    // Always destroy previous instance
-    if (chartInstance) {
-      chartInstance.destroy();
-      chartInstance = undefined;
-    }
-
-    const ctx = chartRef.getContext('2d');
-    if (!ctx) return;
-
-    chartInstance = new Chart(ctx, {
+// Create a base chart component using the withChart HOC
+const ThroughputChartBase = withChart<ThroughputMetrics>({
+  createChartInstance: (ctx, data) => {
+    return new Chart(ctx, {
       type: 'line',
       data: {
         labels: data.dates,
@@ -66,44 +49,16 @@ export const ThroughputChart: Component<Props> = props => {
           },
         },
       },
-    });
-  };
-
-  createEffect(() => {
-    // Trigger effect on both loading and data changes
-    const data = getData();
-    const loading = isLoading();
-
-    if (!loading && data) {
-      // Create chart directly in the effect
-      createChart();
-    }
-  });
-
-  onCleanup(() => {
-    if (chartInstance) {
-      chartInstance.destroy();
-      chartInstance = undefined;
-    }
-  });
-
-  return (
-    <div class="card">
-      <div class="space-y-4">
-        <h2 class="text-xl font-bold">Throughput Analysis</h2>
-        {isLoading() ? (
-          <p>Loading...</p>
-        ) : getData() ? (
-          <>
-            <canvas ref={el => (chartRef = el)} />
-            <div>
-              <p>Average Throughput: {getData()?.average.toFixed(1)} issues per day</p>
-            </div>
-          </>
-        ) : (
-          <p>No data available</p>
-        )}
-      </div>
+    })
+  },
+  renderMetrics: data => (
+    <div>
+      <p>Average Throughput: {data.average.toFixed(1)} issues per day</p>
     </div>
-  );
-};
+  ),
+})
+
+// Export the component with the expected interface
+export const ThroughputChart: Component<Props> = props => {
+  return <ThroughputChartBase {...props} title="Throughput Analysis" />
+}

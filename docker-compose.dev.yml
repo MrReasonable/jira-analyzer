@@ -18,25 +18,26 @@ services:
       # Development Configuration
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-      # Mock Jira for testing
+      # Testing Configuration
       - USE_MOCK_JIRA=${USE_MOCK_JIRA:-true}
+      - USE_IN_MEMORY_DB=${USE_IN_MEMORY_DB:-false}
     volumes:
       - ./backend:/app
       - jira-analyzer-data:/app/data
+    # Override the default command to remove --wait-for-client
+    command: ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
-      interval: 30s
+      interval: 5s
       timeout: 10s
-      retries: 3
+      retries: 10
+      start_period: 10s
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: development-nonroot
-      args:
-        USER_ID: ${USER_ID:-1000}
-        GROUP_ID: ${GROUP_ID:-1000}
+      target: development
     container_name: jira-analyzer-frontend-dev
     # Only expose debug port, web access should be through Caddy
     ports:
@@ -53,9 +54,10 @@ services:
       - backend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5173"]
-      interval: 30s
+      interval: 5s
       timeout: 10s
-      retries: 3
+      retries: 10
+      start_period: 10s
 
   caddy:
     image: caddy:2-alpine

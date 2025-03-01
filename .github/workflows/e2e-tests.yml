@@ -29,6 +29,14 @@ jobs:
       run: |
         cp .env.example .env
         echo "USE_MOCK_JIRA=true" >> .env
+        echo "USE_IN_MEMORY_DB=true" >> .env
+
+    - name: Check and stop any running services
+      run: |
+        if docker ps | grep -q "jira-analyzer"; then
+          echo "Services are already running. Shutting them down..."
+          docker-compose -f docker-compose.dev.yml down
+        fi
 
     - name: Start backend with Docker Compose
       run: |

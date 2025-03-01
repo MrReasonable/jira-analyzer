@@ -1,8 +1,8 @@
 // @ts-check
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import playwrightPlugin from 'eslint-plugin-playwright';
-import prettierConfig from 'eslint-config-prettier';
+import eslint from '@eslint/js'
+import tseslint from 'typescript-eslint'
+import playwrightPlugin from 'eslint-plugin-playwright'
+import prettierConfig from 'eslint-config-prettier'
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -20,7 +20,7 @@ export default tseslint.config(
     },
     rules: {
       // Custom rules
-      'no-console': 'warn',
+      'no-console': 'off', // Allow console statements in e2e tests for logging
       'no-unused-vars': 'off', // TypeScript handles this
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -31,4 +31,4 @@ export default tseslint.config(
       'playwright/prefer-web-first-assertions': 'warn',
     },
   }
-);
+)

@@ -55,9 +55,9 @@ def get_logger(name: str, level: Optional[LogLevel] = None) -> logging.Logger:
             if env_level_str in [e.value for e in LogLevel]
             else LogLevel.INFO
         )
-        effective_level: LogLevel = level or env_level
+        selected_level: LogLevel = level or env_level
         # Use explicit cast to avoid mypy errors
-        log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
+        log_level = LOG_LEVEL_MAP.get(selected_level, logging.INFO)
 
     # Create logger
     logger = logging.getLogger(name)
@@ -91,9 +91,14 @@ def configure_logging(level: Optional[LogLevel] = None) -> None:
     Args:
         level: Optional log level to set for all loggers.
     """
+    # Define the config_level variable once
+    config_level: LogLevel
+
     # If running tests, use CRITICAL level to suppress most logs
     if os.environ.get('PYTEST_CURRENT_TEST') is not None:
         log_level = logging.CRITICAL
+        # Use the level parameter for logging the configuration message
+        config_level = level or LogLevel.CRITICAL
     else:
         # Determine log level from parameter or environment
         env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
@@ -103,9 +108,9 @@ def configure_logging(level: Optional[LogLevel] = None) -> None:
             if env_level_str in [e.value for e in LogLevel]
             else LogLevel.INFO
         )
-        effective_level: LogLevel = level or env_level
+        config_level = level or env_level
         # Use explicit cast to avoid mypy errors
-        log_level = LOG_LEVEL_MAP.get(effective_level, logging.INFO)
+        log_level = LOG_LEVEL_MAP.get(config_level, logging.INFO)
 
     # Configure root logger
     root_logger = logging.getLogger()
@@ -129,7 +134,7 @@ def configure_logging(level: Optional[LogLevel] = None) -> None:
     root_logger.addHandler(handler)
 
     # Log the configuration
-    logger.info(f'Logging configured with level: {level or env_level}')
+    logger.info(f'Logging configured with level: {config_level}')
 
 
 # Configure logging when the module is imported

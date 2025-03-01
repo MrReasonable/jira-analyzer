@@ -1,4 +1,4 @@
-import type { FullConfig } from '@playwright/test';
+import type { FullConfig } from '@playwright/test'
 
 // We're stopping the servers manually in the run-tests.sh script
 async function globalTeardown(_config: FullConfig) {
@@ -6,4 +6,4 @@ async function globalTeardown(_config: FullConfig) {
   // Log statement removed
 }
 
-export default globalTeardown;
+export default globalTeardown

@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
 // Removed unused imports and __dirname declaration
 
 /**
@@ -34,11 +34,20 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:80',
+    baseURL: 'http://localhost',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Configure screenshots */
+    screenshot: {
+      mode: 'only-on-failure',
+      fullPage: true,
+    },
   },
+
+  /* Configure directories for artifacts */
+  outputDir: './test-results/',
 
   /* Configure projects for major browsers */
   projects: [
@@ -49,4 +58,4 @@ export default defineConfig({
   ],
 
   /* We're starting the servers manually in the run-tests.sh script */
-});
+})
