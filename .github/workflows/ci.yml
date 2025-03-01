@@ -211,7 +211,7 @@ jobs:
 
       - name: Build frontend Docker image
         if: steps.check-act.outputs.is_act != 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./frontend
           push: false
@@ -222,7 +222,7 @@ jobs:
 
       - name: Build backend Docker image
         if: steps.check-act.outputs.is_act != 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: false
