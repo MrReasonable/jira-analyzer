@@ -39,20 +39,33 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
     }
   }
 
-  const handleConfigDelete = async (name: string) => {
+  const handleConfigDelete = async (name: string): Promise<boolean> => {
     logger.debug('Deleting Jira configuration', { name })
     try {
       await jiraApi.deleteConfiguration(name)
+
+      // Clear selected config if it's the one being deleted
       if (selectedConfig() === name) {
         setSelectedConfig(undefined)
         logger.debug('Cleared selected configuration')
       }
-      // Refresh the configurations list
+
+      // Update the configurations list immediately to reflect the deletion
+      setConfigurations(prev => prev.filter(config => config.name !== name))
+
+      // Also refresh from the server to ensure consistency
       await loadConfigurations()
+
       logger.info('Jira configuration deleted', { name })
+      return true
     } catch (err) {
       logger.error('Failed to delete configuration:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
+
+      // We'll display the error through the error signal, no need for alert
+      // The error will be shown in the UI through the error accessor
+
+      return false
     }
   }
 

@@ -29,7 +29,7 @@ describe('ConfigurationsHeader', () => {
         loading={loading}
         selectedConfig={selectedConfig}
         onSelect={vi.fn()}
-        onDelete={vi.fn()}
+        onDelete={vi.fn().mockResolvedValue(true)}
         onAddClick={vi.fn()}
       />
     ))

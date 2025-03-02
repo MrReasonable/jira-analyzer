@@ -10,7 +10,7 @@ help:
 install: ## Install all dependencies for frontend, backend, and e2e-tests
 	cd frontend && pnpm install
 	cd backend && pip install -r requirements.txt
-	cd e2e-tests && npm install && pnpm run install:browsers
+	cd e2e-tests && pnpm install && pnpm run install:browsers
 	pip install pre-commit
 
 setup-pre-commit: ## Install pre-commit hooks
@@ -28,11 +28,25 @@ lint: frontend-lint backend-lint e2e-lint ## Run linting for both frontend, back
 
 format: frontend-format backend-format e2e-format ## Format code in both frontend, backend, and e2e-tests
 
-clean: ## Clean up build artifacts and cache
-	cd frontend && rm -rf dist node_modules
+clean: ## Clean up build artifacts, cache, logs, and temporary files
+	# Frontend cleanup
+	cd frontend && rm -rf dist dist-ssr node_modules coverage logs *.log npm-debug.log* yarn-debug.log* yarn-error.log* pnpm-debug.log* lerna-debug.log* .pnpm-store *.tsbuildinfo *.local
+
+	# Backend cleanup
 	cd backend && find . -type d -name "__pycache__" -exec rm -rf {} +
 	cd backend && find . -type f -name "*.pyc" -delete
-	cd e2e-tests && rm -rf node_modules test-results playwright-report blob-report playwright/.cache
+	cd backend && find . -type f -name "*.pyo" -delete
+	cd backend && find . -type f -name "*.pyd" -delete
+	cd backend && find . -type f -name "*.log" -delete
+	cd backend && rm -rf .pytest_cache .coverage htmlcov .ruff_cache .mypy_cache .tox coverage.xml nosetests.xml pip-log.txt pip-delete-this-directory.txt *.egg-info .installed.cfg *.egg
+	cd backend && rm -f jira_analyzer.db
+
+	# E2E tests cleanup
+	cd e2e-tests && rm -rf node_modules test-results playwright-report blob-report playwright/.cache screenshots logs *.log npm-debug.log* yarn-debug.log* yarn-error.log* pnpm-debug.log* *.tsbuildinfo
+
+	# Project-level cleanup
+	rm -rf tmp .aider* .cache
+	find . -type f -name "*.log" -delete
 
 build: ## Build the production version of the application
 	docker build -t jira-analyzer-frontend -f frontend/Dockerfile --target nginx frontend
@@ -194,16 +208,16 @@ e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
 	cd e2e-tests && CI=true pnpm run run-tests
 
 e2e-lint: ## Run linting for e2e-tests
-	cd e2e-tests && npm run lint
+	cd e2e-tests && pnpm run lint
 
 e2e-lint-fix: ## Auto-fix linting issues in e2e-tests
-	cd e2e-tests && npm run lint:fix
+	cd e2e-tests && pnpm run lint:fix
 
 e2e-format: ## Format e2e-tests code
-	cd e2e-tests && npm run format
+	cd e2e-tests && pnpm run format
 
 e2e-format-check: ## Check e2e-tests code formatting
-	cd e2e-tests && npm run format:check
+	cd e2e-tests && pnpm run format:check
 
 test-github-actions: ## Test GitHub Actions workflows locally using act
 	@if ! command -v act &> /dev/null; then \

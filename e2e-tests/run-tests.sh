@@ -3,6 +3,18 @@
 # Function to clean up resources
 cleanup() {
   echo "Cleaning up resources..."
+
+  # Kill the log capturing process if it exists
+  if [ -n "$BACKEND_LOGS_PID" ] && ps -p $BACKEND_LOGS_PID > /dev/null; then
+    echo "Stopping log capture process..."
+    kill $BACKEND_LOGS_PID
+  fi
+
+  # Print log location if logs were captured
+  if [ -f "$LOGS_DIR/backend.log" ]; then
+    echo "Backend logs saved to: $LOGS_DIR/backend.log"
+  fi
+
   cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
   exit $TEST_EXIT_CODE
 }
@@ -24,9 +36,27 @@ if docker ps | grep -q "jira-analyzer"; then
   cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml down
 fi
 
+# Create logs directory if it doesn't exist and clear old logs
+LOGS_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOGS_DIR"
+
+# Create screenshots directory if it doesn't exist
+SCREENSHOTS_DIR="$SCRIPT_DIR/screenshots"
+mkdir -p "$SCREENSHOTS_DIR"
+
+# Clear old log files and screenshots
+echo "Clearing old log files and screenshots..."
+rm -f "$LOGS_DIR"/*.log
+rm -f "$SCREENSHOTS_DIR"/*.png
+
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
 cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up -d
+
+# Start capturing logs in the background
+echo "Capturing backend logs to $LOGS_DIR/backend.log..."
+docker logs -f jira-analyzer-backend-dev > "$LOGS_DIR/backend.log" 2>&1 &
+BACKEND_LOGS_PID=$!
 
 # Wait for services to be ready
 echo "Waiting for services to be ready..."
@@ -37,6 +67,12 @@ counter=0
 echo "Giving services time to start up..."
 sleep 10
 echo "Services should be ready now!"
+
+# Check if node_modules exists and install dependencies if needed
+if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
+  echo "node_modules not found. Installing dependencies..."
+  cd "$SCRIPT_DIR" && pnpm install
+fi
 
 # Check if browsers are installed and install them if needed
 echo "Checking if Playwright browsers are installed..."

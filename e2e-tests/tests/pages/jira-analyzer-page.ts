@@ -154,14 +154,30 @@ export class JiraAnalyzerPage {
    * @param name The name of the configuration to delete (defaults to 'Test Configuration')
    */
   async deleteConfiguration(name: string = 'Test Configuration') {
-    // Click the "Delete" button for the configuration
-    await this.page.getByTestId(`delete-${name}`).click()
+    // Set up the dialog handler BEFORE clicking the delete button
+    this.page.on('dialog', async dialog => {
+      console.log('Accepting confirmation dialog');
+      await dialog.accept();
+    });
 
-    // Handle the confirmation dialog
-    await this.page.once('dialog', async dialog => {
-      console.log('Accepting confirmation dialog')
-      await dialog.accept()
-    })
+    // Take a screenshot before clicking delete
+    await this.page.screenshot({ path: 'screenshots/before-delete.png' });
+
+    // Find the delete button and force click it
+    console.log(`Clicking delete button for configuration: ${name}`);
+    const deleteButton = this.page.getByTestId(`delete-${name}`);
+
+    // Ensure the button is visible and clickable
+    await expect(deleteButton).toBeVisible();
+
+    // Click with force option to ensure the click is registered
+    await deleteButton.click({ force: true });
+
+    // Take a screenshot after clicking delete
+    await this.page.screenshot({ path: 'screenshots/after-delete.png' });
+
+    // Wait for the configuration to be removed from the DOM
+    await this.page.waitForSelector(`text=${name}`, { state: 'detached' });
   }
 
   /**

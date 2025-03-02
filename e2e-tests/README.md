@@ -133,7 +133,39 @@ make e2e-format
 make e2e-format-check
 ```
 
-## CI Integration
+## Logging
+
+The `run-tests.sh` script now captures backend logs during test execution. This helps with debugging test failures, especially when they're related to backend issues.
+
+### Log Location
+
+Backend logs are saved to:
+- `e2e-tests/logs/backend.log`
+
+These logs contain all output from the backend server, including:
+- API request/response details
+- Error messages
+- Debug information
+- Database operations
+
+### Viewing Logs
+
+After running tests, you can examine the logs to diagnose issues:
+
+```bash
+# View the entire log file
+cat e2e-tests/logs/backend.log
+
+# Search for errors
+grep "ERROR" e2e-tests/logs/backend.log
+
+# Follow logs in real-time during test execution
+tail -f e2e-tests/logs/backend.log
+```
+
+### CI Integration
+
+In CI environments, backend logs are automatically captured and uploaded as artifacts. You can access them from the GitHub Actions workflow run page under the "Artifacts" section.
 
 To run these tests in CI, you can use the following command:
 
@@ -146,3 +178,4 @@ This will:
 - Run tests in headless mode
 - Not reuse existing servers
 - Retry failed tests
+- Capture and upload backend logs

@@ -17,8 +17,8 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '23'
-        cache: 'npm'
-        cache-dependency-path: 'e2e-tests/package-lock.json'
+        cache: 'pnpm'
+        cache-dependency-path: 'e2e-tests/pnpm-lock.yaml'
 
     - name: Install Docker
       run: |
@@ -42,6 +42,18 @@ jobs:
       run: |
         docker-compose -f docker-compose.dev.yml up -d
 
+        # Create logs and screenshots directories
+        mkdir -p e2e-tests/logs
+        mkdir -p e2e-tests/screenshots
+
+        # Clear old logs and screenshots
+        rm -f e2e-tests/logs/*.log
+        rm -f e2e-tests/screenshots/*.png
+
+        # Start capturing logs in the background
+        docker logs -f jira-analyzer-backend-dev > e2e-tests/logs/backend.log 2>&1 &
+        echo $! > .docker_logs_pid
+
     - name: Install frontend dependencies
       run: |
         cd frontend
@@ -51,24 +63,25 @@ jobs:
     - name: Install e2e-tests dependencies
       run: |
         cd e2e-tests
-        npm install
+        npm install -g pnpm
+        pnpm install
 
     - name: Install Playwright browsers
       run: |
         cd e2e-tests
-        npx playwright install --with-deps
+        pnpm exec playwright install --with-deps
 
     - name: Lint and format e2e-tests
       run: |
         cd e2e-tests
-        npm run lint
-        npm run format:check
+        pnpm run lint
+        pnpm run format:check
 
     - name: Run end-to-end tests
       run: |
         cd e2e-tests
         chmod +x run-tests.sh
-        CI=true npm run run-tests
+        CI=true pnpm run run-tests
 
     - name: Upload test results
       if: always()
@@ -78,7 +91,24 @@ jobs:
         path: e2e-tests/playwright-report/
         retention-days: 30
 
+    - name: Upload backend logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-logs
+        path: e2e-tests/logs/
+        retention-days: 30
+
     - name: Stop Docker Compose
       if: always()
       run: |
+        # Kill the log capturing process if it exists
+        if [ -f .docker_logs_pid ]; then
+          LOGS_PID=$(cat .docker_logs_pid)
+          if ps -p $LOGS_PID > /dev/null; then
+            echo "Stopping log capture process..."
+            kill $LOGS_PID || true
+          fi
+        fi
+
         docker-compose -f docker-compose.dev.yml down
