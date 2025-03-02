@@ -1,5 +1,5 @@
 # Base stage for common dependencies
-FROM python:3.12-slim AS base
+FROM python:3.13-slim AS base
 
 WORKDIR /app
 
@@ -107,7 +107,7 @@ USER appuser
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # Alpine-based production alternative (smaller image)
-FROM python:3.12-alpine AS alpine
+FROM python:3.13-alpine AS alpine
 
 WORKDIR /app
 
