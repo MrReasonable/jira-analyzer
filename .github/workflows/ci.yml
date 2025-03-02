@@ -18,12 +18,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '23'
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: '10.5.0'
+          version: '10.5.2'
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -51,29 +51,29 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./frontend
-        run: pnpm install --no-optional || pnpm install --no-optional --ignore-scripts
+        run: |
+          # Clean any existing node_modules to avoid dependency conflicts
+          rm -rf node_modules
+          # Force reinstall with platform-specific dependencies
+          pnpm install --force
+
+          # Explicitly install the missing optional dependency for rollup
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            # For Linux runners, ensure the correct platform-specific package is installed
+            pnpm add -D @rollup/rollup-linux-x64-gnu
+          fi
 
       - name: Lint frontend
         working-directory: ./frontend
         run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, using lint:fix instead of lint"
-            pnpm run lint:fix || echo "Linting with fixes completed with warnings"
-          else
-            echo "Running in GitHub Actions, checking linting"
-            pnpm run lint
-          fi
+          echo "Running frontend linting"
+          pnpm run lint
 
       - name: Check frontend formatting
         working-directory: ./frontend
         run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, formatting files instead of checking"
-            pnpm run format
-          else
-            echo "Running in GitHub Actions, checking formatting"
-            pnpm run format:check
-          fi
+          echo "Checking frontend formatting"
+          pnpm run format:check
 
       - name: Type check frontend
         working-directory: ./frontend
@@ -82,12 +82,8 @@ jobs:
       - name: Test frontend
         working-directory: ./frontend
         run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, attempting to run tests with fallback"
-            pnpm run test || echo "Tests failed, but continuing in local environment"
-          else
-            echo "Running in GitHub Actions, running tests"
-            pnpm run test
+          echo "Running frontend tests"
+          pnpm run test
 
   backend-checks:
     name: Backend Checks
@@ -100,68 +96,69 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
+
+      - name: Setup Python virtual environment
+        working-directory: ./backend
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
       - name: Install backend dependencies
         working-directory: ./backend
         run: |
-          python -m pip install --upgrade pip
+          . .venv/bin/activate
           pip install -r requirements.txt
 
       - name: Lint backend with Ruff
         working-directory: ./backend
         run: |
+          . .venv/bin/activate
           pip install ruff
           ruff check app tests
 
       - name: Format backend with Ruff
         working-directory: ./backend
         run: |
+          . .venv/bin/activate
           pip install ruff
           echo "Formatting files with Ruff"
           ruff format app tests
-          if [ -z "$ACT" ]; then
-            echo "Verifying formatting in GitHub Actions"
-            ruff format --check app tests
-          fi
+          echo "Verifying formatting"
+          ruff format --check app tests
 
       - name: Type check backend with MyPy
         working-directory: ./backend
         run: |
+          . .venv/bin/activate
           pip install mypy
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, skipping type checking errors"
-            mypy app --exclude=app/migrations --ignore-missing-imports || echo "Type checking errors found, but continuing in local environment"
-          else
-            echo "Running in GitHub Actions, using strict type checking"
-            mypy app --exclude=app/migrations
+          echo "Running type checking with MyPy"
+          mypy app --exclude=app/migrations --ignore-missing-imports
 
       - name: Security check with Bandit
         working-directory: ./backend
         run: |
+          . .venv/bin/activate
           pip install bandit[toml]
           bandit -c pyproject.toml -r app
 
       - name: Run backend unit tests
         working-directory: ./backend
         run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, running tests with -v flag"
-            pytest tests/unit -v
-          else
-            echo "Running in GitHub Actions, running tests normally"
-            pytest tests/unit
+          . .venv/bin/activate
+          echo "Running backend unit tests"
+          pytest tests/unit -v
 
       - name: Run backend integration tests
         working-directory: ./backend
         run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, skipping integration tests for faster local testing"
-            echo "Integration tests will be run in the actual GitHub Actions environment"
-          else
-            echo "Running in GitHub Actions, running integration tests"
-            pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py
+          . .venv/bin/activate
+          echo "Running backend integration tests"
+          pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py -v
 
   docker-build-test:
     name: Test Docker Build
@@ -172,30 +169,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if running in act
-        id: check-act
-        run: |
-          if [ -n "$ACT" ]; then
-            echo "Running in act environment, will use simplified Docker build"
-            echo "is_act=true" >> $GITHUB_OUTPUT
-          else
-            echo "Running in GitHub Actions, will use full Docker build"
-            echo "is_act=false" >> $GITHUB_OUTPUT
-
       - name: Set up Docker Buildx
-        if: steps.check-act.outputs.is_act != 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Simplified Docker build check (for act)
-        if: steps.check-act.outputs.is_act == 'true'
-        run: |
-          echo "Skipping actual Docker builds in act environment to avoid Docker-in-Docker issues"
-          echo "Checking Dockerfiles for syntax errors instead"
-          docker run --rm -v $(pwd)/frontend/Dockerfile:/Dockerfile replicated/dockerfilelint /Dockerfile || echo "Frontend Dockerfile has warnings but continuing"
-          docker run --rm -v $(pwd)/backend/Dockerfile:/Dockerfile replicated/dockerfilelint /Dockerfile || echo "Backend Dockerfile has warnings but continuing"
-
       - name: Build frontend Docker image
-        if: steps.check-act.outputs.is_act != 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./frontend
@@ -206,7 +183,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build backend Docker image
-        if: steps.check-act.outputs.is_act != 'true'
         uses: docker/build-push-action@v6
         with:
           context: ./backend
