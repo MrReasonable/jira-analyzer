@@ -19,12 +19,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '23'
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: '10.5.0'
+          version: '10.5.2'
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -56,7 +56,7 @@ jobs:
           name: frontend-coverage
           fail_ci_if_error: false
           verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN || '' }}
 
   backend-coverage:
     name: Backend Test Coverage
@@ -69,7 +69,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install backend dependencies
@@ -87,7 +87,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           directory: ./backend
-          file: ./backend/coverage.xml
+          files: ./backend/coverage.xml
           flags: backend
           name: backend-coverage
           fail_ci_if_error: false
