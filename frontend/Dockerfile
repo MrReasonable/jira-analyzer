@@ -1,5 +1,5 @@
 # Base stage for common dependencies
-FROM node:22-slim AS base
+FROM node:23-slim AS base
 
 ARG PNPM_VERSION=10.5.2
 

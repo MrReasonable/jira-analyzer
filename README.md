@@ -225,6 +225,45 @@ The end-to-end tests:
 
 **Note:** Make sure Docker is running before executing the end-to-end tests, as they rely on Docker Compose to start the backend services.
 
+## Version Management
+
+The project uses a centralized version management system to ensure consistent language versions across all configuration files, including GitHub Actions workflows and Docker files.
+
+### Centralized Version File
+
+All language versions are defined in a single source of truth file:
+
+```json
+// versions.json
+{
+  "node": "23",
+  "python": "3.12",
+  "pnpm": "10.5.2"
+}
+```
+
+### Updating Versions
+
+To update language versions across all configuration files:
+
+1. Edit the `versions.json` file with the desired versions
+2. Run the update script:
+   ```bash
+   make update-versions
+   ```
+
+This will automatically update:
+- GitHub Actions workflows
+- Dockerfiles
+- mise.toml (for local development)
+
+### Supported Languages
+
+The version management system currently supports:
+- Node.js
+- Python
+- PNPM
+
 ## Architecture
 
 ### Backend (Python/FastAPI)

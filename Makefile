@@ -1,6 +1,6 @@
 # Makefile for Jira Analyzer project
 
-.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit
+.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions
 
 # Show help message for all make commands
 help:
@@ -15,6 +15,9 @@ install: ## Install all dependencies for frontend, backend, and e2e-tests
 
 setup-pre-commit: ## Install pre-commit hooks
 	pre-commit install
+
+update-versions: ## Update language versions across all configuration files
+	node update-versions.js
 
 dev: ## Start development servers for both frontend and backend
 	docker-compose -f docker-compose.dev.yml up --build
