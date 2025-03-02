@@ -201,3 +201,35 @@ e2e-format: ## Format e2e-tests code
 
 e2e-format-check: ## Check e2e-tests code formatting
 	cd e2e-tests && npm run format:check
+
+test-github-actions: ## Test GitHub Actions workflows locally using act
+	@if ! command -v act &> /dev/null; then \
+		echo "Error: 'act' is not installed. Please install it first:"; \
+		echo "  - macOS: brew install act"; \
+		echo "  - Linux: https://github.com/nektos/act#installation"; \
+		exit 1; \
+	fi
+	@echo "Running GitHub Actions CI workflow locally..."
+	act -j frontend-checks -j backend-checks --workflows .github/workflows/ci.yml --container-architecture linux/amd64
+
+test-github-actions-ci: ## Test GitHub Actions CI workflow locally using act
+	@if ! command -v act &> /dev/null; then \
+		echo "Error: 'act' is not installed. Please install it first:"; \
+		echo "  - macOS: brew install act"; \
+		echo "  - Linux: https://github.com/nektos/act#installation"; \
+		exit 1; \
+	fi
+	@echo "Running GitHub Actions CI workflow locally..."
+	act --workflows .github/workflows/ci.yml --container-architecture linux/amd64
+
+test-github-actions-e2e: ## Test GitHub Actions E2E workflow locally using act
+	@if ! command -v act &> /dev/null; then \
+		echo "Error: 'act' is not installed. Please install it first:"; \
+		echo "  - macOS: brew install act"; \
+		echo "  - Linux: https://github.com/nektos/act#installation"; \
+		exit 1; \
+	fi
+	@echo "Running GitHub Actions E2E tests workflow locally..."
+	act --workflows .github/workflows/e2e-tests.yml --container-architecture linux/amd64
+
+test-github-actions-all: test-github-actions-ci test-github-actions-e2e ## Test all GitHub Actions workflows locally
