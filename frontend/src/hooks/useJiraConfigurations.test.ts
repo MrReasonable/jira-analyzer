@@ -83,17 +83,43 @@ describe('useJiraConfigurations', () => {
     await result.handleConfigSelect('Config 1')
     expect(result.selectedConfig()).toBe('Config 1')
 
+    // Mock successful deletion
+    vi.mocked(jiraApi.deleteConfiguration).mockResolvedValue(undefined)
+
     // Then delete it
-    await result.handleConfigDelete('Config 1')
+    const success = await result.handleConfigDelete('Config 1')
 
     // Check that the API was called
     expect(jiraApi.deleteConfiguration).toHaveBeenCalledWith('Config 1')
+
+    // Check that the operation was successful
+    expect(success).toBe(true)
 
     // Check that the selected config was cleared
     expect(result.selectedConfig()).toBeUndefined()
 
     // Check that configurations were reloaded
     expect(jiraApi.listConfigurations).toHaveBeenCalledTimes(2)
+  })
+
+  it('handles deletion failure correctly', async () => {
+    const { result } = renderHook(() => useJiraConfigurations(mockJqlChange))
+
+    // Mock failed deletion
+    const mockError = new Error('Failed to delete configuration')
+    vi.mocked(jiraApi.deleteConfiguration).mockRejectedValue(mockError)
+
+    // Attempt to delete
+    const success = await result.handleConfigDelete('Config 1')
+
+    // Check that the API was called
+    expect(jiraApi.deleteConfiguration).toHaveBeenCalledWith('Config 1')
+
+    // Check that the operation failed
+    expect(success).toBe(false)
+
+    // Check that error was set
+    expect(result.error()).toEqual(mockError)
   })
 
   it('automatically selects a newly created configuration', async () => {

@@ -7,7 +7,7 @@ interface Props {
   loading: Accessor<boolean>
   error?: Accessor<Error | null>
   onSelect: (name: string) => void
-  onDelete: (name: string) => void
+  onDelete: (name: string) => Promise<boolean> // Return success status
   selectedName?: Accessor<string | undefined>
 }
 
@@ -89,7 +89,14 @@ export const ConfigurationList: Component<Props> = props => {
                             logger.info('User confirmed configuration deletion', {
                               name: config.name,
                             })
-                            props.onDelete(config.name)
+                            // Handle the result of the delete operation
+                            props.onDelete(config.name).then(success => {
+                              if (success) {
+                                logger.info('Configuration deleted successfully', { name: config.name })
+                              } else {
+                                logger.error('Failed to delete configuration', { name: config.name })
+                              }
+                            })
                           } else {
                             logger.debug('User cancelled configuration deletion', {
                               name: config.name,

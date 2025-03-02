@@ -26,7 +26,7 @@ describe('ConfigurationList', () => {
   ]
 
   const mockOnSelect = vi.fn()
-  const mockOnDelete = vi.fn()
+  const mockOnDelete = vi.fn().mockResolvedValue(true)
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -237,9 +237,10 @@ describe('ConfigurationList', () => {
     const [loading] = createSignal(false)
     const [errorState, setErrorState] = createSignal<Error | null>(null)
 
-    // Mock the onDelete function to set the error
+    // Mock the onDelete function to set the error and return a Promise
     const mockOnDeleteWithError = vi.fn().mockImplementation(() => {
       setErrorState(() => errorObj)
+      return Promise.resolve(false) // Return a Promise that resolves to false (failure)
     })
 
     render(() => (
@@ -256,10 +257,10 @@ describe('ConfigurationList', () => {
     const deleteButton = screen.getByTestId('delete-Config 1')
     await fireEvent.click(deleteButton)
 
-    // Set the error state manually since we're not actually calling the API
-    setErrorState(() => errorObj)
-
-    expect(screen.getByText(/Failed to delete configuration/i)).toBeInTheDocument()
+    // Wait for the Promise to resolve
+    await vi.waitFor(() => {
+      expect(screen.getByText(/Failed to delete configuration/i)).toBeInTheDocument()
+    })
 
     confirmSpy.mockRestore()
   })

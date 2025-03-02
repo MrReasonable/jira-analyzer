@@ -97,7 +97,7 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     await jiraAnalyzerPage.deleteConfiguration();
 
     // Verify the configuration was deleted
-    await expect(jiraAnalyzerPage.page.getByText('Test Configuration')).toBeHidden();
+    await expect(jiraAnalyzerPage.page.getByText('Test Configuration')).toBeHidden({ timeout: 10000 });
   });
   */
 })

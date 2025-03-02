@@ -38,6 +38,9 @@ class MockJira:
         """Set up sample data for the mock Jira client."""
         today = datetime.datetime.now()
 
+        # Create sample changelogs for cycle time calculation first
+        self._setup_sample_changelogs()
+
         # Create sample issues with different states and dates
         self.sample_issues = [
             # Completed issues
@@ -73,9 +76,6 @@ class MockJira:
                 'PROJ-7', 'Bug 2', today - datetime.timedelta(days=12), None, 'Backlog'
             ),
         ]
-
-        # Create sample changelogs for cycle time calculation
-        self._setup_sample_changelogs()
 
     def _create_mock_issue(
         self, key, summary, created_date, resolution_date=None, status='In Progress'

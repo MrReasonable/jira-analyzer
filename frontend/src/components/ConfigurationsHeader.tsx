@@ -9,7 +9,7 @@ interface ConfigurationsHeaderProps {
   loading: Accessor<boolean>
   selectedConfig: Accessor<string | undefined>
   onSelect: (name: string) => void
-  onDelete: (name: string) => void
+  onDelete: (name: string) => Promise<boolean>
   onAddClick: () => void
 }
 
