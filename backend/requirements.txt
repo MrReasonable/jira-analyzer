@@ -1,4 +1,4 @@
-fastapi==0.115.8
+fastapi==0.115.11
 uvicorn==0.34.0
 python-dotenv==1.0.1
 jira==3.8.0
@@ -6,7 +6,7 @@ atlassian-python-api==3.41.19
 pandas==2.2.3
 pyarrow==19.0.1
 pydantic==2.10.6
-pydantic-settings==2.8.0
+pydantic-settings==2.8.1
 python-multipart==0.0.20
 # starlette is automatically installed as a dependency of fastapi
 sqlalchemy==2.0.38
