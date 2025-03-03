@@ -140,9 +140,11 @@ The `run-tests.sh` script now captures backend logs during test execution. This 
 ### Log Location
 
 Backend logs are saved to:
+
 - `e2e-tests/logs/backend.log`
 
 These logs contain all output from the backend server, including:
+
 - API request/response details
 - Error messages
 - Debug information

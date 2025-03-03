@@ -1,0 +1,69 @@
+# YAML Lint configuration file
+# See https://yamllint.readthedocs.io/en/stable/configuration.html for details
+
+extends: default
+
+rules:
+  # Line length
+  line-length:
+    max: 120
+    level: warning
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+  # Indentation
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Trailing spaces
+  trailing-spaces: enable
+
+  # Document start/end markers
+  document-start:
+    present: false
+  document-end:
+    present: false
+
+  # Comments
+  comments:
+    require-starting-space: true
+    min-spaces-from-content: 1
+
+  # Truthy values
+  truthy:
+    allowed-values: ["true", "false", "yes", "no", "on", "off"]
+    check-keys: false
+
+  # Empty lines
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 0
+
+  # Key duplicates
+  key-duplicates: enable
+
+  # Key ordering
+  key-ordering: disable
+
+  # New line at end of file
+  new-line-at-end-of-file: enable
+
+  # Octal values
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
+# Files to ignore
+ignore:
+  - node_modules/
+  - .pnpm-store/
+  - dist/
+  - build/
+  - coverage/
+  - .venv/
+  - .git/
+  - "*.min.yaml"
+  - "*.min.yml"

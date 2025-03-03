@@ -92,9 +92,13 @@ export const ConfigurationList: Component<Props> = props => {
                             // Handle the result of the delete operation
                             props.onDelete(config.name).then(success => {
                               if (success) {
-                                logger.info('Configuration deleted successfully', { name: config.name })
+                                logger.info('Configuration deleted successfully', {
+                                  name: config.name,
+                                })
                               } else {
-                                logger.error('Failed to delete configuration', { name: config.name })
+                                logger.error('Failed to delete configuration', {
+                                  name: config.name,
+                                })
                               }
                             })
                           } else {

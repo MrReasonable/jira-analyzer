@@ -43,10 +43,10 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     expect(jqlQuery).toContain('project =')
     expect(jqlQuery).toContain('type = Story')
 
-    console.log('Step 5: Analyze metrics')
+    console.log('Step 4: Analyze metrics')
     await jiraAnalyzerPage.analyzeMetrics()
 
-    console.log('Step 6: Delete the configuration')
+    console.log('Step 5: Delete the configuration')
     await jiraAnalyzerPage.deleteConfiguration()
 
     console.log('Step 7: Verify the configuration was deleted')

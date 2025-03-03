@@ -1,16 +1,11 @@
-# Frontend-specific base stage
-FROM node-base AS frontend-base
+# E2E tests base stage
+FROM node-base AS e2e-base
 
-# Install additional frontend-specific dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    libpixman-1-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev && \
-    rm -rf /var/lib/apt/lists/*
+# Install additional e2e-specific dependencies if needed
+# RUN apt-get update && \
+#     apt-get install -y \
+#     some-package && \
+#     rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
@@ -22,32 +17,14 @@ RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
 # Copy source code
 COPY . .
 
-# Development stage
-FROM frontend-base AS development
-
-# Expose ports for development
-EXPOSE 5173
-EXPOSE 9229
-
-# Enable source maps for debugging
-ENV VITE_ENABLE_SOURCE_MAPS=true
-
-# Start Vite dev server with debugging enabled
-CMD ["pnpm", "run", "dev", "--host", "--debug"]
-
-# Development stage with non-root user support
+# Development stage with non-root user
 FROM node-base AS development-nonroot-base
 
-# Install additional frontend-specific dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    libpixman-1-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev && \
-    rm -rf /var/lib/apt/lists/*
+# Install additional e2e-specific dependencies if needed
+# RUN apt-get update && \
+#     apt-get install -y \
+#     some-package && \
+#     rm -rf /var/lib/apt/lists/*
 
 # Add non-root user
 ARG USER_ID=1000
@@ -102,29 +79,14 @@ RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
 # Copy source code
 COPY --chown=appuser:appuser . .
 
-# Expose ports
-EXPOSE 5173
-EXPOSE 9229
-
-# Enable source maps for debugging
-ENV VITE_ENABLE_SOURCE_MAPS=true
-
-# Start Vite dev server with debugging enabled
-CMD ["pnpm", "run", "dev", "--host", "--debug"]
-
 # CI stage for testing and linting
 FROM node-base-ci AS ci
 
-# Install additional frontend-specific dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    libpixman-1-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev && \
-    rm -rf /var/lib/apt/lists/*
+# Install additional e2e-specific dependencies if needed
+# RUN apt-get update && \
+#     apt-get install -y \
+#     some-package && \
+#     rm -rf /var/lib/apt/lists/*
 
 # Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
@@ -136,22 +98,3 @@ COPY . .
 
 # Default command for CI
 CMD ["pnpm", "run", "test"]
-
-# Production stage
-FROM frontend-base AS production
-
-# Build the application
-RUN pnpm run build
-
-# Use nginx to serve the built application
-FROM nginx:alpine AS nginx
-
-# Copy the built application from the production stage
-COPY --from=production /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration if needed
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]

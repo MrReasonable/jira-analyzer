@@ -24,11 +24,11 @@ dev: ## Start development servers for both frontend and backend
 
 test: frontend-test backend-test e2e-test ## Run all tests (frontend, backend, and end-to-end)
 
-lint: frontend-lint backend-lint e2e-lint ## Run linting for both frontend, backend, and e2e-tests
+lint: frontend-lint frontend-type-check backend-lint e2e-lint e2e-type-check yaml-lint ## Run linting for frontend, backend, e2e-tests, and YAML files
 
-format: frontend-format backend-format e2e-format ## Format code in both frontend, backend, and e2e-tests
+format: frontend-format backend-format e2e-format yaml-format ## Format code in frontend, backend, e2e-tests, and YAML files
 
-clean: ## Clean up build artifacts, cache, logs, and temporary files
+clean: ## Clean up build artifacts, cache, logs, temporary files, and Docker resources
 	# Frontend cleanup
 	cd frontend && rm -rf dist dist-ssr node_modules coverage logs *.log npm-debug.log* yarn-debug.log* yarn-error.log* pnpm-debug.log* lerna-debug.log* .pnpm-store *.tsbuildinfo *.local
 
@@ -41,12 +41,23 @@ clean: ## Clean up build artifacts, cache, logs, and temporary files
 	cd backend && rm -rf .pytest_cache .coverage htmlcov .ruff_cache .mypy_cache .tox coverage.xml nosetests.xml pip-log.txt pip-delete-this-directory.txt *.egg-info .installed.cfg *.egg
 	cd backend && rm -f jira_analyzer.db
 
-	# E2E tests cleanup
+	# E2E tests clceanup
 	cd e2e-tests && rm -rf node_modules test-results playwright-report blob-report playwright/.cache screenshots logs *.log npm-debug.log* yarn-debug.log* yarn-error.log* pnpm-debug.log* *.tsbuildinfo
 
 	# Project-level cleanup
 	rm -rf tmp .aider* .cache
 	find . -type f -name "*.log" -delete
+
+	# Docker cleanup
+	@echo "Stopping and removing Docker containers..."
+	docker-compose -f docker-compose.dev.yml down --remove-orphans || true
+	docker-compose -f docker-compose.yml down --remove-orphans || true
+
+	@echo "Removing Docker networks..."
+	docker network rm jira-analyzer-network-dev jira-analyzer-network 2>/dev/null || true
+
+	@echo "Removing Docker images..."
+	docker rmi jira-analyzer-frontend jira-analyzer-backend jira-analyzer-frontend-dev jira-analyzer-backend-dev frontend-dev frontend-ci backend-dev 2>/dev/null || true
 
 build: ## Build the production version of the application
 	docker build -t jira-analyzer-frontend -f frontend/Dockerfile --target nginx frontend
@@ -58,11 +69,36 @@ docker-build: ## Build production Docker images
 docker-dev: ## Start development environment using Docker
 	docker-compose -f docker-compose.dev.yml up --build
 
-frontend-test: ## Run frontend tests only (run once and exit)
+node-base: ## Build the shared Node.js base image
+	docker build -t node-base \
+		-f Dockerfile.node-base --target node-base .
+
+node-base-ci: ## Build the shared Node.js CI base image
+	docker build -t node-base-ci \
+		-f Dockerfile.node-base --target node-base-ci .
+
+# Image building targets
+frontend-dev-image: node-base ## Build the frontend development image
 	docker build -t frontend-dev \
 		--build-arg USER_ID=$(shell id -u) \
 		--build-arg GROUP_ID=$(shell id -g) \
 		-f frontend/Dockerfile --target development-nonroot frontend
+
+frontend-ci-image: node-base-ci ## Build the frontend CI image
+	docker build -t frontend-ci \
+		-f frontend/Dockerfile --target ci frontend
+
+e2e-dev-image: node-base ## Build the e2e-tests development image
+	docker build -t e2e-dev \
+		--build-arg USER_ID=$(shell id -u) \
+		--build-arg GROUP_ID=$(shell id -g) \
+		-f e2e-tests/Dockerfile --target development-nonroot e2e-tests
+
+e2e-ci-image: node-base-ci ## Build the e2e-tests CI image
+	docker build -t e2e-ci \
+		-f e2e-tests/Dockerfile --target ci e2e-tests
+
+frontend-test: frontend-dev-image ## Run frontend tests only (run once and exit)
 	docker run --rm -ti \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -75,8 +111,7 @@ frontend-test: ## Run frontend tests only (run once and exit)
 		-v $(PWD)/frontend/vitest.config.ts:/app/vitest.config.ts \
 		frontend-dev pnpm test
 
-frontend-test-ci: ## Run frontend tests in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
+frontend-test-ci: node-base frontend-ci-image ## Run frontend tests in CI mode (non-interactive)
 	docker run --rm \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -89,11 +124,7 @@ frontend-test-ci: ## Run frontend tests in CI mode (non-interactive)
 		-v $(PWD)/frontend/vitest.config.ts:/app/vitest.config.ts \
 		frontend-ci pnpm test
 
-frontend-test-watch: ## Run frontend tests in watch mode
-	docker build -t frontend-dev \
-		--build-arg USER_ID=$(shell id -u) \
-		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile --target development-nonroot frontend
+frontend-test-watch: frontend-dev-image ## Run frontend tests in watch mode
 	docker run --rm -ti \
 		-v $(PWD)/frontend/src:/app/src \
 		-v $(PWD)/frontend/public:/app/public \
@@ -126,15 +157,10 @@ backend-fast-test: ## Run backend tests with optimizations
 	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest -xvs --no-header
 
-frontend-lint: ## Run frontend linting only
-	docker build -t frontend-dev \
-		--build-arg USER_ID=$(shell id -u) \
-		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile --target development-nonroot frontend
+frontend-lint: frontend-dev-image ## Run frontend linting only
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint
 
-frontend-lint-ci: ## Run frontend linting in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
+frontend-lint-ci: node-base frontend-ci-image ## Run frontend linting in CI mode (non-interactive)
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint
 
 backend-lint: ## Run backend linting only
@@ -145,30 +171,22 @@ backend-lint-ci: ## Run backend linting in CI mode (non-interactive)
 	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check app tests && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
-frontend-format: ## Format frontend code only
-	docker build -t frontend-dev \
-		--build-arg USER_ID=$(shell id -u) \
-		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile --target development-nonroot frontend
+frontend-format: frontend-dev-image ## Format frontend code only
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run format
 
-frontend-format-ci: ## Format frontend code in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
+frontend-format-ci: node-base frontend-ci-image ## Format frontend code in CI mode (non-interactive)
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run format
 
-frontend-lint-fix: ## Auto-fix frontend linting issues
-	docker build -t frontend-dev \
-		--build-arg USER_ID=$(shell id -u) \
-		--build-arg GROUP_ID=$(shell id -g) \
-		-f frontend/Dockerfile --target development-nonroot frontend
+frontend-lint-fix: frontend-dev-image ## Auto-fix frontend linting issues
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint:fix
 
-frontend-lint-fix-ci: ## Auto-fix frontend linting issues in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
+frontend-lint-fix-ci: node-base frontend-ci-image ## Auto-fix frontend linting issues in CI mode (non-interactive)
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint:fix
 
-frontend-type-check-ci: ## Run TypeScript type checking in CI mode (non-interactive)
-	docker build -t frontend-ci -f frontend/Dockerfile --target ci frontend
+frontend-type-check: frontend-dev-image ## Run TypeScript type checking
+	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run type-check
+
+frontend-type-check-ci: node-base frontend-ci-image ## Run TypeScript type checking in CI mode (non-interactive)
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run type-check
 
 backend-format: ## Format backend code only
@@ -187,7 +205,7 @@ backend-lint-fix-ci: ## Auto-fix backend linting issues in CI mode (non-interact
 	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --exit-non-zero-on-fix app tests && ruff format app tests --exclude app/migrations/versions/ && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
-lint-fix: frontend-lint-fix backend-lint-fix e2e-lint-fix ## Auto-fix linting issues in frontend, backend, and e2e-tests
+lint-fix: frontend-lint-fix frontend-type-check backend-lint-fix e2e-lint-fix e2e-type-check yaml-format ## Auto-fix linting issues in frontend, backend, e2e-tests, and YAML files
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
@@ -207,17 +225,54 @@ e2e-test-debug: ## Run end-to-end tests with debug output
 e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
 	cd e2e-tests && CI=true pnpm run run-tests
 
-e2e-lint: ## Run linting for e2e-tests
-	cd e2e-tests && pnpm run lint
+e2e-lint: e2e-dev-image ## Run linting for e2e-tests
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run lint
 
-e2e-lint-fix: ## Auto-fix linting issues in e2e-tests
-	cd e2e-tests && pnpm run lint:fix
+e2e-lint-ci: node-base e2e-ci-image ## Run linting for e2e-tests in CI mode (non-interactive)
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run lint:strict
 
-e2e-format: ## Format e2e-tests code
-	cd e2e-tests && pnpm run format
+e2e-lint-fix: e2e-dev-image ## Auto-fix linting issues in e2e-tests
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run lint:fix
 
-e2e-format-check: ## Check e2e-tests code formatting
-	cd e2e-tests && pnpm run format:check
+e2e-lint-fix-ci: node-base e2e-ci-image ## Auto-fix linting issues in e2e-tests in CI mode (non-interactive)
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run lint:fix
+
+e2e-format: e2e-dev-image ## Format e2e-tests code
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run format
+
+e2e-format-ci: node-base e2e-ci-image ## Format e2e-tests code in CI mode (non-interactive)
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run format
+
+e2e-format-check: e2e-dev-image ## Check e2e-tests code formatting
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run format:check
+
+e2e-format-check-ci: node-base e2e-ci-image ## Check e2e-tests code formatting in CI mode (non-interactive)
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run format:check
+
+e2e-type-check: e2e-dev-image ## Run TypeScript type checking for e2e-tests
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run type-check
+
+e2e-type-check-ci: node-base e2e-ci-image ## Run TypeScript type checking for e2e-tests in CI mode (non-interactive)
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run type-check
+
+yaml-lint: ## Lint YAML files
+	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
+	docker run --rm -ti -v $(PWD):/app backend-dev yamllint -c /app/.yamllint.yml .github docker-compose.yml docker-compose.dev.yml
+
+yamlfmt-image: ## Build the yamlfmt Docker image
+	docker build -t yamlfmt -f Dockerfile.yamlfmt .
+
+yaml-format: yamlfmt-image ## Format YAML files
+	docker run --rm -ti -v $(PWD):/app yamlfmt -conf .yamlfmt.yml .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+
+yaml-format-check: yamlfmt-image ## Check YAML files formatting
+	docker run --rm -ti -v $(PWD):/app yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+
+yaml-format-ci: yamlfmt-image ## Format YAML files in CI mode (non-interactive)
+	docker run --rm -v $(PWD):/app yamlfmt -conf .yamlfmt.yml .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+
+yaml-format-check-ci: yamlfmt-image ## Check YAML files formatting in CI mode (non-interactive)
+	docker run --rm -v $(PWD):/app yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
 
 test-github-actions: ## Test GitHub Actions workflows locally using act
 	@if ! command -v act &> /dev/null; then \
@@ -248,5 +303,3 @@ test-github-actions-e2e: ## Test GitHub Actions E2E workflow locally using act
 	fi
 	@echo "Running GitHub Actions E2E tests workflow locally..."
 	act --workflows .github/workflows/e2e-tests.yml --container-architecture linux/amd64
-
-test-github-actions-all: test-github-actions-ci test-github-actions-e2e ## Test all GitHub Actions workflows locally

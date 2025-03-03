@@ -19,6 +19,8 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -81,12 +83,12 @@ jobs:
       # In a real-world scenario, you would:
       # 1. Connect to your server (SSH, kubectl, etc.)
       # 2. Pull the new images
-      # 3. Update your deployment (docker-compose, k8s, etc.)
-
       - name: Deploy to environment
         run: |
           echo "Deploying to ${{ github.event.inputs.environment || 'staging' }} environment"
-          echo "Using image tags: ${{ steps.meta.outputs.version }}"
+          echo "Using image tags: ${{ needs.build-and-push.outputs.version }}"
+          # Add actual deployment commands here
+          echo "Using image tags: ${{ needs.build-and-push.outputs.version }}"
           # Add actual deployment commands here
 
       - name: Verify deployment

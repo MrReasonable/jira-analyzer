@@ -1,0 +1,23 @@
+FROM node:23-slim AS node-base
+
+ARG PNPM_VERSION=10.5.2
+
+# Set environment variables
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+WORKDIR /app
+
+# Install common build dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    pkg-config && \
+    corepack enable && \
+    rm -rf /var/lib/apt/lists/*
+
+# CI stage for testing and linting
+FROM node-base AS node-base-ci
+
+# No default command for CI (will be defined in child images)

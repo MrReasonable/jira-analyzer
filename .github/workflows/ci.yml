@@ -2,11 +2,52 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
+  e2e-tests-checks:
+    name: E2E Tests Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.5.2"
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Lint e2e-tests
+        run: make e2e-lint-ci
+
+      - name: Check e2e-tests formatting
+        run: make e2e-format-check-ci
+
+      - name: Type check e2e-tests
+        run: make e2e-type-check-ci
+
   frontend-checks:
     name: Frontend Checks
     runs-on: ubuntu-latest
@@ -18,12 +59,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '23'
+          node-version: "23"
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: '10.5.2'
+          version: "10.5.2"
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -96,8 +137,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: "3.12"
+          cache: "pip"
 
       - name: Setup Python virtual environment
         working-directory: ./backend
@@ -160,10 +201,24 @@ jobs:
           echo "Running backend integration tests"
           pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py -v
 
+  yaml-checks:
+    name: YAML Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build yamlfmt Docker image
+        run: docker build -t yamlfmt -f Dockerfile.yamlfmt .
+
+      - name: Check YAML formatting
+        run: make yaml-format-check-ci
+
   docker-build-test:
     name: Test Docker Build
     runs-on: ubuntu-latest
-    needs: [frontend-checks, backend-checks]
+    needs: [e2e-tests-checks, frontend-checks, backend-checks, yaml-checks]
 
     steps:
       - name: Checkout code
