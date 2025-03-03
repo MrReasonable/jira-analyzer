@@ -12,8 +12,8 @@ export default tseslint.config(
   {
     ignores: ['node_modules', 'playwright-report', 'test-results', 'dist'],
     languageOptions: {
+      parser: tseslint.parser,
       parserOptions: {
-        project: true,
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
@@ -29,6 +29,7 @@ export default tseslint.config(
       'playwright/no-conditional-in-test': 'warn',
       'playwright/no-force-option': 'warn',
       'playwright/prefer-web-first-assertions': 'warn',
+      'playwright/no-wait-for-selector': 'error', // Disallow waitForSelector
     },
   }
 )

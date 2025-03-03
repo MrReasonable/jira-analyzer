@@ -7,9 +7,9 @@ services:
     container_name: jira-analyzer-backend-dev
     # Only expose debug port, API access should be through Caddy
     ports:
-      - "5678:5678"  # Python debugger port
+      - "5678:5678" # Python debugger port
     expose:
-      - "8000"  # Expose to other containers, but not to host
+      - "8000" # Expose to other containers, but not to host
     environment:
       # Server Configuration
       - HOST=0.0.0.0
@@ -41,9 +41,9 @@ services:
     container_name: jira-analyzer-frontend-dev
     # Only expose debug port, web access should be through Caddy
     ports:
-      - "9229:9229"  # Node.js debugger port
+      - "9229:9229" # Node.js debugger port
     expose:
-      - "5173"  # Expose to other containers, but not to host
+      - "5173" # Expose to other containers, but not to host
     environment:
       - VITE_API_URL=/api
       - NODE_ENV=development
@@ -63,8 +63,8 @@ services:
     image: caddy:2-alpine
     container_name: jira-analyzer-caddy-dev
     ports:
-      - "${FRONTEND_PORT:-80}:80"  # HTTP port
-      - "443:443"  # HTTPS port
+      - "${FRONTEND_PORT:-80}:80" # HTTP port
+      - "443:443" # HTTPS port
     volumes:
       - ./frontend/Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
@@ -75,8 +75,8 @@ services:
 
 volumes:
   jira-analyzer-data:
-  caddy_data:    # Persistent volume for Caddy SSL certificates
-  caddy_config:  # Persistent volume for Caddy configuration
+  caddy_data: # Persistent volume for Caddy SSL certificates
+  caddy_config: # Persistent volume for Caddy configuration
 
 networks:
   default:

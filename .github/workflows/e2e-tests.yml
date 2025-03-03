@@ -2,113 +2,113 @@ name: End-to-End Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '23'
-        cache: 'pnpm'
-        cache-dependency-path: 'e2e-tests/pnpm-lock.yaml'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          cache: "pnpm"
+          cache-dependency-path: "e2e-tests/pnpm-lock.yaml"
 
-    - name: Install Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
 
-    - name: Create .env file
-      run: |
-        cp .env.example .env
-        echo "USE_MOCK_JIRA=true" >> .env
-        echo "USE_IN_MEMORY_DB=true" >> .env
+      - name: Create .env file
+        run: |
+          cp .env.example .env
+          echo "USE_MOCK_JIRA=true" >> .env
+          echo "USE_IN_MEMORY_DB=true" >> .env
 
-    - name: Check and stop any running services
-      run: |
-        if docker ps | grep -q "jira-analyzer"; then
-          echo "Services are already running. Shutting them down..."
-          docker-compose -f docker-compose.dev.yml down
-        fi
-
-    - name: Start backend with Docker Compose
-      run: |
-        docker-compose -f docker-compose.dev.yml up -d
-
-        # Create logs and screenshots directories
-        mkdir -p e2e-tests/logs
-        mkdir -p e2e-tests/screenshots
-
-        # Clear old logs and screenshots
-        rm -f e2e-tests/logs/*.log
-        rm -f e2e-tests/screenshots/*.png
-
-        # Start capturing logs in the background
-        docker logs -f jira-analyzer-backend-dev > e2e-tests/logs/backend.log 2>&1 &
-        echo $! > .docker_logs_pid
-
-    - name: Install frontend dependencies
-      run: |
-        cd frontend
-        npm install -g pnpm
-        pnpm install
-
-    - name: Install e2e-tests dependencies
-      run: |
-        cd e2e-tests
-        npm install -g pnpm
-        pnpm install
-
-    - name: Install Playwright browsers
-      run: |
-        cd e2e-tests
-        pnpm exec playwright install --with-deps
-
-    - name: Lint and format e2e-tests
-      run: |
-        cd e2e-tests
-        pnpm run lint
-        pnpm run format:check
-
-    - name: Run end-to-end tests
-      run: |
-        cd e2e-tests
-        chmod +x run-tests.sh
-        CI=true pnpm run run-tests
-
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: playwright-report
-        path: e2e-tests/playwright-report/
-        retention-days: 30
-
-    - name: Upload backend logs
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: backend-logs
-        path: e2e-tests/logs/
-        retention-days: 30
-
-    - name: Stop Docker Compose
-      if: always()
-      run: |
-        # Kill the log capturing process if it exists
-        if [ -f .docker_logs_pid ]; then
-          LOGS_PID=$(cat .docker_logs_pid)
-          if ps -p $LOGS_PID > /dev/null; then
-            echo "Stopping log capture process..."
-            kill $LOGS_PID || true
+      - name: Check and stop any running services
+        run: |
+          if docker ps | grep -q "jira-analyzer"; then
+            echo "Services are already running. Shutting them down..."
+            docker-compose -f docker-compose.dev.yml down
           fi
-        fi
 
-        docker-compose -f docker-compose.dev.yml down
+      - name: Start backend with Docker Compose
+        run: |
+          docker-compose -f docker-compose.dev.yml up -d
+
+          # Create logs and screenshots directories
+          mkdir -p e2e-tests/logs
+          mkdir -p e2e-tests/screenshots
+
+          # Clear old logs and screenshots
+          rm -f e2e-tests/logs/*.log
+          rm -f e2e-tests/screenshots/*.png
+
+          # Start capturing logs in the background
+          docker logs -f jira-analyzer-backend-dev > e2e-tests/logs/backend.log 2>&1 &
+          echo $! > .docker_logs_pid
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install -g pnpm
+          pnpm install
+
+      - name: Install e2e-tests dependencies
+        run: |
+          cd e2e-tests
+          npm install -g pnpm
+          pnpm install
+
+      - name: Install Playwright browsers
+        run: |
+          cd e2e-tests
+          pnpm exec playwright install --with-deps
+
+      - name: Lint, format, and type-check e2e-tests
+        run: |
+          cd e2e-tests && pnpm run lint:strict
+          make e2e-format-check-ci
+          make e2e-type-check-ci
+
+      - name: Run end-to-end tests
+        run: |
+          cd e2e-tests
+          chmod +x run-tests.sh
+          CI=true pnpm run run-tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e-tests/playwright-report/
+          retention-days: 30
+
+      - name: Upload backend logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-logs
+          path: e2e-tests/logs/
+          retention-days: 30
+
+      - name: Stop Docker Compose
+        if: always()
+        run: |
+          # Kill the log capturing process if it exists
+          if [ -f .docker_logs_pid ]; then
+            LOGS_PID=$(cat .docker_logs_pid)
+            if ps -p $LOGS_PID > /dev/null; then
+              echo "Stopping log capture process..."
+              kill $LOGS_PID || true
+            fi
+          fi
+
+          docker-compose -f docker-compose.dev.yml down

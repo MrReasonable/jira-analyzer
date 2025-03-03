@@ -1,0 +1,21 @@
+FROM debian:bookworm-slim
+
+# Install wget to download yamlfmt
+RUN apt-get update && \
+    apt-get install -y wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download and install yamlfmt
+RUN wget -q https://github.com/google/yamlfmt/releases/download/v0.10.0/yamlfmt_0.10.0_Linux_x86_64.tar.gz && \
+    tar -xzf yamlfmt_0.10.0_Linux_x86_64.tar.gz && \
+    mv yamlfmt /usr/local/bin/ && \
+    rm yamlfmt_0.10.0_Linux_x86_64.tar.gz && \
+    chmod +x /usr/local/bin/yamlfmt && \
+    rm -rf /tmp/*
+
+# Set the working directory
+WORKDIR /app
+
+# Set the entrypoint to yamlfmt
+ENTRYPOINT ["yamlfmt"]

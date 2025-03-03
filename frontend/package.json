@@ -12,10 +12,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix",
-    "format": "prettier --write 'src/**/*.{ts,tsx,css,json}'",
+    "format": "prettier --write 'src/**/*.{ts,tsx,css,json,yaml}'",
     "format:check": "prettier --check 'src/**/*.{ts,tsx,css,json}'",
     "type-check": "tsc --noEmit",
-    "validate": "npm run lint && npm run format:check && npm run type-check && npm run test"
+    "validate": "npm run lint && npm run format:check && npm run type-check && npm run type-check:tests && npm run test"
   },
   "dependencies": {
     "@kobalte/core": "^0.13.9",

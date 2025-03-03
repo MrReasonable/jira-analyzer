@@ -69,3 +69,7 @@ tmp/
 
 # Testing
 screenshots/
+
+# YAML formatting
+yamlfmt
+yamlfmt_*

@@ -16,10 +16,11 @@ repos:
     hooks:
       - id: backend-lint-fix
         name: Backend Lint Fix
-        entry: make backend-lint-fix-ci
+        entry: bash -c 'echo "Running backend linting and type checking" && make backend-lint-fix-ci || { echo "Backend lint check failed"; exit 1; }'
         language: system
         files: ^backend/.*\.py$
         exclude: ^backend/app/migrations/
+        types: [file]
         pass_filenames: false
 
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -28,7 +29,12 @@ repos:
       - id: mypy
         files: ^backend/
         exclude: ^backend/(app/migrations/|tests/unit/conftest\.py)
-        args: [--explicit-package-bases, --namespace-packages, --ignore-missing-imports]
+        args:
+          [
+            --explicit-package-bases,
+            --namespace-packages,
+            --ignore-missing-imports,
+          ]
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.7
@@ -44,36 +50,79 @@ repos:
     hooks:
       - id: frontend-lint
         name: Frontend ESLint
-        entry: cd frontend && pnpm run lint:fix
+        entry: bash -c 'echo "Running ESLint for frontend" && make frontend-lint-fix-ci || { echo "ESLint check failed"; exit 1; }'
         language: system
         files: ^frontend/.*\.(ts|tsx)$
+        types: [file]
         pass_filenames: false
 
       - id: frontend-format
         name: Frontend Prettier
-        entry: cd frontend && pnpm run format
+        entry: bash -c 'echo "Running Prettier for frontend" && make frontend-format-ci || { echo "Prettier check failed"; exit 1; }'
         language: system
         files: ^frontend/.*\.(ts|tsx|css|json)$
+        types: [file]
         pass_filenames: false
 
       - id: frontend-type-check
         name: Frontend TypeScript
-        entry: make frontend-type-check-ci
+        entry: bash -c 'echo "Running TypeScript check" && cd frontend && pnpm run type-check || { echo "TypeScript check failed"; exit 1; }'
         language: system
         files: ^frontend/.*\.(ts|tsx)$
+        types: [file]
         pass_filenames: false
 
       - id: frontend-test
         name: Frontend Tests
-        entry: make frontend-test-ci
+        entry: bash -c 'echo "Running frontend tests" && make frontend-test-ci || { echo "Frontend tests failed"; exit 1; }'
         language: system
         files: ^frontend/.*\.(ts|tsx)$
+        types: [file]
         pass_filenames: false
 
       - id: backend-test
         name: Backend Unit Tests
-        entry: make backend-unit-test-ci
+        entry: bash -c 'echo "Running backend unit tests" && make backend-unit-test-ci || { echo "Backend tests failed"; exit 1; }'
         language: system
         files: ^backend/.*\.py$
         exclude: ^backend/app/migrations/
+        types: [file]
+        pass_filenames: false
+
+  # E2E Tests hooks
+  - repo: local
+    hooks:
+      - id: e2e-lint
+        name: E2E Tests ESLint
+        entry: bash -c 'echo "Running ESLint for E2E tests" && cd e2e-tests && pnpm run lint:strict || { echo "ESLint check failed"; exit 1; }'
+        language: system
+        files: ^e2e-tests/.*\.(ts|tsx)$
+        types: [file]
+        pass_filenames: false
+
+      - id: e2e-format
+        name: E2E Tests Prettier
+        entry: bash -c 'echo "Running Prettier for E2E tests" && make e2e-format-ci || { echo "Prettier check failed"; exit 1; }'
+        language: system
+        files: ^e2e-tests/.*\.(ts|tsx|json)$
+        types: [file]
+        pass_filenames: false
+
+      - id: e2e-type-check
+        name: E2E Tests TypeScript
+        entry: bash -c 'echo "Running TypeScript check for E2E tests" && cd e2e-tests && pnpm run type-check || { echo "TypeScript check failed"; exit 1; }'
+        language: system
+        files: ^e2e-tests/.*\.(ts|tsx)$
+        types: [file]
+        pass_filenames: false
+
+  # YAML formatting hooks
+  - repo: local
+    hooks:
+      - id: yaml-format
+        name: YAML Format
+        entry: bash -c 'echo "Running YAML formatting" && make yaml-format-ci || { echo "YAML formatting failed"; exit 1; }'
+        language: system
+        files: \.(yml|yaml)$
+        types: [file]
         pass_filenames: false

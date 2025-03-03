@@ -107,7 +107,7 @@ describe('App', () => {
         handleConfigSelect: vi.fn(async (_name: string) => {
           onJqlChange('project = TEST')
         }),
-        handleConfigDelete: vi.fn(async () => {}),
+        handleConfigDelete: vi.fn(async () => true),
         showConfigForm: () => false,
         setShowConfigForm: vi.fn(),
         handleConfigSaved: vi.fn(async () => {}),
@@ -158,7 +158,7 @@ describe('App', () => {
           handleConfigSelect: vi.fn(async (_name: string) => {
             onJqlChange('project = TEST')
           }),
-          handleConfigDelete: vi.fn(async () => {}),
+          handleConfigDelete: vi.fn(async () => true),
           showConfigForm: () => showConfigFormValue,
           setShowConfigForm: vi.fn(value => {
             showConfigFormValue = value
@@ -199,7 +199,7 @@ describe('App', () => {
           handleConfigSelect: vi.fn(async (_name: string) => {
             onJqlChange('project = TEST')
           }),
-          handleConfigDelete: vi.fn(async () => {}),
+          handleConfigDelete: vi.fn(async () => true),
           showConfigForm: () => false,
           setShowConfigForm: vi.fn(),
           handleConfigSaved: vi.fn(async () => {}),
@@ -328,7 +328,7 @@ describe('App', () => {
           handleConfigSelect: vi.fn(async (_name: string) => {
             onJqlChange('project = TEST')
           }),
-          handleConfigDelete: vi.fn(async () => {}),
+          handleConfigDelete: vi.fn(async () => true),
           showConfigForm: () => false,
           setShowConfigForm: vi.fn(),
           handleConfigSaved: vi.fn(async () => {}),
@@ -384,7 +384,7 @@ describe('App', () => {
           handleConfigSelect: vi.fn(async (_name: string) => {
             onJqlChange('project = TEST')
           }),
-          handleConfigDelete: vi.fn(async () => {}),
+          handleConfigDelete: vi.fn(async () => true),
           showConfigForm: () => false,
           setShowConfigForm: vi.fn(),
           handleConfigSaved: vi.fn(async () => {}),

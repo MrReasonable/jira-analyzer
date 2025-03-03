@@ -55,9 +55,9 @@ services:
 
 volumes:
   jira-analyzer-data:
-  frontend_build:  # Shared volume between frontend build and Caddy
-  caddy_data:      # Persistent volume for Caddy SSL certificates
-  caddy_config:    # Persistent volume for Caddy configuration
+  frontend_build: # Shared volume between frontend build and Caddy
+  caddy_data: # Persistent volume for Caddy SSL certificates
+  caddy_config: # Persistent volume for Caddy configuration
 
 networks:
   default:
