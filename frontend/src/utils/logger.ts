@@ -11,13 +11,38 @@ export enum LogLevel {
   DEBUG = 4,
 }
 
+// Helper to parse string log level
+const parseLogLevel = (level: string | undefined): LogLevel => {
+  if (!level) return LogLevel.ERROR
+
+  switch (level.toLowerCase()) {
+    case 'none':
+      return LogLevel.NONE
+    case 'error':
+      return LogLevel.ERROR
+    case 'warn':
+      return LogLevel.WARN
+    case 'info':
+      return LogLevel.INFO
+    case 'debug':
+      return LogLevel.DEBUG
+    case 'verbose':
+      return LogLevel.DEBUG // Alias for DEBUG
+    default:
+      return LogLevel.ERROR
+  }
+}
+
 // Default log level based on environment
 const DEFAULT_LOG_LEVEL =
-  import.meta.env.MODE === 'test'
-    ? LogLevel.NONE
-    : import.meta.env.DEV
-      ? LogLevel.DEBUG
-      : LogLevel.ERROR
+  // First check for explicit debug level in env vars
+  import.meta.env.VITE_DEBUG_LEVEL
+    ? parseLogLevel(import.meta.env.VITE_DEBUG_LEVEL as string)
+    : import.meta.env.MODE === 'test'
+      ? LogLevel.NONE
+      : import.meta.env.DEV
+        ? LogLevel.DEBUG
+        : LogLevel.ERROR
 
 // Current log level
 let currentLogLevel = DEFAULT_LOG_LEVEL

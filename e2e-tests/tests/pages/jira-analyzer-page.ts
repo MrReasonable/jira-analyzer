@@ -11,6 +11,19 @@ export class JiraAnalyzerPage {
    */
   async goto() {
     try {
+      // Add browser network debugging
+      this.page.on('request', request => {
+        console.log(`Browser request: ${request.method()} ${request.url()}`)
+      })
+
+      this.page.on('response', response => {
+        console.log(`Browser response: ${response.status()} for ${response.url()}`)
+      })
+
+      this.page.on('requestfailed', request => {
+        console.error(`Request failed: ${request.url()}, ${request.failure()?.errorText}`)
+      })
+
       console.log('Navigating to application using baseURL configuration')
       // Use baseURL from playwright.config.ts by using relative URL
       const response = await this.page.goto('/', { timeout: 20000 })
@@ -45,6 +58,7 @@ export class JiraAnalyzerPage {
     cycleTimeEndState: string
   }) {
     try {
+      console.log('API URL from env:', process.env.VITE_API_URL || 'Not set')
       console.log('Locating and clicking "Add Configuration" button')
       const addButton = this.page.getByRole('button', { name: 'Add Configuration' })
       await addButton.waitFor({ state: 'visible', timeout: 10000 })
