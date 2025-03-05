@@ -14,9 +14,9 @@
     "run-tests": "./run-tests.sh",
     "run-tests:headed": "./run-tests.sh --headed",
     "run-tests:debug": "./run-tests.sh --headed --debug",
-    "lint": "node ./node_modules/.bin/eslint .",
-    "lint:strict": "node ./node_modules/.bin/eslint . --max-warnings 0",
-    "lint:fix": "node ./node_modules/.bin/eslint . --fix",
+    "lint": "eslint --ignore-pattern 'dist/' .",
+    "lint:strict": "eslint --ignore-pattern 'dist/' . --max-warnings 0",
+    "lint:fix": "eslint --ignore-pattern 'dist/' . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "type-check": "node ./node_modules/typescript/bin/tsc --noEmit"
