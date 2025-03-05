@@ -85,9 +85,13 @@ fi
 echo "Building the tests..."
 cd "$SCRIPT_DIR" && pnpm run build
 
-# Run the tests
+# Run the tests with environment variables set for the local Docker setup
 echo "Running tests..."
-cd "$SCRIPT_DIR" && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js pnpm exec playwright test --config=dist/playwright.config.js "$@"
+cd "$SCRIPT_DIR" && \
+  TEST_HOST=localhost \
+  TEST_PORT=80 \
+  PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js \
+  pnpm exec playwright test --config=dist/playwright.config.js "$@"
 TEST_EXIT_CODE=$?
 
 # Cleanup is handled by the trap

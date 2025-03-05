@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
+ * Read environment variables for test configuration
+ */
+// Default to localhost:80 for local development with Caddy
+const TEST_HOST = process.env.TEST_HOST || 'localhost'
+const TEST_PORT = process.env.TEST_PORT || '80'
+const BASE_URL = `http://${TEST_HOST}:${TEST_PORT}`
+
+console.log(`Using base URL for tests: ${BASE_URL}`)
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -33,7 +43,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost',
+    baseURL: BASE_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
