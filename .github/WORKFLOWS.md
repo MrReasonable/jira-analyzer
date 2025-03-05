@@ -1,10 +1,12 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for automating various aspects of the development process for the Jira Analyzer project.
+This directory contains GitHub Actions workflows for automating various aspects of the development process for the Jira
+Analyzer project.
 
 ## Testing Workflows Locally
 
-You can test the GitHub Actions workflows locally using the [act](https://github.com/nektos/act) tool. This allows you to verify that your workflows are correctly configured before pushing them to GitHub.
+You can test the GitHub Actions workflows locally using the [act](https://github.com/nektos/act) tool. This allows you to
+verify that your workflows are correctly configured before pushing them to GitHub.
 
 ### Prerequisites
 
@@ -51,19 +53,22 @@ When testing workflows locally with `act`, you might encounter some issues:
 
 1. **Missing Dependencies**: The Docker containers used by `act` might not have all the necessary dependencies installed. We've updated the workflows to install required dependencies during execution, but you might still encounter issues.
 
-   - For backend Python dependencies, we now explicitly install tools like `ruff`, `mypy`, and `bandit` in the workflow steps.
+   - For backend Python dependencies, we now explicitly install tools like `ruff`, `mypy`, and `bandit` in the workflow
+     steps.
    - For frontend dependencies, we've added steps to install system dependencies required for the `canvas` package.
 
 2. **Adaptive Behavior**: The workflows are designed to detect when they're running in the `act` environment and adjust their behavior accordingly:
 
-   - **Format Checking**: When running with `act`, the format checking steps will automatically format files instead of failing when formatting issues are found.
+   - **Format Checking**: When running with `act`, the format checking steps will automatically format files instead of
+     failing when formatting issues are found.
    - **Linting**: Frontend linting uses fix mode in the local environment.
    - **Type Checking**: MyPy type checking uses more lenient settings in the local environment.
    - **Integration Tests**: Integration tests are skipped in the local environment to speed up testing.
    - **Unit Tests**: Unit tests run with more verbose output in the local environment.
    - **Docker Builds**: Docker builds use a simplified approach in the local environment to avoid Docker-in-Docker issues.
 
-2. **Canvas Package Issues**: The `canvas` package requires system dependencies that might not be available in the Docker container. You can try the following:
+3. **Canvas Package Issues**: The `canvas` package requires system dependencies that might not be available in the Docker
+   container. You can try the following:
 
    ```bash
    # Run with a more complete Ubuntu image
@@ -73,20 +78,22 @@ When testing workflows locally with `act`, you might encounter some issues:
    .github/test-workflows.sh -w ci.yml -j backend-checks
    ```
 
-3. **Architecture Issues**: If you're using an Apple M-series chip, you might encounter architecture compatibility issues. Try running with the `--container-architecture` flag:
+4. **Architecture Issues**: If you're using an Apple M-series chip, you might encounter architecture compatibility issues.
+   Try running with the `--container-architecture` flag:
 
    ```bash
    .github/test-workflows.sh -w ci.yml --container-architecture linux/amd64
    ```
 
-4. **Skipping Jobs**: You can test specific jobs within a workflow:
+5. **Skipping Jobs**: You can test specific jobs within a workflow:
 
    ```bash
    # Test only the backend checks
    .github/test-workflows.sh -w ci.yml -j backend-checks
    ```
 
-Remember that local testing with `act` is not a perfect simulation of GitHub's environment. Some workflows might work differently when run on GitHub's infrastructure.
+Remember that local testing with `act` is not a perfect simulation of GitHub's environment. Some workflows might work
+differently when run on GitHub's infrastructure.
 
 ## Workflows
 
@@ -131,7 +138,8 @@ This workflow runs when a new tag with the format `v*` is pushed to the reposito
 
 **File:** [pre-commit.yml](./workflows/pre-commit.yml)
 
-This workflow runs on pull requests targeting the `main` branch and when manually triggered. It performs the following actions:
+This workflow runs on pull requests targeting the `main` branch and when manually triggered. It performs the following
+actions:
 
 - Runs all pre-commit hooks on all files in the repository
 - For pull requests, also runs pre-commit hooks on the changed files only
@@ -140,7 +148,8 @@ This workflow runs on pull requests targeting the `main` branch and when manuall
 
 **File:** [code-coverage.yml](./workflows/code-coverage.yml)
 
-This workflow runs on every push to the `main` branch, on pull requests targeting the `main` branch, and when manually triggered. It performs the following actions:
+This workflow runs on every push to the `main` branch, on pull requests targeting the `main` branch, and when manually
+triggered. It performs the following actions:
 
 - **Frontend Coverage:**
   - Runs frontend tests with coverage reporting

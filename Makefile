@@ -24,9 +24,9 @@ dev: ## Start development servers for both frontend and backend
 
 test: frontend-test backend-test e2e-test ## Run all tests (frontend, backend, and end-to-end)
 
-lint: frontend-lint frontend-type-check backend-lint e2e-lint e2e-type-check yaml-lint ## Run linting for frontend, backend, e2e-tests, and YAML files
+lint: frontend-lint frontend-type-check backend-lint e2e-lint e2e-type-check yaml-lint markdown-lint ## Run linting for frontend, backend, e2e-tests, YAML and Markdown files
 
-format: frontend-format backend-format e2e-format yaml-format ## Format code in frontend, backend, e2e-tests, and YAML files
+format: frontend-format backend-format e2e-format yaml-format markdown-format ## Format code in frontend, backend, e2e-tests, YAML and Markdown files
 
 clean: ## Clean up build artifacts, cache, logs, temporary files, and Docker resources
 	# Frontend cleanup
@@ -205,7 +205,7 @@ backend-lint-fix-ci: ## Auto-fix backend linting issues in CI mode (non-interact
 	docker build -t backend-dev -f backend/Dockerfile --target ci backend
 	docker run --rm -v $(PWD)/backend:/app backend-dev sh -c "ruff check --fix --exit-non-zero-on-fix app tests && ruff format app tests --exclude app/migrations/versions/ && mypy --explicit-package-bases --namespace-packages --ignore-missing-imports --exclude 'app/migrations/|tests/unit/conftest\.py' app tests && bandit -c pyproject.toml -r app tests"
 
-lint-fix: frontend-lint-fix frontend-type-check backend-lint-fix e2e-lint-fix e2e-type-check yaml-format ## Auto-fix linting issues in frontend, backend, e2e-tests, and YAML files
+lint-fix: frontend-lint-fix frontend-type-check backend-lint-fix e2e-lint-fix e2e-type-check yaml-format markdown-format ## Auto-fix linting issues in frontend, backend, e2e-tests, YAML and Markdown files
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
@@ -273,6 +273,22 @@ yaml-format-ci: yamlfmt-image ## Format YAML files in CI mode (non-interactive)
 
 yaml-format-check-ci: yamlfmt-image ## Check YAML files formatting in CI mode (non-interactive)
 	docker run --rm -v $(PWD):/app yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+
+markdown-lint: ## Lint Markdown files
+	docker build -t markdownlint -f Dockerfile.markdownlint .
+	cd $(PWD) && docker run --rm -v $(PWD):/app -w /app markdownlint markdownlint-cli2 || true
+
+markdown-lint-ci: ## Lint Markdown files in CI mode (non-interactive)
+	docker build -t markdownlint -f Dockerfile.markdownlint .
+	cd $(PWD) && docker run --rm -v $(PWD):/app -w /app markdownlint markdownlint-cli2 || true
+
+markdown-format: ## Format Markdown files
+	docker build -t markdownlint -f Dockerfile.markdownlint .
+	cd $(PWD) && docker run --rm -v $(PWD):/app -w /app markdownlint markdownlint-cli2 --fix || true
+
+markdown-format-ci: ## Format Markdown files in CI mode (non-interactive)
+	docker build -t markdownlint -f Dockerfile.markdownlint .
+	cd $(PWD) && docker run --rm -v $(PWD):/app -w /app markdownlint markdownlint-cli2 --fix || true
 
 test-github-actions: ## Test GitHub Actions workflows locally using act
 	@if ! command -v act &> /dev/null; then \
