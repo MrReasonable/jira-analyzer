@@ -61,7 +61,9 @@ const App: Component = () => {
           />
 
           <div class="mt-6">
-            <h3 id="jql-query-heading" class="mb-2 text-lg font-medium">JQL Query</h3>
+            <h3 id="jql-query-heading" class="mb-2 text-lg font-medium">
+              JQL Query
+            </h3>
             <JqlInput
               jql={metricsState.jql}
               onJqlChange={metricsState.setJql}

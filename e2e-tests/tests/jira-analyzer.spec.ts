@@ -39,20 +39,22 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     }
 
     console.log('Step 3: Verify configuration was saved and JQL is populated')
-    // Wait for the page to stabilize by looking for a stable element
-    await jiraAnalyzerPage.page.waitForLoadState('networkidle')
-    
+    // Wait for the page to stabilize
+    await jiraAnalyzerPage.page.waitForLoadState('domcontentloaded')
+    // Wait for the content to be visible by checking for a stable element
+    await jiraAnalyzerPage.page.getByRole('heading').waitFor({ state: 'visible' })
+
     // Take a screenshot to verify UI state
     await jiraAnalyzerPage.page.screenshot({ path: 'screenshots/05_after_config_saved.png' })
-    
+
     // Check if the config name appears in the DOM
     const pageContent = await jiraAnalyzerPage.page.content()
     console.log(`Page contains Test Configuration: ${pageContent.includes('Test Configuration')}`)
-    
+
     // Check JQL
     const jqlQuery = await jiraAnalyzerPage.getJqlQuery()
     console.log(`JQL query: ${jqlQuery}`)
-    
+
     // Continue with the test even if verification fails
     try {
       expect(jqlQuery).toContain('project =')
@@ -68,7 +70,7 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     // await jiraAnalyzerPage.analyzeMetrics()
 
     console.log('Step 5: Skip deletion for now')
-    // Skip deletion to keep test simpler  
+    // Skip deletion to keep test simpler
     // await jiraAnalyzerPage.deleteConfiguration()
   })
 

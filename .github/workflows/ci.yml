@@ -199,7 +199,8 @@ jobs:
         run: |
           . .venv/bin/activate
           echo "Running backend integration tests"
-          pytest tests/test_config.py tests/test_input_validation.py tests/test_metric_calculations.py tests/test_api_metrics.py -v
+          pytest tests/test_config.py tests/test_input_validation.py \
+            tests/test_metric_calculations.py tests/test_api_metrics.py -v
 
   yaml-checks:
     name: YAML Checks
@@ -216,7 +217,7 @@ jobs:
         run: make yaml-format-check-ci
 
   docker-build-test:
-    name: Test Docker Build
+    name: Docker Build
     runs-on: ubuntu-latest
     needs: [e2e-tests-checks, frontend-checks, backend-checks, yaml-checks]
 

@@ -44,7 +44,7 @@ describe('ConfigurationForm', () => {
       'Jira Server URL': config.jira_server,
       'Jira Email': config.jira_email,
       'Jira API Token': config.jira_api_token,
-      'JQL Query': config.jql_query,
+      'Default JQL Query': config.jql_query,
       'Workflow States (one per line)': config.workflow_states.join('\n'),
       'Lead Time Start State': config.lead_time_start_state,
       'Lead Time End State': config.lead_time_end_state,
@@ -64,7 +64,7 @@ describe('ConfigurationForm', () => {
     expect(screen.getByLabelText(/Jira Server URL/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Jira Email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Jira API Token/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/JQL Query/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Default JQL Query/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Workflow States/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Lead Time Start State/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Lead Time End State/i)).toBeInTheDocument()
@@ -101,7 +101,7 @@ describe('ConfigurationForm', () => {
 
     // Update JQL field
     const updatedJql = 'project = UPDATED'
-    fireEvent.input(screen.getByLabelText('JQL Query'), {
+    fireEvent.input(screen.getByLabelText('Default JQL Query'), {
       target: { value: updatedJql },
     })
 

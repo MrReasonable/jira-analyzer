@@ -31,13 +31,13 @@ export class JiraAnalyzerPage {
   }) {
     console.log('Clicking "Add Configuration" button')
     await this.page.getByRole('button', { name: 'Add Configuration' }).click()
-    
+
     // Take screenshot after clicking Add Configuration
     await this.page.screenshot({ path: 'screenshots/01_after_add_config_click.png' })
-    
+
     console.log('Waiting for Configuration Name field')
     await this.page.getByLabel('Configuration Name').waitFor({ state: 'visible', timeout: 5000 })
-    
+
     console.log('Filling form fields')
     // Fill in the form fields using more reliable getByLabel selectors
     await this.page.getByLabel('Configuration Name').fill(config.name)
@@ -50,7 +50,7 @@ export class JiraAnalyzerPage {
     await this.page.getByLabel('Lead Time End State').fill(config.leadTimeEndState)
     await this.page.getByLabel('Cycle Time Start State').fill(config.cycleTimeStartState)
     await this.page.getByLabel('Cycle Time End State').fill(config.cycleTimeEndState)
-    
+
     // Take screenshot after filling form
     await this.page.screenshot({ path: 'screenshots/02_after_filling_form.png' })
 
@@ -59,15 +59,17 @@ export class JiraAnalyzerPage {
     const submitButton = this.page.getByRole('button', { name: 'Create Configuration' })
     await submitButton.waitFor({ state: 'visible', timeout: 5000 })
     await submitButton.click()
-    
+
     // Take screenshot after clicking submit
     await this.page.screenshot({ path: 'screenshots/03_after_submit_click.png' })
 
     // Wait for configuration to be saved and verify it appears in the list
     console.log('Waiting for configuration to appear in the list')
-    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForLoadState('domcontentloaded')
+    // Wait for a stable element to be visible
+    await this.page.getByRole('heading').waitFor({ state: 'visible' })
     await this.page.getByText(config.name).waitFor({ state: 'visible', timeout: 10000 })
-    
+
     // Take screenshot of the saved configuration
     await this.page.screenshot({ path: 'screenshots/04_after_submission.png' })
   }
@@ -103,13 +105,13 @@ export class JiraAnalyzerPage {
   async analyzeMetrics() {
     console.log('Analyzing metrics')
     await this.page.getByRole('button', { name: 'Analyze' }).click()
-    
+
     // Take screenshot after clicking Analyze
     await this.page.screenshot({ path: 'screenshots/05_after_analyze_click.png' })
-    
+
     // Wait for the metrics to load
     await this.page.getByText('Analytics').waitFor({ state: 'visible', timeout: 10000 })
-    
+
     // Take screenshot after metrics loaded
     await this.page.screenshot({ path: 'screenshots/06_after_metrics_loaded.png' })
   }
@@ -120,15 +122,17 @@ export class JiraAnalyzerPage {
   async deleteConfiguration() {
     console.log('Deleting configuration')
     // Set up dialog handler before clicking the Delete button
-    this.page.on('dialog', dialog => dialog.accept());
-    
+    this.page.on('dialog', dialog => dialog.accept())
+
     // Click the Delete button
     await this.page.getByRole('button', { name: 'Delete' }).click()
-    
+
     // Take a screenshot after delete
     await this.page.screenshot({ path: 'screenshots/07_after_delete.png' })
-    
+
     // Wait for deletion to complete
-    await this.page.waitForLoadState('networkidle')
+    await this.page.waitForLoadState('domcontentloaded')
+    // Wait for UI to stabilize - check for some stable element like a heading or the add button
+    await this.page.getByRole('button', { name: 'Add Configuration' }).waitFor({ state: 'visible' })
   }
 }
