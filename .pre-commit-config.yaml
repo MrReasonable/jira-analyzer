@@ -126,3 +126,15 @@ repos:
         files: \.(yml|yaml)$
         types: [file]
         pass_filenames: false
+
+  # Markdown linting hooks
+  - repo: local
+    hooks:
+      - id: markdown-lint
+        name: Markdown Lint
+        entry: bash -c 'echo "Running Markdown linting" && make markdown-lint-ci || { echo "Markdown linting failed"; exit 1; }'
+        language: system
+        files: \.md$
+        types: [file]
+        exclude: node_modules/
+        pass_filenames: false

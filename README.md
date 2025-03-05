@@ -1,51 +1,91 @@
-# yamlfmt
+# Jira Analyzer
 
-`yamlfmt` is an extensible command line tool or library to format yaml files.
+A powerful analytics tool for visualizing and understanding Jira workflow metrics.
 
-## Goals
+## Overview
 
-* Create a command line yaml formatting tool that is easy to distribute (single binary)
-* Make it simple to extend with new custom formatters
-* Enable alternative use as a library, providing a foundation for users to create a tool that meets specific needs
+Jira Analyzer is a web application that provides insightful metrics and visualizations for Jira projects. It helps teams
+analyze their workflow efficiency by calculating and displaying key performance indicators derived from Jira issue data.
 
-## Maintainers
+## Features
 
-This tool is not yet officially supported by Google. It is currenlty maintained solely by @braydonk, and unless something changes primarily in spare time.
+- **JQL-Based Analysis**: Filter issues using Jira Query Language (JQL) to focus on specific projects, teams, or time periods
+- **Saved Configurations**: Create and save configurations for quick access to frequently used queries
+- **Comprehensive Metrics**:
+  - **Lead Time**: Visualize how long issues take from creation to completion
+  - **Throughput**: Track completion rates over time
+  - **WIP (Work in Progress)**: Monitor the number of issues in progress at any given time
+  - **CFD (Cumulative Flow Diagram)**: Visualize workflow distribution and identify bottlenecks
+  - **Cycle Time**: Measure the time issues spend in specific workflow states
 
-## Installation
+## Architecture
 
-To download the `yamlfmt` command, you can download the desired binary from releases or install the module directly:
-```
-go install github.com/google/yamlfmt/cmd/yamlfmt@latest
-```
-This currently requires Go version 1.18 or greater.
+The application consists of:
 
-NOTE: Recommended setup if this is your first time installing Go would be in [this DigitalOcean blog post](https://www.digitalocean.com/community/tutorials/how-to-build-and-install-go-programs).
+- **Frontend**: Built with SolidJS and TailwindCSS, providing a responsive and intuitive user interface
+- **Backend**: Python/FastAPI backend that interfaces with Jira's API and processes metrics
+- **Dockerized Deployment**: Containerized setup with Docker Compose for easy deployment and development
+- **CI/CD**: GitHub Actions workflows for continuous integration and deployment
 
-You can also download the binary you want from releases. The binary is self-sufficient with no dependencies, and can simply be put somewhere on your PATH and run with the command `yamlfmt`.
+### Development Tools
 
-You can also install the command as a [pre-commit](https://pre-commit.com/) hook. See the [pre-commit hook](./docs/pre-commit.md) docs for instructions.
+This repository uses several tools to maintain code quality:
 
-## Basic Usage
+- **yamlfmt**: YAML formatting tool used to ensure consistent formatting of YAML files
+- **pre-commit**: Hooks for code quality checks before committing
+- **ESLint/Ruff**: Code linting for JavaScript/TypeScript and Python
+- **Playwright**: End-to-end testing framework
 
-See [Command Usage](./docs/command-usage.md) for in depth information and available flags.
+## Getting Started
 
-To run the tool with all default settings, run the command with a path argument:
+### Prerequisites
+
+- Docker and Docker Compose
+- Jira instance with API access
+
+### Installation & Running
+
+1. Clone this repository
+2. Create a `.env` file based on `.env.example` with your configuration settings
+3. Run the application:
+
+   ```bash
+   # Production mode
+   docker-compose up -d
+
+   # Development mode
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+
+4. Access the application at <http://localhost> (or the port specified in your `.env` file)
+
+### Development Setup
+
+For development, the application provides:
+
+- Hot-reloading for both frontend and backend
+- Debugging ports for Python (5678) and Node.js (9229)
+- Mock Jira API option for testing without a real Jira instance
+
 ```bash
-yamlfmt x.yaml y.yaml <...>
-```
-You can specify as many paths as you want. You can also specify a directory which will be searched recursively for any files with the extension `.yaml` or `.yml`.
-```bash
-yamlfmt .
+# Start in development mode
+docker-compose -f docker-compose.dev.yml up -d
+
+# Run tests
+make test
+
+# Run E2E tests
+make e2e-tests
 ```
 
-You can also use an alternate mode that will search paths with doublestar globs by supplying the `-dstar` flag.
-```bash
-yamlfmt -dstar **/*.{yaml,yml}
-```
-See the [doublestar](https://github.com/bmatcuk/doublestar) package for more information on this format.
+## License
 
-# Configuration File
+This project is licensed under the terms in the LICENSE file.
 
-The `yamlfmt` command can be configured through a yaml file called `.yamlfmt`. This file can live in your working directory, a path specified through a [CLI flag](./docs/command-usage.md#operation-flags), or in the standard global config path on your system (see docs for specifics).
-For in-depth configuration documentation see [Config](docs/config-file.md).
+## Repository Structure
+
+- **frontend/**: SolidJS frontend application
+- **backend/**: Python/FastAPI backend application
+- **e2e-tests/**: End-to-end tests using Playwright
+- **.github/**: GitHub Actions workflows and configuration
+  - Contains detailed [GitHub Actions documentation](.github/WORKFLOWS.md)

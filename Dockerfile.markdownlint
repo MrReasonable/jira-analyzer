@@ -1,0 +1,8 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN npm install -g markdownlint-cli2 markdownlint-cli2-formatter-default
+
+ARG CMD=markdownlint-cli2
+ENTRYPOINT ["sh", "-c", "exec $CMD \"$@\"", "--"]

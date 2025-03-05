@@ -22,7 +22,8 @@ This directory contains end-to-end tests for the Jira Analyzer application using
 
 ### Using the run-tests.sh Script (Recommended)
 
-The `run-tests.sh` script handles starting the backend and frontend servers before running the tests, and then cleans up afterward. This is the recommended way to run the tests.
+The `run-tests.sh` script handles starting the backend and frontend servers before running the tests, and then cleans up
+afterward. This is the recommended way to run the tests.
 
 ```bash
 # Run tests in headless mode
@@ -50,7 +51,8 @@ make e2e-test-debug
 
 ### Running Tests Directly (Not Recommended)
 
-These commands run the tests directly without starting the servers. You need to start the backend and frontend servers manually before running these commands.
+These commands run the tests directly without starting the servers. You need to start the backend and frontend servers
+manually before running these commands.
 
 ```bash
 # Run tests in headless mode
@@ -78,7 +80,8 @@ The tests are located in the `tests` directory and are organized as follows:
 
 ## Mock Jira Server
 
-The end-to-end tests use a mock Jira server to avoid requiring actual Jira credentials. This makes the tests more reliable and faster, as they don't depend on external services.
+The end-to-end tests use a mock Jira server to avoid requiring actual Jira credentials. This makes the tests more
+reliable and faster, as they don't depend on external services.
 
 The mock Jira server:
 
@@ -87,7 +90,8 @@ The mock Jira server:
 - Includes changelogs for cycle time calculation
 - Is automatically enabled when running the tests
 
-The mock implementation is in `backend/app/mock_jira.py` and is activated by setting the `USE_MOCK_JIRA` environment variable to `true` in the Docker Compose configuration.
+The mock implementation is in `backend/app/mock_jira.py` and is activated by setting the `USE_MOCK_JIRA` environment
+variable to `true` in the Docker Compose configuration.
 
 ## Configuration
 
@@ -135,7 +139,8 @@ make e2e-format-check
 
 ## Logging
 
-The `run-tests.sh` script now captures backend logs during test execution. This helps with debugging test failures, especially when they're related to backend issues.
+The `run-tests.sh` script now captures backend logs during test execution. This helps with debugging test failures,
+especially when they're related to backend issues.
 
 ### Log Location
 
@@ -167,7 +172,8 @@ tail -f e2e-tests/logs/backend.log
 
 ### CI Integration
 
-In CI environments, backend logs are automatically captured and uploaded as artifacts. You can access them from the GitHub Actions workflow run page under the "Artifacts" section.
+In CI environments, backend logs are automatically captured and uploaded as artifacts. You can access them from the
+GitHub Actions workflow run page under the "Artifacts" section.
 
 To run these tests in CI, you can use the following command:
 
