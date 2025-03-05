@@ -26,6 +26,7 @@ export const JqlInput: Component<JqlInputProps> = props => {
   return (
     <div class="flex items-center gap-4">
       <TextField.Root class="flex-1">
+        <TextField.Label class="sr-only">JQL Query</TextField.Label>
         <TextField.Input
           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           placeholder="Enter JQL Query"
@@ -33,6 +34,7 @@ export const JqlInput: Component<JqlInputProps> = props => {
           // Remove the onChange prop as it's not compatible with the expected type
           onInput={e => handleJqlChange(e.currentTarget.value)}
           data-testid="jql-input"
+          aria-labelledby="jql-query-heading"
           disabled={!props.configSelected()}
         />
       </TextField.Root>

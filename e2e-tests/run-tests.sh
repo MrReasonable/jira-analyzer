@@ -81,9 +81,13 @@ if [ ! -d "$HOME/Library/Caches/ms-playwright" ] || [ ! -d "$HOME/Library/Caches
   cd "$SCRIPT_DIR" && pnpm exec playwright install
 fi
 
+# Build the tests before running
+echo "Building the tests..."
+cd "$SCRIPT_DIR" && pnpm run build
+
 # Run the tests
 echo "Running tests..."
-cd "$SCRIPT_DIR" && pnpm exec playwright test "$@"
+cd "$SCRIPT_DIR" && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js pnpm exec playwright test --config=dist/playwright.config.js "$@"
 TEST_EXIT_CODE=$?
 
 # Cleanup is handled by the trap
