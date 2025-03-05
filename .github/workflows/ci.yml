@@ -15,38 +15,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+          version: "10"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "23"
+          cache: "pnpm"
+          cache-dependency-path: "e2e-tests/pnpm-lock.yaml"
 
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          version: "10.5.2"
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+      - name: Install e2e-tests dependencies
+        working-directory: ./e2e-tests
+        run: pnpm install
 
       - name: Lint e2e-tests
-        run: make e2e-lint-ci
+        working-directory: ./e2e-tests
+        run: pnpm run lint:strict
 
       - name: Check e2e-tests formatting
-        run: make e2e-format-check-ci
+        working-directory: ./e2e-tests
+        run: pnpm run format:check
 
       - name: Type check e2e-tests
-        run: make e2e-type-check-ci
+        working-directory: ./e2e-tests
+        run: pnpm run type-check
 
   frontend-checks:
     name: Frontend Checks
@@ -56,29 +52,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+          version: "10"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "23"
-
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          version: "10.5.2"
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: "pnpm"
+          cache-dependency-path: "frontend/pnpm-lock.yaml"
 
       - name: Install system dependencies for canvas
         run: |
@@ -93,10 +78,7 @@ jobs:
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: |
-          # Clean any existing node_modules to avoid dependency conflicts
-          rm -rf node_modules
-          # Force reinstall with platform-specific dependencies
-          pnpm install --force
+          pnpm install
 
           # Explicitly install the missing optional dependency for rollup
           if [ "$RUNNER_OS" == "Linux" ]; then
@@ -106,15 +88,11 @@ jobs:
 
       - name: Lint frontend
         working-directory: ./frontend
-        run: |
-          echo "Running frontend linting"
-          pnpm run lint
+        run: pnpm run lint
 
       - name: Check frontend formatting
         working-directory: ./frontend
-        run: |
-          echo "Checking frontend formatting"
-          pnpm run format:check
+        run: pnpm run format:check
 
       - name: Type check frontend
         working-directory: ./frontend
@@ -122,9 +100,7 @@ jobs:
 
       - name: Test frontend
         working-directory: ./frontend
-        run: |
-          echo "Running frontend tests"
-          pnpm run test
+        run: pnpm run test
 
   backend-checks:
     name: Backend Checks
@@ -154,21 +130,18 @@ jobs:
         run: |
           . .venv/bin/activate
           pip install -r requirements.txt
+          pip install ruff mypy bandit[toml]
 
       - name: Lint backend with Ruff
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          pip install ruff
           ruff check app tests
 
       - name: Format backend with Ruff
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          pip install ruff
-          echo "Formatting files with Ruff"
-          ruff format app tests
           echo "Verifying formatting"
           ruff format --check app tests
 
@@ -176,29 +149,24 @@ jobs:
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          pip install mypy
-          echo "Running type checking with MyPy"
           mypy app --exclude=app/migrations --ignore-missing-imports
 
       - name: Security check with Bandit
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          pip install bandit[toml]
           bandit -c pyproject.toml -r app
 
       - name: Run backend unit tests
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          echo "Running backend unit tests"
           pytest tests/unit -v
 
       - name: Run backend integration tests
         working-directory: ./backend
         run: |
           . .venv/bin/activate
-          echo "Running backend integration tests"
           pytest tests/test_config.py tests/test_input_validation.py \
             tests/test_metric_calculations.py tests/test_api_metrics.py -v
 
@@ -210,11 +178,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build yamlfmt Docker image
-        run: docker build -t yamlfmt -f Dockerfile.yamlfmt .
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install yamlfmt
+        run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 
       - name: Check YAML formatting
-        run: make yaml-format-check-ci
+        run: yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
 
   docker-build-test:
     name: Docker Build
@@ -237,6 +210,10 @@ jobs:
           tags: jira-analyzer-frontend:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          file: ./frontend/Dockerfile.standalone
+          build-args: |
+            NODE_VERSION=23
+            PNPM_VERSION=10.5.2
 
       - name: Build backend Docker image
         uses: docker/build-push-action@v6

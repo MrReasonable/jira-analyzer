@@ -10,7 +10,8 @@ export class JiraAnalyzerPage {
    * Navigate to the Jira Analyzer application
    */
   async goto() {
-    await this.page.goto('http://localhost')
+    // Use baseURL from playwright.config.ts by using relative URL
+    await this.page.goto('/')
     await this.page.waitForLoadState('domcontentloaded')
   }
 
@@ -66,8 +67,10 @@ export class JiraAnalyzerPage {
     // Wait for configuration to be saved and verify it appears in the list
     console.log('Waiting for configuration to appear in the list')
     await this.page.waitForLoadState('domcontentloaded')
-    // Wait for a stable element to be visible
-    await this.page.getByRole('heading').waitFor({ state: 'visible' })
+    // Wait for a stable element to be visible - using more specific selector
+    await this.page
+      .getByRole('heading', { name: 'Saved Configurations' })
+      .waitFor({ state: 'visible' })
     await this.page.getByText(config.name).waitFor({ state: 'visible', timeout: 10000 })
 
     // Take screenshot of the saved configuration

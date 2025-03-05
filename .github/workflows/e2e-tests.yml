@@ -9,82 +9,98 @@ on:
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.5.2"
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "23"
           cache: "pnpm"
-          cache-dependency-path: "e2e-tests/pnpm-lock.yaml"
+          cache-dependency-path: "**/pnpm-lock.yaml"
 
-      - name: Set up Docker Compose
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      # Create required directories
+      - name: Create logs and screenshots directories
         run: |
-          # Docker and Docker Compose V2 are pre-installed on GitHub runners
-          # Just verify they are available
-          docker --version
-          docker compose version
-
-      - name: Create .env file
-        run: |
-          cp .env.example .env
-          echo "USE_MOCK_JIRA=true" >> .env
-          echo "USE_IN_MEMORY_DB=true" >> .env
-
-      - name: Check and stop any running services
-        run: |
-          if docker ps | grep -q "jira-analyzer"; then
-            echo "Services are already running. Shutting them down..."
-            docker compose -f docker-compose.dev.yml down
-          fi
-
-      - name: Start backend with Docker Compose
-        run: |
-          docker compose -f docker-compose.dev.yml up -d
-
-          # Create logs and screenshots directories
           mkdir -p e2e-tests/logs
           mkdir -p e2e-tests/screenshots
-
-          # Clear old logs and screenshots
-          rm -f e2e-tests/logs/*.log
           rm -f e2e-tests/screenshots/*.png
+          rm -f e2e-tests/logs/*.log
 
-          # Start capturing logs in the background
-          docker logs -f jira-analyzer-backend-dev > e2e-tests/logs/backend.log 2>&1 &
-          echo $! > .docker_logs_pid
+      # Install dependencies for all components
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: pip install -r requirements.txt
 
       - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm install -g pnpm
-          pnpm install
+        working-directory: ./frontend
+        run: pnpm install
 
       - name: Install e2e-tests dependencies
-        run: |
-          cd e2e-tests
-          npm install -g pnpm
-          pnpm install
+        working-directory: ./e2e-tests
+        run: pnpm install
 
       - name: Install Playwright browsers
-        run: |
-          cd e2e-tests
-          pnpm exec playwright install --with-deps
+        working-directory: ./e2e-tests
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Lint, format, and type-check e2e-tests
-        run: |
-          cd e2e-tests && pnpm run lint:strict
-          make e2e-format-check-ci
-          make e2e-type-check-ci
+      # Build frontend
+      - name: Build frontend
+        working-directory: ./frontend
+        run: pnpm run build
 
+      # Build e2e-tests
+      - name: Build e2e-tests
+        working-directory: ./e2e-tests
+        run: pnpm run build
+
+      # Start services
+      - name: Start backend server
+        working-directory: ./backend
+        run: |
+          # Configure backend with correct CORS settings for the GitHub Actions environment
+          USE_MOCK_JIRA=true USE_IN_MEMORY_DB=true CORS_ORIGINS='["http://localhost:5173"]' python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > ../e2e-tests/logs/backend.log 2>&1 &
+          echo $! > ../.backend_pid
+          # Give backend time to start
+          sleep 5
+          # Check if backend is running
+          curl -s http://localhost:8000/docs || (cat ../e2e-tests/logs/backend.log && exit 1)
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          # Use port 5173 for GitHub Actions (non-privileged port)
+          pnpm run preview --port 5173 > ../e2e-tests/logs/frontend.log 2>&1 &
+          echo $! > ../.frontend_pid
+          # Give frontend time to start
+          sleep 5
+          # Check if frontend is running
+          curl -s http://localhost:5173 || (cat ../e2e-tests/logs/frontend.log && exit 1)
+
+      # Run tests with environment variables for host/port configuration
       - name: Run end-to-end tests
+        working-directory: ./e2e-tests
+        env:
+          TEST_HOST: localhost
+          TEST_PORT: 5173
+          CI: true
+          PLAYWRIGHT_CONFIG_PATH: dist/playwright.config.js
         run: |
-          cd e2e-tests
-          chmod +x run-tests.sh
-          CI=true pnpm run run-tests
+          pnpm exec playwright test --config=dist/playwright.config.js
 
+      # Upload artifacts for debugging
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -93,24 +109,29 @@ jobs:
           path: e2e-tests/playwright-report/
           retention-days: 30
 
-      - name: Upload backend logs
+      - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-logs
+          name: screenshots
+          path: e2e-tests/screenshots/
+          retention-days: 30
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
           path: e2e-tests/logs/
           retention-days: 30
 
-      - name: Stop Docker Compose
+      # Cleanup
+      - name: Stop servers
         if: always()
         run: |
-          # Kill the log capturing process if it exists
-          if [ -f .docker_logs_pid ]; then
-            LOGS_PID=$(cat .docker_logs_pid)
-            if ps -p $LOGS_PID > /dev/null; then
-              echo "Stopping log capture process..."
-              kill $LOGS_PID || true
-            fi
+          if [ -f .backend_pid ]; then
+            kill $(cat .backend_pid) || true
           fi
-
-          docker compose -f docker-compose.dev.yml down
+          if [ -f .frontend_pid ]; then
+            kill $(cat .frontend_pid) || true
+          fi

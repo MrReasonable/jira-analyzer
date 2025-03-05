@@ -42,7 +42,9 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     // Wait for the page to stabilize
     await jiraAnalyzerPage.page.waitForLoadState('domcontentloaded')
     // Wait for the content to be visible by checking for a stable element
-    await jiraAnalyzerPage.page.getByRole('heading').waitFor({ state: 'visible' })
+    await jiraAnalyzerPage.page
+      .getByRole('heading', { name: 'Saved Configurations' })
+      .waitFor({ state: 'visible' })
 
     // Take a screenshot to verify UI state
     await jiraAnalyzerPage.page.screenshot({ path: 'screenshots/05_after_config_saved.png' })
