@@ -81,13 +81,14 @@ jobs:
       - name: Start frontend server
         working-directory: ./frontend
         run: |
-          # Use port 5173 for GitHub Actions (non-privileged port)
-          pnpm run preview --port 5173 > ../e2e-tests/logs/frontend.log 2>&1 &
+          # Use port 5173 for GitHub Actions (non-privileged port) and bind to all interfaces
+          VITE_API_URL=http://localhost:8000 pnpm run preview -- --host 0.0.0.0 --port 5173 > ../e2e-tests/logs/frontend.log 2>&1 &
           echo $! > ../.frontend_pid
-          # Give frontend time to start
-          sleep 5
-          # Check if frontend is running
-          curl -s http://localhost:5173 || (cat ../e2e-tests/logs/frontend.log && exit 1)
+          # Give frontend more time to start
+          sleep 30
+          # Check if frontend is running and display logs in any case for debugging
+          curl -v http://localhost:5173 || (cat ../e2e-tests/logs/frontend.log && exit 1)
+          cat ../e2e-tests/logs/frontend.log
 
       # Run tests with environment variables for host/port configuration
       - name: Run end-to-end tests

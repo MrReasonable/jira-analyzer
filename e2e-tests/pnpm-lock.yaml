@@ -14,7 +14,7 @@ importers:
         specifier: ^1.42.1
         version: 1.50.1
       '@types/node':
-        specifier: ^22
+        specifier: ^22.13.5
         version: 22.13.5
       esbuild:
         specifier: ^0.25.0

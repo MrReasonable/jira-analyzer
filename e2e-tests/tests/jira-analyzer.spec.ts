@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { JiraAnalyzerPage } from './pages/jira-analyzer-page'
 
-// Increase the test timeout
-test.setTimeout(120000)
+// Increase the test timeout for all tests in this file, but keep it reasonable
+test.setTimeout(30000) // 30 seconds max timeout as requested
 
 test.describe('Jira Analyzer End-to-End Test', () => {
   let jiraAnalyzerPage: JiraAnalyzerPage
