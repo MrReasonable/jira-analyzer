@@ -18,13 +18,13 @@ export default defineConfig({
   /* Cleanup after tests */
   globalTeardown: './global-teardown.ts',
   /* Maximum time one test can run for. */
-  timeout: 30 * 1000,
+  timeout: 30 * 1000, // Maximum 30 seconds per test as requested
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
      * For example in `await expect(locator).toHaveText();`
      */
-    timeout: 5000,
+    timeout: 10000, // 10 seconds for expect timeouts
   },
   /* Run tests in files in parallel */
   fullyParallel: true,

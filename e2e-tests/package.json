@@ -24,7 +24,7 @@
   "devDependencies": {
     "@eslint/js": "9.21.0",
     "@playwright/test": "^1.42.1",
-    "@types/node": "^22",
+    "@types/node": "^22.13.5",
     "esbuild": "^0.25.0",
     "eslint": "9.21.0",
     "eslint-config-prettier": "10.0.2",
