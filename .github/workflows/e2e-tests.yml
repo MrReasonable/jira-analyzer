@@ -59,7 +59,9 @@ jobs:
       # Build frontend
       - name: Build frontend
         working-directory: ./frontend
-        run: pnpm run build
+        run: |
+          # Set API URL for build
+          VITE_API_URL=http://localhost:8000 pnpm run build
 
       # Build e2e-tests
       - name: Build e2e-tests
@@ -70,34 +72,53 @@ jobs:
       - name: Start backend server
         working-directory: ./backend
         run: |
-          # Configure backend with correct CORS settings for the GitHub Actions environment
-          USE_MOCK_JIRA=true USE_IN_MEMORY_DB=true CORS_ORIGINS='["http://localhost:5173"]' python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > ../e2e-tests/logs/backend.log 2>&1 &
+          # Configure backend with permissive CORS settings for GitHub Actions environment
+          USE_MOCK_JIRA=true USE_IN_MEMORY_DB=true CORS_ORIGINS='["*"]' CORS_ALLOW_METHODS='["GET", "POST", "PUT", "DELETE", "OPTIONS"]' CORS_ALLOW_HEADERS='["*"]' CORS_ALLOW_CREDENTIALS=true python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > ../e2e-tests/logs/backend.log 2>&1 &
           echo $! > ../.backend_pid
-          # Give backend time to start
-          sleep 5
+          # Give backend more time to start
+          sleep 10
           # Check if backend is running
           curl -s http://localhost:8000/docs || (cat ../e2e-tests/logs/backend.log && exit 1)
 
       - name: Start frontend server
         working-directory: ./frontend
         run: |
-          # Use port 5173 for GitHub Actions (non-privileged port) and bind to all interfaces
-          VITE_API_URL=http://localhost:8000 pnpm run preview -- --host 0.0.0.0 --port 5173 > ../e2e-tests/logs/frontend.log 2>&1 &
+          # Note: Vite preview command always uses port 4173 regardless of any specified port
+          # Enable verbose debugging in the frontend
+          VITE_API_URL=http://localhost:8000 VITE_DEBUG_LEVEL=verbose pnpm run preview -- --host 0.0.0.0 > ../e2e-tests/logs/frontend.log 2>&1 &
           echo $! > ../.frontend_pid
           # Give frontend more time to start
           sleep 30
           # Check if frontend is running and display logs in any case for debugging
-          curl -v http://localhost:5173 || (cat ../e2e-tests/logs/frontend.log && exit 1)
+          curl -v http://localhost:4173 || (cat ../e2e-tests/logs/frontend.log && exit 1)
           cat ../e2e-tests/logs/frontend.log
+
+      # Debug network connectivity
+      - name: Debug network connectivity
+        run: |
+          echo "Checking backend connectivity..."
+          curl -v http://localhost:8000/docs
+
+          echo "Checking frontend connectivity..."
+          curl -v http://localhost:4173
+
+          echo "Checking API connectivity from frontend..."
+          curl -v http://localhost:8000/api/configurations || true
+
+          echo "Network interfaces and routes:"
+          ip addr
+          ip route
 
       # Run tests with environment variables for host/port configuration
       - name: Run end-to-end tests
         working-directory: ./e2e-tests
         env:
           TEST_HOST: localhost
-          TEST_PORT: 5173
+          TEST_PORT: 4173
           CI: true
           PLAYWRIGHT_CONFIG_PATH: dist/playwright.config.js
+          # Pass API URL to ensure browser in e2e tests can connect to backend
+          VITE_API_URL: http://localhost:8000
         run: |
           pnpm exec playwright test --config=dist/playwright.config.js
 

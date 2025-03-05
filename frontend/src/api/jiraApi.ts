@@ -1,10 +1,40 @@
 import axios from 'axios'
 import { logger } from '../utils/logger'
 
+// Setup API with more robust configuration
+export const getApiBaseUrl = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  console.debug(`Using API base URL: ${apiUrl}`)
+  return apiUrl
+}
+
 // Export for testing
 export const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost'}/api`,
+  baseURL: `${getApiBaseUrl()}/api`,
+  // Add timeout and better error handling for e2e tests
+  timeout: 10000,
+  withCredentials: false, // Important for CORS in test environments
 })
+
+// Log requests in debug/verbose mode
+api.interceptors.request.use(config => {
+  logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`, config.data)
+  return config
+})
+
+// Log responses in debug/verbose mode
+api.interceptors.response.use(
+  response => {
+    logger.debug(
+      `API Response (${response.status}): ${response.config.method?.toUpperCase()} ${response.config.url}`
+    )
+    return response
+  },
+  error => {
+    logger.error('API Error:', error.response?.data || error.message)
+    return Promise.reject(error)
+  }
+)
 
 export interface MetricResponse {
   error?: string

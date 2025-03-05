@@ -8,7 +8,11 @@ const TEST_HOST = process.env.TEST_HOST || 'localhost'
 const TEST_PORT = process.env.TEST_PORT || '80'
 const BASE_URL = `http://${TEST_HOST}:${TEST_PORT}`
 
+// Get API URL from environment or default to localhost
+const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
+
 console.log(`Using base URL for tests: ${BASE_URL}`)
+console.log(`Using API URL for tests: ${API_URL}`)
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -62,7 +66,9 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+      },
     },
   ],
 
