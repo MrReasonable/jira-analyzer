@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
-// Removed unused imports and __dirname declaration
+import path from 'path'
 
 /**
  * See https://playwright.dev/docs/test-configuration.

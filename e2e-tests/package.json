@@ -4,17 +4,19 @@
   "description": "End-to-end tests for Jira Analyzer",
   "type": "module",
   "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --headed --debug",
+    "build": "node build.js",
+    "prebuild": "rm -rf dist",
+    "test": "npm run build && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js playwright test --config=dist/playwright.config.js",
+    "test:ui": "npm run build && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js playwright test --config=dist/playwright.config.js --ui",
+    "test:headed": "npm run build && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js playwright test --config=dist/playwright.config.js --headed",
+    "test:debug": "npm run build && PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js playwright test --config=dist/playwright.config.js --headed --debug",
     "install:browsers": "pnpm exec playwright install",
     "run-tests": "./run-tests.sh",
     "run-tests:headed": "./run-tests.sh --headed",
     "run-tests:debug": "./run-tests.sh --headed --debug",
-    "lint": "eslint .",
-    "lint:strict": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix",
+    "lint": "node ./node_modules/.bin/eslint .",
+    "lint:strict": "node ./node_modules/.bin/eslint . --max-warnings 0",
+    "lint:fix": "node ./node_modules/.bin/eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "type-check": "node ./node_modules/typescript/bin/tsc --noEmit"
@@ -23,6 +25,7 @@
     "@eslint/js": "9.21.0",
     "@playwright/test": "^1.42.1",
     "@types/node": "^22",
+    "esbuild": "^0.25.0",
     "eslint": "9.21.0",
     "eslint-config-prettier": "10.0.2",
     "eslint-plugin-playwright": "2.2.0",
@@ -30,5 +33,10 @@
     "typescript": "^5.7.3",
     "typescript-eslint": "8.25.0"
   },
-  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b"
+  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
 }

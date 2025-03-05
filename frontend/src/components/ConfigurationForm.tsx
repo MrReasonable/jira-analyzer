@@ -151,7 +151,7 @@ export const ConfigurationForm: Component<Props> = props => {
       {/* JQL Query field */}
       <div role="group" class="space-y-1">
         <label for="jql_query" class="block text-sm font-medium text-gray-700">
-          JQL Query
+          Default JQL Query
         </label>
         <textarea
           id="jql_query"

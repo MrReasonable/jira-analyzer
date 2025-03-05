@@ -13,5 +13,9 @@
     "noEmit": true,
     "types": ["node", "@playwright/test"]
   },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  },
   "include": ["**/*.ts", "eslint.config.js"]
 }

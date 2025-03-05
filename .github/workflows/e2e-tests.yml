@@ -20,10 +20,12 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: "e2e-tests/pnpm-lock.yaml"
 
-      - name: Install Docker
+      - name: Set up Docker Compose
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+          # Docker and Docker Compose V2 are pre-installed on GitHub runners
+          # Just verify they are available
+          docker --version
+          docker compose version
 
       - name: Create .env file
         run: |
@@ -35,12 +37,12 @@ jobs:
         run: |
           if docker ps | grep -q "jira-analyzer"; then
             echo "Services are already running. Shutting them down..."
-            docker-compose -f docker-compose.dev.yml down
+            docker compose -f docker-compose.dev.yml down
           fi
 
       - name: Start backend with Docker Compose
         run: |
-          docker-compose -f docker-compose.dev.yml up -d
+          docker compose -f docker-compose.dev.yml up -d
 
           # Create logs and screenshots directories
           mkdir -p e2e-tests/logs
@@ -111,4 +113,4 @@ jobs:
             fi
           fi
 
-          docker-compose -f docker-compose.dev.yml down
+          docker compose -f docker-compose.dev.yml down
