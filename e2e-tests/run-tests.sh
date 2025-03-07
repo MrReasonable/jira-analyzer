@@ -87,12 +87,50 @@ cd "$SCRIPT_DIR" && pnpm run build
 
 # Run the tests with environment variables set for the local Docker setup
 echo "Running tests..."
-cd "$SCRIPT_DIR" && \
-  TEST_HOST=localhost \
-  TEST_PORT=80 \
-  PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js \
-  DEBUG=pw:api \
-  pnpm exec playwright test --config=dist/playwright.config.js --debug "$@"
+cd "$SCRIPT_DIR"
+
+# Set environment variables
+export TEST_HOST=localhost
+export TEST_PORT=80
+export PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js
+export DEBUG=pw:api
+
+# Run the tests, using a cross-platform approach for timeout
+echo "Starting tests with a 120-second safety timeout..."
+(
+  # Start the tests in background
+  pnpm exec playwright test --config=dist/playwright.config.js "$@" &
+  TEST_PID=$!
+
+  # Wait for the test to complete or timeout
+  TIMEOUT=120
+  COUNT=0
+  while [ $COUNT -lt $TIMEOUT ]; do
+    # Check if the process is still running
+    if ! ps -p $TEST_PID > /dev/null; then
+      # Process has finished
+      wait $TEST_PID
+      TEST_EXIT_CODE=$?
+      break
+    fi
+
+    # Sleep for a second
+    sleep 1
+    COUNT=$((COUNT+1))
+  done
+
+  # If we've reached the timeout, kill the test process
+  if [ $COUNT -ge $TIMEOUT ]; then
+    echo "Tests have been running for $TIMEOUT seconds, which likely indicates a hanging test."
+    echo "Terminating the test process..."
+    kill -9 $TEST_PID 2>/dev/null
+    # Generate a report even if tests timed out
+    pnpm exec playwright show-report
+    TEST_EXIT_CODE=124
+  fi
+
+  exit $TEST_EXIT_CODE
+)
 TEST_EXIT_CODE=$?
 
 # Cleanup is handled by the trap
