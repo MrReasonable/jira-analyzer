@@ -57,6 +57,10 @@ export default defineConfig({
       mode: 'only-on-failure',
       fullPage: true,
     },
+
+    /* Set timeouts to prevent hanging */
+    navigationTimeout: 20000,
+    actionTimeout: 10000,
   },
 
   /* Configure directories for artifacts */
