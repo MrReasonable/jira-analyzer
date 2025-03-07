@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@solidjs/testing-library'
 import { useWorkflowStates } from './useWorkflowStates'
-import type { WorkflowState } from '@types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 // Mock ID generator to provide deterministic IDs for testing
 vi.mock('../utils/idGenerator', () => ({

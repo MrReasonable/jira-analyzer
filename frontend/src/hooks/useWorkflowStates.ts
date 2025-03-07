@@ -1,6 +1,6 @@
 import { createEffect, createSignal, createMemo } from 'solid-js'
 import { generateId } from '@utils/idGenerator'
-import type { WorkflowState } from '@types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 /**
  * Hook to manage workflow states, providing operations for adding, removing,

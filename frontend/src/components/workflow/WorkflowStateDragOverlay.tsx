@@ -1,5 +1,5 @@
 import { Component } from 'solid-js'
-import type { WorkflowState } from '@types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 interface WorkflowStateDragOverlayProps {
   item: WorkflowState

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@solidjs/testing-library'
 import { WorkflowStatesList } from '@components/workflow'
-import type { WorkflowState } from '@types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 describe('WorkflowStatesList', () => {
   const mockOnChange = vi.fn()
