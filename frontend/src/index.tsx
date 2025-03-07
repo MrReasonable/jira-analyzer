@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web'
 import App from './App'
 import './index.css'
-import { logger, LogLevel } from './utils/logger'
+import { logger, LogLevel } from '@utils/logger'
 
 // Configure logger based on environment
 if (import.meta.env.PROD) {

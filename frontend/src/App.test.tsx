@@ -7,17 +7,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 window.scrollTo = vi.fn()
 import { render, screen, fireEvent } from '@solidjs/testing-library'
 import App from './App'
-import { jiraApi } from './api/jiraApi'
-import * as useJiraConfigurationsModule from './hooks/useJiraConfigurations'
+import { jiraApi } from '@api/jiraApi'
+import * as useJiraConfigurationsModule from '@hooks/useJiraConfigurations'
 
 // Mock the useJiraConfigurations hook
-vi.mock('./hooks/useJiraConfigurations', () => {
+vi.mock('@hooks/useJiraConfigurations', () => {
   return {
     useJiraConfigurations: vi.fn(),
   }
 })
 
-vi.mock('./api/jiraApi', () => ({
+vi.mock('@api/jiraApi', () => ({
   jiraApi: {
     getLeadTime: vi.fn(),
     getThroughput: vi.fn(),
@@ -104,7 +104,7 @@ describe('App', () => {
         selectedConfig: () => undefined,
         setSelectedConfig: vi.fn(),
         loadConfigurations: vi.fn(async () => {}),
-        handleConfigSelect: vi.fn(async (_name: string) => {
+        handleConfigSelect: vi.fn(async (_: string) => {
           onJqlChange('project = TEST')
         }),
         handleConfigDelete: vi.fn(async () => true),
@@ -237,7 +237,7 @@ describe('App', () => {
     })
 
     // Mock the useJiraMetrics hook
-    vi.mock('./hooks/useJiraMetrics', () => ({
+    vi.mock('@hooks/useJiraMetrics', () => ({
       useJiraMetrics: () => ({
         jql: () => 'project = TEST',
         setJql: vi.fn(),
@@ -284,7 +284,7 @@ describe('App', () => {
 
     // Clean up
     document.createElement = originalCreateElement
-    vi.unmock('./hooks/useJiraMetrics')
+    vi.unmock('@hooks/useJiraMetrics')
   })
 
   it('shows loading state during analysis', async () => {
@@ -301,7 +301,7 @@ describe('App', () => {
     const error = new Error('API Error')
 
     // Import and mock the logger directly
-    const { logger } = await import('./utils/logger')
+    const { logger } = await import('@utils/logger')
     const loggerSpy = vi.spyOn(logger, 'error').mockImplementation((..._args: unknown[]) => {})
 
     // Directly call the logger with the error to verify it's logged correctly

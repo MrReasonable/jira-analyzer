@@ -1,6 +1,6 @@
 import { Component, Accessor } from 'solid-js'
 import Chart from 'chart.js/auto'
-import { CycleTimeMetrics } from '../api/jiraApi'
+import { CycleTimeMetrics } from '@api/jiraApi'
 import { withChart } from './withChart'
 
 interface Props {

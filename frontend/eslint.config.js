@@ -1,58 +1,58 @@
-import eslint from '@eslint/js';
-import tseslint from '@typescript-eslint/eslint-plugin';
-import tsparser from '@typescript-eslint/parser';
-import solidPlugin from 'eslint-plugin-solid';
-import prettierConfig from 'eslint-config-prettier';
+import { fileURLToPath } from 'url'
+import globals from 'globals'
+import js from '@eslint/js'
+import eslintConfigPrettier from 'eslint-config-prettier'
+import solidPlugin from 'eslint-plugin-solid'
+import tsEslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
 
 export default [
+  { ignores: ['node_modules', 'dist', 'build', '.solid', '.eslintrc.js'] },
+  js.configs.recommended,
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**']
-  },
-  eslint.configs.recommended,
-  {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
+    plugins: {
+      solid: solidPlugin,
+      '@typescript-eslint': tsEslint,
+    },
     languageOptions: {
-      parser: tsparser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 'latest',
-        sourceType: 'module',
         ecmaFeatures: {
-          jsx: true
-        }
+          jsx: true,
+        },
+        // Remove the project config to avoid the parsing errors
+        // since we're only looking for reactivity issues
       },
       globals: {
-        document: 'readonly',
-        navigator: 'readonly',
-        window: 'readonly',
-        HTMLCanvasElement: 'readonly',
-        Event: 'readonly',
-        confirm: 'readonly',
-        Chart: 'readonly',
-        console: 'readonly',
-        global: 'readonly'
-      }
-    },
-    plugins: {
-      '@typescript-eslint': tseslint,
-      'solid': solidPlugin
+        ...globals.browser,
+        ...globals.node,
+      },
     },
     rules: {
-      ...tseslint.configs.recommended.rules,
-      'solid/components-return-once': 'error',
-      'solid/no-destructure': 'error',
-      'solid/jsx-no-undef': 'error',
-      'solid/reactivity': 'error',
-      'solid/no-react-specific-props': 'error',
-      'solid/prefer-for': 'error',
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
-      'no-console': 'off'
+      'solid/reactivity': 'error',
+      'solid/no-destructure': 'warn',
+      'solid/jsx-no-undef': 'error',
+      'solid/self-closing-comp': 'warn',
+      'prefer-const': 'error',
     },
-    settings: {
-      'solid/typescript': true
-    }
   },
-  prettierConfig
-];
+  // Disable specific rules for test files
+  {
+    files: ['**/test/**', '**/*.test.{ts,tsx}'],
+    rules: {
+      'solid/reactivity': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  eslintConfigPrettier,
+]

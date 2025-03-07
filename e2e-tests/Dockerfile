@@ -1,30 +1,21 @@
 # E2E tests base stage
 FROM node-base AS e2e-base
 
-# Install additional e2e-specific dependencies if needed
-# RUN apt-get update && \
-#     apt-get install -y \
-#     some-package && \
-#     rm -rf /var/lib/apt/lists/*
-
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY . .
 
 # Development stage with non-root user
 FROM node-base AS development-nonroot-base
-
-# Install additional e2e-specific dependencies if needed
-# RUN apt-get update && \
-#     apt-get install -y \
-#     some-package && \
-#     rm -rf /var/lib/apt/lists/*
 
 # Add non-root user
 ARG USER_ID=1000
@@ -62,9 +53,11 @@ RUN if [ "${USER_ID}" = "1000" ] && getent passwd 1000 > /dev/null; then \
     # Ensure app directory has the right permissions
     chown -R ${USER_ID}:${GROUP_ID} /app
 
-# Install global npm packages
-RUN npm install -g npm && \
-    npm -g update
+# Install global npm packages with minimal caching
+RUN mkdir -p /tmp/npm-cache && \
+    npm_config_cache=/tmp/npm-cache npm install -g npm && \
+    npm_config_cache=/tmp/npm-cache npm -g update && \
+    rm -rf /tmp/npm-cache
 
 FROM development-nonroot-base AS development-nonroot
 
@@ -73,8 +66,11 @@ USER appuser
 
 # Copy package files and install dependencies
 COPY --chown=appuser:appuser package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY --chown=appuser:appuser . .
@@ -90,8 +86,11 @@ FROM node-base-ci AS ci
 
 # Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY . .

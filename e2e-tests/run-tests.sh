@@ -51,7 +51,7 @@ rm -f "$SCREENSHOTS_DIR"/*.png
 
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
-cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up -d
+cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up --build -d
 
 # Start capturing logs in the background
 echo "Capturing backend logs to $LOGS_DIR/backend.log..."
@@ -91,7 +91,8 @@ cd "$SCRIPT_DIR" && \
   TEST_HOST=localhost \
   TEST_PORT=80 \
   PLAYWRIGHT_CONFIG_PATH=dist/playwright.config.js \
-  pnpm exec playwright test --config=dist/playwright.config.js "$@"
+  DEBUG=pw:api \
+  pnpm exec playwright test --config=dist/playwright.config.js --debug "$@"
 TEST_EXIT_CODE=$?
 
 # Cleanup is handled by the trap

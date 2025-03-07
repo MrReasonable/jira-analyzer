@@ -100,41 +100,41 @@ e2e-ci-image: node-base-ci ## Build the e2e-tests CI image
 
 frontend-test: frontend-dev-image ## Run frontend tests only (run once and exit)
 	docker run --rm -ti \
-		-v $(PWD)/frontend/src:/app/src \
-		-v $(PWD)/frontend/public:/app/public \
-		-v $(PWD)/frontend/index.html:/app/index.html \
-		-v $(PWD)/frontend/package.json:/app/package.json \
-		-v $(PWD)/frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml \
-		-v $(PWD)/frontend/tsconfig.json:/app/tsconfig.json \
-		-v $(PWD)/frontend/tsconfig.node.json:/app/tsconfig.node.json \
-		-v $(PWD)/frontend/vite.config.ts:/app/vite.config.ts \
-		-v $(PWD)/frontend/vitest.config.ts:/app/vitest.config.ts \
+		-v $(PWD)/frontend/src:/frontend/src \
+		-v $(PWD)/frontend/public:/frontend/public \
+		-v $(PWD)/frontend/index.html:/frontend/index.html \
+		-v $(PWD)/frontend/package.json:/frontend/package.json \
+		-v $(PWD)/frontend/pnpm-lock.yaml:/frontend/pnpm-lock.yaml \
+		-v $(PWD)/frontend/tsconfig.json:/frontend/tsconfig.json \
+		-v $(PWD)/frontend/tsconfig.node.json:/frontend/tsconfig.node.json \
+		-v $(PWD)/frontend/vite.config.ts:/frontend/vite.config.ts \
+		-v $(PWD)/frontend/vitest.config.ts:/frontend/vitest.config.ts \
 		frontend-dev pnpm test
 
 frontend-test-ci: node-base frontend-ci-image ## Run frontend tests in CI mode (non-interactive)
 	docker run --rm \
-		-v $(PWD)/frontend/src:/app/src \
-		-v $(PWD)/frontend/public:/app/public \
-		-v $(PWD)/frontend/index.html:/app/index.html \
-		-v $(PWD)/frontend/package.json:/app/package.json \
-		-v $(PWD)/frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml \
-		-v $(PWD)/frontend/tsconfig.json:/app/tsconfig.json \
-		-v $(PWD)/frontend/tsconfig.node.json:/app/tsconfig.node.json \
-		-v $(PWD)/frontend/vite.config.ts:/app/vite.config.ts \
-		-v $(PWD)/frontend/vitest.config.ts:/app/vitest.config.ts \
+		-v $(PWD)/frontend/src:/frontend/src \
+		-v $(PWD)/frontend/public:/frontend/public \
+		-v $(PWD)/frontend/index.html:/frontend/index.html \
+		-v $(PWD)/frontend/package.json:/frontend/package.json \
+		-v $(PWD)/frontend/pnpm-lock.yaml:/frontend/pnpm-lock.yaml \
+		-v $(PWD)/frontend/tsconfig.json:/frontend/tsconfig.json \
+		-v $(PWD)/frontend/tsconfig.node.json:/frontend/tsconfig.node.json \
+		-v $(PWD)/frontend/vite.config.ts:/frontend/vite.config.ts \
+		-v $(PWD)/frontend/vitest.config.ts:/frontend/vitest.config.ts \
 		frontend-ci pnpm test
 
 frontend-test-watch: frontend-dev-image ## Run frontend tests in watch mode
 	docker run --rm -ti \
-		-v $(PWD)/frontend/src:/app/src \
-		-v $(PWD)/frontend/public:/app/public \
-		-v $(PWD)/frontend/index.html:/app/index.html \
-		-v $(PWD)/frontend/package.json:/app/package.json \
-		-v $(PWD)/frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml \
-		-v $(PWD)/frontend/tsconfig.json:/app/tsconfig.json \
-		-v $(PWD)/frontend/tsconfig.node.json:/app/tsconfig.node.json \
-		-v $(PWD)/frontend/vite.config.ts:/app/vite.config.ts \
-		-v $(PWD)/frontend/vitest.config.ts:/app/vitest.config.ts \
+		-v $(PWD)/frontend/src:/frontend/src \
+		-v $(PWD)/frontend/public:/frontend/public \
+		-v $(PWD)/frontend/index.html:/frontend/index.html \
+		-v $(PWD)/frontend/package.json:/frontend/package.json \
+		-v $(PWD)/frontend/pnpm-lock.yaml:/frontend/pnpm-lock.yaml \
+		-v $(PWD)/frontend/tsconfig.json:/frontend/tsconfig.json \
+		-v $(PWD)/frontend/tsconfig.node.json:/frontend/tsconfig.node.json \
+		-v $(PWD)/frontend/vite.config.ts:/frontend/vite.config.ts \
+		-v $(PWD)/frontend/vitest.config.ts:/frontend/vitest.config.ts \
 		frontend-dev pnpm test:watch
 
 backend-test: ## Run backend tests only

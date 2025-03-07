@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { jiraApi } from './jiraApi'
-import { mockData } from '../test/testUtils'
+import { mockData } from '@test/testUtils'
 
 // Mock the entire jiraApi module
 vi.mock('./jiraApi', () => {

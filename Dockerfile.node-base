@@ -1,9 +1,12 @@
 FROM node:23-slim AS node-base
 
-ARG PNPM_VERSION=10.5.2
+ARG PNPM_VERSION=10.6.1
 
 # Set environment variables
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+# Configure npm to use a minimal cache
+ENV npm_config_cache=/tmp/npm-cache
+ENV npm_config_prefer_offline=false
 
 WORKDIR /app
 

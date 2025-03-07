@@ -6,8 +6,8 @@ import {
   WipMetrics,
   CfdMetrics,
   CycleTimeMetrics,
-} from '../api/jiraApi'
-import { logger } from '../utils/logger'
+} from '@api/jiraApi'
+import { logger } from '@utils/logger'
 
 export function useJiraMetrics(initialJql = 'project = "DEMO" AND type = Story') {
   const [jql, setJql] = createSignal(initialJql)

@@ -1,6 +1,6 @@
 import { Component, Accessor } from 'solid-js'
 import Chart from 'chart.js/auto'
-import { LeadTimeMetrics } from '../api/jiraApi'
+import { LeadTimeMetrics } from '@api/jiraApi'
 import { withChart } from './withChart'
 
 interface Props {

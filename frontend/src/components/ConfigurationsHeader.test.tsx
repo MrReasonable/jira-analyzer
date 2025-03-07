@@ -2,11 +2,11 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@solidjs/testing-library'
 import { ConfigurationsHeader } from './ConfigurationsHeader'
 import { createSignal } from 'solid-js'
-import { logger } from '../utils/logger'
-import { JiraConfigurationList } from '../api/jiraApi'
+import { logger } from '@utils/logger'
+import { JiraConfigurationList } from '@api/jiraApi'
 
 // Mock the logger
-vi.mock('../utils/logger', () => ({
+vi.mock('@utils/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

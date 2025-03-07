@@ -1,6 +1,6 @@
 import { Component, For, Show, Accessor } from 'solid-js'
-import { JiraConfigurationList } from '../api/jiraApi'
-import { logger } from '../utils/logger'
+import { JiraConfigurationList } from '@api/jiraApi'
+import { logger } from '@utils/logger'
 
 interface Props {
   configurations: Accessor<JiraConfigurationList[]>

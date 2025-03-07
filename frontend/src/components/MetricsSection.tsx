@@ -5,7 +5,7 @@ import {
   WipMetrics,
   CfdMetrics,
   CycleTimeMetrics,
-} from '../api/jiraApi'
+} from '@api/jiraApi'
 import { LeadTimeChart } from './LeadTimeChart'
 import { ThroughputChart } from './ThroughputChart'
 import { WipChart } from './WipChart'
