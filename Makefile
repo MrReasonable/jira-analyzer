@@ -158,10 +158,10 @@ backend-fast-test: ## Run backend tests with optimizations
 	docker run --rm -ti -v $(PWD)/backend:/app backend-dev pytest -xvs --no-header
 
 frontend-lint: frontend-dev-image ## Run frontend linting only
-	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint
+	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev sh -c "pnpm run lint && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 frontend-lint-ci: node-base frontend-ci-image ## Run frontend linting in CI mode (non-interactive)
-	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint
+	docker run --rm -v $(PWD)/frontend:/app frontend-ci sh -c "pnpm run lint && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 backend-lint: ## Run backend linting only
 	docker build -t backend-dev -f backend/Dockerfile --target development-enhanced backend
@@ -178,10 +178,10 @@ frontend-format-ci: node-base frontend-ci-image ## Format frontend code in CI mo
 	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run format
 
 frontend-lint-fix: frontend-dev-image ## Auto-fix frontend linting issues
-	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run lint:fix
+	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev sh -c "pnpm run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 frontend-lint-fix-ci: node-base frontend-ci-image ## Auto-fix frontend linting issues in CI mode (non-interactive)
-	docker run --rm -v $(PWD)/frontend:/app frontend-ci pnpm run lint:fix
+	docker run --rm -v $(PWD)/frontend:/app frontend-ci sh -c "pnpm run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 frontend-type-check: frontend-dev-image ## Run TypeScript type checking
 	docker run --rm -ti -v $(PWD)/frontend:/app frontend-dev pnpm run type-check
@@ -226,16 +226,16 @@ e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
 	cd e2e-tests && CI=true pnpm run run-tests
 
 e2e-lint: e2e-dev-image ## Run linting for e2e-tests
-	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run lint
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev sh -c "pnpm run lint && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 e2e-lint-ci: node-base e2e-ci-image ## Run linting for e2e-tests in CI mode (non-interactive)
-	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run lint:strict
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci sh -c "pnpm run lint:strict && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 e2e-lint-fix: e2e-dev-image ## Auto-fix linting issues in e2e-tests
-	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run lint:fix
+	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev sh -c "pnpm run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 e2e-lint-fix-ci: node-base e2e-ci-image ## Auto-fix linting issues in e2e-tests in CI mode (non-interactive)
-	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci pnpm run lint:fix
+	docker run --rm -v $(PWD)/e2e-tests:/app e2e-ci sh -c "pnpm run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
 
 e2e-format: e2e-dev-image ## Format e2e-tests code
 	docker run --rm -ti -v $(PWD)/e2e-tests:/app e2e-dev pnpm run format

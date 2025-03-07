@@ -34,7 +34,9 @@ jobs:
 
       - name: Lint e2e-tests
         working-directory: ./e2e-tests
-        run: pnpm run lint:strict
+        run: |
+          pnpm run lint:strict
+          npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'
 
       - name: Check e2e-tests formatting
         working-directory: ./e2e-tests
@@ -88,7 +90,9 @@ jobs:
 
       - name: Lint frontend
         working-directory: ./frontend
-        run: pnpm run lint
+        run: |
+          pnpm run lint
+          npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'
 
       - name: Check frontend formatting
         working-directory: ./frontend

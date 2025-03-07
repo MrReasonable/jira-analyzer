@@ -104,7 +104,7 @@ describe('App', () => {
         selectedConfig: () => undefined,
         setSelectedConfig: vi.fn(),
         loadConfigurations: vi.fn(async () => {}),
-        handleConfigSelect: vi.fn(async (_: string) => {
+        handleConfigSelect: vi.fn(async (_name: string) => {
           onJqlChange('project = TEST')
         }),
         handleConfigDelete: vi.fn(async () => true),

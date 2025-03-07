@@ -3,7 +3,7 @@ import solid from 'vite-plugin-solid'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
-export default defineConfig(({ mode }) => {
+export default defineConfig((_) => {
   return {
     plugins: [tailwindcss(), solid()],
     // Enable logs and debugging for e2e testing
