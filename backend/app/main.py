@@ -62,8 +62,18 @@ async def lifespan(app: FastAPI):
 
 
 # Use the lifespan context manager
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    title='Jira Analyzer API',
+    description='API for analyzing Jira metrics and configurations',
+    version='1.0.0',
+    openapi_url='/openapi.json',  # Specify the OpenAPI schema URL
+    docs_url='/docs',  # Specify the Swagger UI URL
+    redoc_url='/redoc',  # Specify the ReDoc URL
+)
 
+# Set root path for OpenAPI (critical for proper documentation when behind a proxy)
+app.root_path = '/api'
 
 # Enable CORS
 settings = get_settings()
