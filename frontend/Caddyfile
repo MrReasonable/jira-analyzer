@@ -1,7 +1,35 @@
 # Caddyfile configuration for local development
 
 :80 {
-    # Reverse proxy for API requests
+    # Reverse proxy for API requests with OpenAPI docs
+
+    # Redirect /api to /api/docs for convenience
+    handle /api {
+        redir * /api/docs permanent
+    }
+
+    # Handle OpenAPI JSON endpoint explicitly
+    handle /api/openapi.json {
+        # Don't strip prefix - pass the full URL
+        reverse_proxy backend:8000 {
+            header_up X-Forwarded-Prefix "/api"
+        }
+    }
+
+    # Handle API documentation
+    handle /api/docs* {
+        reverse_proxy backend:8000 {
+            header_up X-Forwarded-Prefix "/api"
+        }
+    }
+
+    handle /api/redoc* {
+        reverse_proxy backend:8000 {
+            header_up X-Forwarded-Prefix "/api"
+        }
+    }
+
+    # Handle all other API requests
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy backend:8000
