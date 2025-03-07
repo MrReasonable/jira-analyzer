@@ -8,7 +8,7 @@ import {
   WipMetrics,
   CfdMetrics,
   CycleTimeMetrics,
-} from '../api/jiraApi'
+} from '@api/jiraApi'
 
 // Mock the chart components
 vi.mock('./LeadTimeChart', () => ({
@@ -20,7 +20,7 @@ vi.mock('./LeadTimeChart', () => ({
       data-testid="lead-time-chart"
       data-loading={props.loading()}
       data-has-data={!!props.data()}
-    ></div>
+    />
   ),
 }))
 
@@ -33,27 +33,19 @@ vi.mock('./ThroughputChart', () => ({
       data-testid="throughput-chart"
       data-loading={props.loading()}
       data-has-data={!!props.data()}
-    ></div>
+    />
   ),
 }))
 
 vi.mock('./WipChart', () => ({
   WipChart: (props: { loading: Accessor<boolean>; data: Accessor<WipMetrics | null> }) => (
-    <div
-      data-testid="wip-chart"
-      data-loading={props.loading()}
-      data-has-data={!!props.data()}
-    ></div>
+    <div data-testid="wip-chart" data-loading={props.loading()} data-has-data={!!props.data()} />
   ),
 }))
 
 vi.mock('./CfdChart', () => ({
   CfdChart: (props: { loading: Accessor<boolean>; data: Accessor<CfdMetrics | null> }) => (
-    <div
-      data-testid="cfd-chart"
-      data-loading={props.loading()}
-      data-has-data={!!props.data()}
-    ></div>
+    <div data-testid="cfd-chart" data-loading={props.loading()} data-has-data={!!props.data()} />
   ),
 }))
 
@@ -66,7 +58,7 @@ vi.mock('./CycleTimeChart', () => ({
       data-testid="cycle-time-chart"
       data-loading={props.loading()}
       data-has-data={!!props.data()}
-    ></div>
+    />
   ),
 }))
 

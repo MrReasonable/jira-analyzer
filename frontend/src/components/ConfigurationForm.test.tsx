@@ -1,11 +1,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@solidjs/testing-library'
 import { ConfigurationForm } from './ConfigurationForm'
-import { jiraApi } from '../api/jiraApi'
-import type { JiraConfiguration } from '../api/jiraApi'
+import { jiraApi } from '@api/jiraApi'
+import type { JiraConfiguration } from '@api/jiraApi'
+
+// Mock the WorkflowStatesList component
+vi.mock('./WorkflowStatesList', () => {
+  return {
+    WorkflowState: {},
+    WorkflowStatesList: (props: {
+      onChange: (
+        states: Array<{ id: string; name: string; isStartPoint: boolean; isEndPoint: boolean }>
+      ) => void
+    }) => {
+      return (
+        <div data-testid="workflow-states-list">
+          <button
+            type="button"
+            onClick={() =>
+              props.onChange([
+                { id: '1', name: 'Todo', isStartPoint: false, isEndPoint: false },
+                { id: '2', name: 'In Progress', isStartPoint: false, isEndPoint: false },
+                { id: '3', name: 'Done', isStartPoint: false, isEndPoint: false },
+              ])
+            }
+            data-testid="mock-set-workflow-states"
+          >
+            Set workflow states
+          </button>
+        </div>
+      )
+    },
+  }
+})
 
 // Mock the jiraApi module
-vi.mock('../api/jiraApi', () => ({
+vi.mock('@api/jiraApi', () => ({
   jiraApi: {
     createConfiguration: vi.fn(),
     updateConfiguration: vi.fn(),
@@ -39,33 +69,50 @@ describe('ConfigurationForm', () => {
 
   // Helper function to fill the form
   const fillForm = (config: JiraConfiguration) => {
+    // Fill text fields
     Object.entries({
       'Configuration Name': config.name,
       'Jira Server URL': config.jira_server,
       'Jira Email': config.jira_email,
       'Jira API Token': config.jira_api_token,
       'Default JQL Query': config.jql_query,
-      'Workflow States (one per line)': config.workflow_states.join('\n'),
-      'Lead Time Start State': config.lead_time_start_state,
-      'Lead Time End State': config.lead_time_end_state,
-      'Cycle Time Start State': config.cycle_time_start_state,
-      'Cycle Time End State': config.cycle_time_end_state,
     }).forEach(([label, value]) => {
       const element = screen.getByLabelText(label)
       fireEvent.input(element, { target: { value } })
+    })
+
+    // Set workflow states using our mock button
+    fireEvent.click(screen.getByTestId('mock-set-workflow-states'))
+
+    // Set dropdowns for lead/cycle time states
+    const selectFields = [
+      { label: 'Lead Time Start State', value: config.lead_time_start_state },
+      { label: 'Lead Time End State', value: config.lead_time_end_state },
+      { label: 'Cycle Time Start State', value: config.cycle_time_start_state },
+      { label: 'Cycle Time End State', value: config.cycle_time_end_state },
+    ]
+
+    selectFields.forEach(({ label, value }) => {
+      const select = screen.getByLabelText(label)
+      fireEvent.change(select, { target: { value } })
     })
   }
 
   it('renders all required form fields', () => {
     render(() => <ConfigurationForm onConfigurationSaved={mockOnSaved} />)
 
-    // Check for all required fields
+    // Check for text input fields
     expect(screen.getByLabelText(/Configuration Name/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Jira Server URL/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Jira Email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Jira API Token/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Default JQL Query/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Workflow States/i)).toBeInTheDocument()
+
+    // Check for the workflow states list component
+    expect(screen.getByText(/Workflow States/i, { selector: 'label' })).toBeInTheDocument()
+    expect(screen.getByTestId('workflow-states-list')).toBeInTheDocument()
+
+    // Check for dropdown fields
     expect(screen.getByLabelText(/Lead Time Start State/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Lead Time End State/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Cycle Time Start State/i)).toBeInTheDocument()

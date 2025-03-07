@@ -1,6 +1,8 @@
-import { Component, createSignal } from 'solid-js'
-import { jiraApi, JiraConfiguration } from '../api/jiraApi'
-import { logger } from '../utils/logger'
+import { Component, createSignal, createEffect, For } from 'solid-js'
+import { generateId } from '@utils/idGenerator'
+import { jiraApi, JiraConfiguration } from '@api/jiraApi'
+import { logger } from '@utils/logger'
+import { WorkflowState, WorkflowStatesList } from './WorkflowStatesList'
 
 interface Props {
   initialConfig?: JiraConfiguration
@@ -15,11 +17,69 @@ export const ConfigurationForm: Component<Props> = props => {
     jira_email: props.initialConfig?.jira_email || '',
     jira_api_token: props.initialConfig?.jira_api_token || '',
     jql_query: props.initialConfig?.jql_query || '',
-    workflow_states: props.initialConfig?.workflow_states.join('\n') || '',
     lead_time_start_state: props.initialConfig?.lead_time_start_state || '',
     lead_time_end_state: props.initialConfig?.lead_time_end_state || '',
     cycle_time_start_state: props.initialConfig?.cycle_time_start_state || '',
     cycle_time_end_state: props.initialConfig?.cycle_time_end_state || '',
+  })
+
+  // Initialize workflow states from props or empty array
+  const initialWorkflowStates = () => {
+    if (props.initialConfig?.workflow_states?.length) {
+      return props.initialConfig.workflow_states.map(name => ({
+        id: generateId(),
+        name,
+        isStartPoint:
+          name === props.initialConfig?.lead_time_start_state ||
+          name === props.initialConfig?.cycle_time_start_state,
+        isEndPoint:
+          name === props.initialConfig?.lead_time_end_state ||
+          name === props.initialConfig?.cycle_time_end_state,
+      }))
+    }
+    return []
+  }
+
+  const [workflowStates, setWorkflowStates] = createSignal<WorkflowState[]>(initialWorkflowStates())
+
+  // Update lead/cycle time states when workflow states are modified
+  createEffect(() => {
+    const states = workflowStates()
+    const startStates = states.filter(s => s.isStartPoint).map(s => s.name)
+    const endStates = states.filter(s => s.isEndPoint).map(s => s.name)
+
+    // Only update if we have marked states and current values are empty or not in the list anymore
+    if (startStates.length > 0) {
+      if (
+        !formData().lead_time_start_state ||
+        !states.some(s => s.name === formData().lead_time_start_state)
+      ) {
+        updateField('lead_time_start_state', startStates[0])
+      }
+
+      if (
+        !formData().cycle_time_start_state ||
+        !states.some(s => s.name === formData().cycle_time_start_state)
+      ) {
+        updateField('cycle_time_start_state', startStates[0])
+      }
+    }
+
+    if (endStates.length > 0) {
+      if (
+        !formData().lead_time_end_state ||
+        !states.some(s => s.name === formData().lead_time_end_state)
+      ) {
+        updateField('lead_time_end_state', endStates[0])
+      }
+
+      if (
+        !formData().cycle_time_end_state ||
+        !states.some(s => s.name === formData().cycle_time_end_state)
+      ) {
+        updateField('cycle_time_end_state', endStates[0])
+      }
+    }
   })
 
   const handleSubmit = async (e: Event) => {
@@ -38,7 +98,7 @@ export const ConfigurationForm: Component<Props> = props => {
       jira_email: formData().jira_email,
       jira_api_token: formData().jira_api_token,
       jql_query: formData().jql_query,
-      workflow_states: formData().workflow_states.split('\n').filter(Boolean),
+      workflow_states: workflowStates().map(state => state.name),
       lead_time_start_state: formData().lead_time_start_state,
       lead_time_end_state: formData().lead_time_end_state,
       cycle_time_start_state: formData().cycle_time_start_state,
@@ -165,17 +225,12 @@ export const ConfigurationForm: Component<Props> = props => {
 
       {/* Workflow States field */}
       <div role="group" class="space-y-1">
-        <label for="workflow_states" class="block text-sm font-medium text-gray-700">
-          Workflow States (one per line)
-        </label>
-        <textarea
-          id="workflow_states"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          value={formData().workflow_states}
-          onInput={e => updateField('workflow_states', e.currentTarget.value)}
-          required
-          placeholder="Backlog&#10;In Progress&#10;Done"
-        />
+        <label class="block text-sm font-medium text-gray-700">Workflow States</label>
+        <p class="mb-2 text-xs text-gray-500">
+          Add workflow states and drag to reorder them. Mark states as start/end points for lead and
+          cycle time calculations.
+        </p>
+        <WorkflowStatesList states={workflowStates()} onChange={setWorkflowStates} />
       </div>
 
       {/* Lead Time Start State field */}
@@ -183,14 +238,20 @@ export const ConfigurationForm: Component<Props> = props => {
         <label for="lead_time_start_state" class="block text-sm font-medium text-gray-700">
           Lead Time Start State
         </label>
-        <input
+        <select
           id="lead_time_start_state"
-          type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().lead_time_start_state}
-          onInput={e => updateField('lead_time_start_state', e.currentTarget.value)}
+          onChange={e => updateField('lead_time_start_state', e.currentTarget.value)}
           required
-        />
+        >
+          <option value="" disabled>
+            Select a state
+          </option>
+          <For each={workflowStates()}>
+            {state => <option value={state.name}>{state.name}</option>}
+          </For>
+        </select>
       </div>
 
       {/* Lead Time End State field */}
@@ -198,14 +259,20 @@ export const ConfigurationForm: Component<Props> = props => {
         <label for="lead_time_end_state" class="block text-sm font-medium text-gray-700">
           Lead Time End State
         </label>
-        <input
+        <select
           id="lead_time_end_state"
-          type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().lead_time_end_state}
-          onInput={e => updateField('lead_time_end_state', e.currentTarget.value)}
+          onChange={e => updateField('lead_time_end_state', e.currentTarget.value)}
           required
-        />
+        >
+          <option value="" disabled>
+            Select a state
+          </option>
+          <For each={workflowStates()}>
+            {state => <option value={state.name}>{state.name}</option>}
+          </For>
+        </select>
       </div>
 
       {/* Cycle Time Start State field */}
@@ -213,14 +280,20 @@ export const ConfigurationForm: Component<Props> = props => {
         <label for="cycle_time_start_state" class="block text-sm font-medium text-gray-700">
           Cycle Time Start State
         </label>
-        <input
+        <select
           id="cycle_time_start_state"
-          type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().cycle_time_start_state}
-          onInput={e => updateField('cycle_time_start_state', e.currentTarget.value)}
+          onChange={e => updateField('cycle_time_start_state', e.currentTarget.value)}
           required
-        />
+        >
+          <option value="" disabled>
+            Select a state
+          </option>
+          <For each={workflowStates()}>
+            {state => <option value={state.name}>{state.name}</option>}
+          </For>
+        </select>
       </div>
 
       {/* Cycle Time End State field */}
@@ -228,14 +301,20 @@ export const ConfigurationForm: Component<Props> = props => {
         <label for="cycle_time_end_state" class="block text-sm font-medium text-gray-700">
           Cycle Time End State
         </label>
-        <input
+        <select
           id="cycle_time_end_state"
-          type="text"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().cycle_time_end_state}
-          onInput={e => updateField('cycle_time_end_state', e.currentTarget.value)}
+          onChange={e => updateField('cycle_time_end_state', e.currentTarget.value)}
           required
-        />
+        >
+          <option value="" disabled>
+            Select a state
+          </option>
+          <For each={workflowStates()}>
+            {state => <option value={state.name}>{state.name}</option>}
+          </For>
+        </select>
       </div>
 
       {error() && (

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from 'vitest'
-import { server } from './mocks/server'
-import { logger, LogLevel } from './utils/logger'
+import { server } from '@mocks/server'
+import { logger, LogLevel } from '@utils/logger'
 import '@testing-library/jest-dom'
 import { cleanup } from '@solidjs/testing-library'
 
@@ -67,4 +67,18 @@ afterAll(() => {
   server.close()
 })
 
-// Mock any global objects if needed
+// Mock @thisbeyond/solid-dnd
+vi.mock('@thisbeyond/solid-dnd', async () => {
+  // Use type assertion to specify the expected type structure
+  const actual = (await vi.importActual('@mocks/solid-dnd-mock')) as {
+    createSortable: typeof import('@mocks/solid-dnd-mock').createSortable
+    transformStyle: typeof import('@mocks/solid-dnd-mock').transformStyle
+    DragDropProvider: typeof import('@mocks/solid-dnd-mock').DragDropProvider
+    DragDropSensors: typeof import('@mocks/solid-dnd-mock').DragDropSensors
+    DragOverlay: typeof import('@mocks/solid-dnd-mock').DragOverlay
+    createDraggable: typeof import('@mocks/solid-dnd-mock').createDraggable
+    createDroppable: typeof import('@mocks/solid-dnd-mock').createDroppable
+    useDragDropContext: typeof import('@mocks/solid-dnd-mock').useDragDropContext
+  }
+  return actual
+})

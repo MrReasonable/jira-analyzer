@@ -51,13 +51,15 @@ The following test event files are available in `.github/test-events/`:
 
 When testing workflows locally with `act`, you might encounter some issues:
 
-1. **Missing Dependencies**: The Docker containers used by `act` might not have all the necessary dependencies installed. We've updated the workflows to install required dependencies during execution, but you might still encounter issues.
+1. **Missing Dependencies**: The Docker containers used by `act` might not have all the necessary dependencies installed.
+We've updated the workflows to install required dependencies during execution, but you might still encounter issues.
 
    - For backend Python dependencies, we now explicitly install tools like `ruff`, `mypy`, and `bandit` in the workflow
      steps.
    - For frontend dependencies, we've added steps to install system dependencies required for the `canvas` package.
 
-2. **Adaptive Behavior**: The workflows are designed to detect when they're running in the `act` environment and adjust their behavior accordingly:
+2. **Adaptive Behavior**: The workflows are designed to detect when they're running in the `act` environment and adjust
+their behavior accordingly:
 
    - **Format Checking**: When running with `act`, the format checking steps will automatically format files instead of
      failing when formatting issues are found.
@@ -101,7 +103,8 @@ differently when run on GitHub's infrastructure.
 
 **File:** [ci.yml](./workflows/ci.yml)
 
-This workflow runs on every push to the `main` branch and on pull requests targeting the `main` branch. It performs the following checks:
+This workflow runs on every push to the `main` branch and on pull requests targeting the `main` branch.
+It performs the following checks:
 
 - **Frontend Checks:**
   - Linting with ESLint
@@ -123,7 +126,8 @@ This workflow runs on every push to the `main` branch and on pull requests targe
 
 **File:** [cd.yml](./workflows/cd.yml)
 
-This workflow runs when a new tag with the format `v*` is pushed to the repository or when manually triggered. It performs the following actions:
+This workflow runs when a new tag with the format `v*` is pushed to the repository or when manually triggered.
+It performs the following actions:
 
 - **Build and Push Docker Images:**
   - Builds the frontend and backend Docker images
@@ -163,7 +167,8 @@ triggered. It performs the following actions:
 
 **File:** [dependabot.yml](../dependabot.yml)
 
-This configuration file sets up Dependabot to automatically check for updates to dependencies and create pull requests when updates are available. It includes:
+This configuration file sets up Dependabot to automatically check for updates to dependencies and create pull requests
+when updates are available. It includes:
 
 - Frontend dependency updates (npm)
 - Backend dependency updates (pip)

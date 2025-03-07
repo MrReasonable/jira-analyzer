@@ -1,4 +1,4 @@
-import { setupJiraApiMocks } from '../test/testUtils'
+import { setupJiraApiMocks } from '@test/testUtils'
 import { mockHandlers } from './handlers'
 
 // Export for use in tests

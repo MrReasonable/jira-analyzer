@@ -1,8 +1,8 @@
 import { Component, Accessor } from 'solid-js'
 import { Button } from '@kobalte/core'
 import { ConfigurationList } from './ConfigurationList'
-import { JiraConfigurationList } from '../api/jiraApi'
-import { logger } from '../utils/logger'
+import { JiraConfigurationList } from '@api/jiraApi'
+import { logger } from '@utils/logger'
 
 interface ConfigurationsHeaderProps {
   configurations: Accessor<JiraConfigurationList[]>

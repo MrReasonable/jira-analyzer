@@ -1,6 +1,6 @@
 import { Component, Accessor } from 'solid-js'
 import { TextField, Button } from '@kobalte/core'
-import { logger } from '../utils/logger'
+import { logger } from '@utils/logger'
 
 interface JqlInputProps {
   jql: Accessor<string>

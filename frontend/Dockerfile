@@ -16,8 +16,11 @@ RUN apt-get update && \
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY . .
@@ -85,9 +88,11 @@ RUN if [ "${USER_ID}" = "1000" ] && getent passwd 1000 > /dev/null; then \
     # Ensure app directory has the right permissions
     chown -R ${USER_ID}:${GROUP_ID} /app
 
-# Install global npm packages
-RUN npm install -g npm && \
-    npm -g update
+# Install global npm packages with minimal caching
+RUN mkdir -p /tmp/npm-cache && \
+    npm_config_cache=/tmp/npm-cache npm install -g npm && \
+    npm_config_cache=/tmp/npm-cache npm -g update && \
+    rm -rf /tmp/npm-cache
 
 FROM development-nonroot-base AS development-nonroot
 
@@ -96,8 +101,11 @@ USER appuser
 
 # Copy package files and install dependencies
 COPY --chown=appuser:appuser package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY --chown=appuser:appuser . .
@@ -128,8 +136,11 @@ RUN apt-get update && \
 
 # Copy package files and install dependencies
 COPY package.json pnpm-lock.yaml ./
-RUN corepack prepare pnpm@${PNPM_VERSION} --activate && \
-    pnpm install
+# Optimize for space efficiency
+RUN mkdir -p /tmp/pnpm-cache && \
+    PNPM_HOME=/tmp/pnpm-cache corepack prepare pnpm@${PNPM_VERSION} --activate && \
+    TMPDIR=/tmp pnpm install --prefer-offline=false && \
+    rm -rf /tmp/pnpm-cache
 
 # Copy source code
 COPY . .

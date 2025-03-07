@@ -187,7 +187,9 @@ jobs:
         run: go install github.com/google/yamlfmt/cmd/yamlfmt@latest
 
       - name: Check YAML formatting
-        run: yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+        run: |
+          yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml \
+          .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
 
   docker-build-test:
     name: Docker Build
@@ -213,7 +215,7 @@ jobs:
           file: ./frontend/Dockerfile.standalone
           build-args: |
             NODE_VERSION=23
-            PNPM_VERSION=10.5.2
+            PNPM_VERSION=10.6.1
 
       - name: Build backend Docker image
         uses: docker/build-push-action@v6

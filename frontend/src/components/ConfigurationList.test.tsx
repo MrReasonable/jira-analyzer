@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@solidjs/testing-library'
 import { ConfigurationList } from './ConfigurationList'
-import { jiraApi } from '../api/jiraApi'
+import { jiraApi } from '@api/jiraApi'
 import { createSignal } from 'solid-js'
 
-vi.mock('../api/jiraApi', () => ({
+vi.mock('@api/jiraApi', () => ({
   jiraApi: {
     listConfigurations: vi.fn(),
     deleteConfiguration: vi.fn(),

@@ -1,6 +1,6 @@
 import { createSignal, createEffect } from 'solid-js'
-import { jiraApi, JiraConfigurationList } from '../api/jiraApi'
-import { logger } from '../utils/logger'
+import { jiraApi, JiraConfigurationList } from '@api/jiraApi'
+import { logger } from '@utils/logger'
 
 export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
   const [configurations, setConfigurations] = createSignal<JiraConfigurationList[]>([])

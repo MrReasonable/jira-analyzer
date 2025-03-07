@@ -93,7 +93,7 @@ export function withChart<T extends ChartData>(config: ChartConfig<T>) {
           <h2 class="text-xl font-bold">{props.title}</h2>
           {isLoading() ? (
             <div class="flex justify-center py-4" role="status" aria-label="Loading">
-              <div class="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+              <div class="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
             </div>
           ) : hasError() || !getData() ? (
             <p class="py-4 text-center text-gray-500">

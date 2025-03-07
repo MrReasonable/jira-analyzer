@@ -1,9 +1,9 @@
 import { vi } from 'vitest'
-import { mockData } from '../test/testUtils'
-import { jiraApi, JiraConfiguration } from '../api/jiraApi'
+import { mockData } from '@test/testUtils'
+import { jiraApi, JiraConfiguration } from '@api/jiraApi'
 
 // Mock the jiraApi module for tests
-vi.mock('../api/jiraApi', () => {
+vi.mock('@api/jiraApi', () => {
   return {
     jiraApi: {
       getLeadTime: vi.fn().mockResolvedValue(mockData.leadTime),
