@@ -18,7 +18,7 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     console.log('Step 1: Navigate to the application')
     await jiraAnalyzerPage.goto()
 
-    console.log('Taking screenshot after navigation')
+    console.log('Taking screenshot af ter navigation')
     await jiraAnalyzerPage.page.screenshot({ path: 'screenshots/00_after_navigation.png' })
 
     console.log('Step 2: Create a new Jira configuration')
