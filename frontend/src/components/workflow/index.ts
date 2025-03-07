@@ -10,4 +10,4 @@ export { default as WorkflowStateItem } from './WorkflowStateItem'
 export { default as WorkflowStateDragOverlay } from './WorkflowStateDragOverlay'
 
 // Re-export types from our main types file
-export type { WorkflowState } from '@types/workflow'
+export type { WorkflowState } from '~types/workflow'

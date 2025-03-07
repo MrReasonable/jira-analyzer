@@ -16,7 +16,7 @@ export default defineConfig((_) => {
         '@pages': resolve(__dirname, './src/pages'),
         '@utils': resolve(__dirname, './src/utils'),
         '@api': resolve(__dirname, './src/api'),
-        '@types': resolve(__dirname, './src/types'),
+        '~types': resolve(__dirname, './src/types'),
         '@test': resolve(__dirname, './test'),
         '@mocks': resolve(__dirname, './test/mocks')
       }

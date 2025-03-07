@@ -4,7 +4,7 @@
  */
 
 import { WorkflowStatesList } from '@components/workflow'
-import type { WorkflowState } from '@types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 // Re-export for backward compatibility
 export { WorkflowStatesList }
