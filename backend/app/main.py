@@ -146,7 +146,7 @@ async def get_jira_client(
 
 
 # Configuration endpoints
-@app.post('/api/configurations', response_model=JiraConfigSchema)
+@app.post('/configurations', response_model=JiraConfigSchema)
 async def create_configuration(
     config: JiraConfigurationCreate, session: AsyncSession = Depends(get_session)
 ):
@@ -176,7 +176,7 @@ async def create_configuration(
         raise HTTPException(status_code=400, detail=f'Could not create configuration: {str(e)}')
 
 
-@app.get('/api/configurations', response_model=List[JiraConfigurationList])
+@app.get('/configurations', response_model=List[JiraConfigurationList])
 async def list_configurations(session: AsyncSession = Depends(get_session)):
     """List all Jira configurations.
 
@@ -194,7 +194,7 @@ async def list_configurations(session: AsyncSession = Depends(get_session)):
     return configs
 
 
-@app.get('/api/configurations/{name}', response_model=JiraConfigSchema)
+@app.get('/configurations/{name}', response_model=JiraConfigSchema)
 async def get_configuration(name: str, session: AsyncSession = Depends(get_session)):
     """Retrieve a specific Jira configuration by name.
 
@@ -219,7 +219,7 @@ async def get_configuration(name: str, session: AsyncSession = Depends(get_sessi
     return config
 
 
-@app.put('/api/configurations/{name}', response_model=JiraConfigSchema)
+@app.put('/configurations/{name}', response_model=JiraConfigSchema)
 async def update_configuration(
     name: str, config: JiraConfigurationUpdate, session: AsyncSession = Depends(get_session)
 ):
@@ -258,7 +258,7 @@ async def update_configuration(
         raise HTTPException(status_code=400, detail=f'Could not update configuration: {str(e)}')
 
 
-@app.delete('/api/configurations/{name}', status_code=status.HTTP_204_NO_CONTENT)
+@app.delete('/configurations/{name}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_configuration(name: str, session: AsyncSession = Depends(get_session)):
     """Delete a Jira configuration.
 
@@ -343,7 +343,7 @@ def validate_jql_query(jql: str) -> str:
     return jql
 
 
-@app.get('/api/metrics/lead-time')
+@app.get('/metrics/lead-time')
 async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
     """Calculate lead time metrics for issues matching the JQL query.
 
@@ -384,7 +384,7 @@ async def get_lead_time(jql: str, jira: JIRA = Depends(get_jira_client)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/api/metrics/throughput')
+@app.get('/metrics/throughput')
 async def get_throughput(jql: str, jira: JIRA = Depends(get_jira_client)):
     """Calculate throughput metrics for issues matching the JQL query.
 
@@ -423,7 +423,7 @@ async def get_throughput(jql: str, jira: JIRA = Depends(get_jira_client)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/api/metrics/wip')
+@app.get('/metrics/wip')
 async def get_wip(
     jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
 ):
@@ -466,7 +466,7 @@ async def get_wip(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/api/metrics/cycle-time')
+@app.get('/metrics/cycle-time')
 async def get_cycle_time(
     jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
 ):
@@ -534,7 +534,7 @@ async def get_cycle_time(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get('/api/metrics/cfd')
+@app.get('/metrics/cfd')
 async def get_cfd(
     jql: str, jira: JIRA = Depends(get_jira_client), settings: Settings = Depends(get_settings)
 ):

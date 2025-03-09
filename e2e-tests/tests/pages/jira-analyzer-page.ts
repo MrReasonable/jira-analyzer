@@ -1,10 +1,18 @@
 import { Page } from '@playwright/test'
+import { takeScreenshot, setScreenshotTestName } from '../utils/screenshot-helper'
 
 /**
  * Page object for the Jira Analyzer application
  */
 export class JiraAnalyzerPage {
   constructor(public page: Page) {}
+
+  /**
+   * Set the test name for screenshots taken by this page object
+   */
+  setTestName(testName: string): void {
+    setScreenshotTestName(testName)
+  }
 
   /**
    * Navigate to the Jira Analyzer application
@@ -42,7 +50,7 @@ export class JiraAnalyzerPage {
       console.log(`Page title: ${title}`)
 
       // Take a screenshot of the initial page load
-      await this.page.screenshot({ path: 'screenshots/00_initial_page_load.png' })
+      await takeScreenshot(this.page, 'initial_page_load')
 
       // Wait for application to be ready by looking for a key element
       console.log('Waiting for Jira Analyzer heading to be visible')
@@ -56,7 +64,7 @@ export class JiraAnalyzerPage {
         const errorMessage = e instanceof Error ? e.message : String(e)
         console.error('Could not find Jira Analyzer heading:', errorMessage)
         // Take screenshot and print page content for debugging
-        await this.page.screenshot({ path: 'screenshots/heading_not_found.png' })
+        await takeScreenshot(this.page, 'heading_not_found')
 
         console.log('Page HTML content:')
         const html = await this.page.content()
@@ -67,7 +75,7 @@ export class JiraAnalyzerPage {
     } catch (error) {
       console.error('Error during navigation:', error)
       // Take screenshot of error state
-      await this.page.screenshot({ path: 'screenshots/navigation_error.png' })
+      await takeScreenshot(this.page, 'navigation_error')
       throw error
     }
   }
@@ -92,7 +100,7 @@ export class JiraAnalyzerPage {
       console.log('Locating and clicking "Add Configuration" button')
 
       // Take screenshot before trying to find the add button
-      await this.page.screenshot({ path: 'screenshots/before_finding_add_button.png' })
+      await takeScreenshot(this.page, 'before_finding_add_button')
 
       // Wait for the application to be fully loaded and stabilized
       console.log('Waiting for the page to be fully loaded')
@@ -110,13 +118,13 @@ export class JiraAnalyzerPage {
       await addButton.waitFor({ state: 'visible', timeout: 30000 })
 
       // Take a screenshot before clicking for reference
-      await this.page.screenshot({ path: 'screenshots/before_clicking_add_button.png' })
+      await takeScreenshot(this.page, 'before_clicking_add_button')
 
       console.log('Clicking the Add Configuration button')
       await addButton.click({ timeout: 15000 })
 
       // Take screenshot after clicking Add Configuration
-      await this.page.screenshot({ path: 'screenshots/01_after_add_config_click.png' })
+      await takeScreenshot(this.page, 'after_add_config_click')
 
       console.log('Waiting for Configuration Name field')
       const nameField = this.page.getByLabel('Configuration Name')
@@ -158,7 +166,7 @@ export class JiraAnalyzerPage {
 
           // Take a minimal number of screenshots for debugging
           if (state === workflowStatesArray[0]) {
-            await this.page.screenshot({ path: `screenshots/add_first_state.png` })
+            await takeScreenshot(this.page, 'add_first_state')
           }
 
           // Find and click the Add button with more reliable selectors
@@ -178,13 +186,13 @@ export class JiraAnalyzerPage {
         } catch (error) {
           console.error(`Error adding workflow state ${state}:`, error)
           // We'll log the error but continue with other states to avoid hanging
-          await this.page.screenshot({ path: `screenshots/error_adding_state_${state}.png` })
+          await takeScreenshot(this.page, `error_adding_state_${state}`)
           // Don't throw error for individual states - try to continue with the test
         }
       }
 
       // Take a single screenshot of the final workflow states list
-      await this.page.screenshot({ path: 'screenshots/workflow_states_list.png' })
+      await takeScreenshot(this.page, 'workflow_states_list')
 
       // Perform a single verification of all states at the end
       try {
@@ -207,12 +215,12 @@ export class JiraAnalyzerPage {
         )
       } catch (error) {
         console.error('Error verifying workflow states:', error)
-        await this.page.screenshot({ path: 'screenshots/workflow_states_verification_error.png' })
+        await takeScreenshot(this.page, 'workflow_states_verification_error')
         // Log but continue with the test
       }
 
       // Take a screenshot to see the states list
-      await this.page.screenshot({ path: 'screenshots/workflow_states_list.png' })
+      await takeScreenshot(this.page, 'workflow_states_list_final')
 
       console.log('Setting workflow state markers for Lead Time and Cycle Time')
 
@@ -240,7 +248,7 @@ export class JiraAnalyzerPage {
       console.log(`Selected ${config.leadTimeStartState} from Lead Time Start State dropdown`)
 
       // Take screenshot after selecting
-      await this.page.screenshot({ path: 'screenshots/after_select_lead_time_start.png' })
+      await takeScreenshot(this.page, 'after_select_lead_time_start')
 
       // Set end state via dropdown like we did for the start state
       console.log(`Setting ${config.leadTimeEndState} as Lead Time end state via dropdown`)
@@ -251,7 +259,7 @@ export class JiraAnalyzerPage {
       console.log(`Selected ${config.leadTimeEndState} from Lead Time End State dropdown`)
 
       // Take screenshot after selecting
-      await this.page.screenshot({ path: 'screenshots/after_select_lead_time_end.png' })
+      await takeScreenshot(this.page, 'after_select_lead_time_end')
 
       // Fill in the Cycle Time dropdowns too
       console.log(`Setting Cycle Time states via dropdowns`)
@@ -259,10 +267,10 @@ export class JiraAnalyzerPage {
       await this.page.getByLabel('Cycle Time End State').selectOption(config.cycleTimeEndState)
 
       // Take screenshot after setting all dropdowns
-      await this.page.screenshot({ path: 'screenshots/after_setting_all_state_dropdowns.png' })
+      await takeScreenshot(this.page, 'after_setting_all_state_dropdowns')
 
       // Take screenshot after filling form
-      await this.page.screenshot({ path: 'screenshots/02_after_filling_form.png' })
+      await takeScreenshot(this.page, 'after_filling_form')
 
       console.log('Submitting the form')
       // Use a more reliable selector for the submit button
@@ -273,7 +281,7 @@ export class JiraAnalyzerPage {
       await submitButton.click()
 
       // Take screenshot after clicking submit
-      await this.page.screenshot({ path: 'screenshots/03_after_submit_click.png' })
+      await takeScreenshot(this.page, 'after_submit_click')
 
       // Wait for page to be fully loaded instead of networkidle
       await this.page.waitForLoadState('domcontentloaded', { timeout: 10000 })
@@ -287,12 +295,12 @@ export class JiraAnalyzerPage {
       await this.page.waitForLoadState('load', { timeout: 10000 })
 
       // Take a screenshot of the current state
-      await this.page.screenshot({ path: 'screenshots/04_after_form_submission.png' })
+      await takeScreenshot(this.page, 'after_form_submission')
 
       // No arbitrary wait, just proceed with verification
 
       // Take another screenshot for debugging
-      await this.page.screenshot({ path: 'screenshots/before_verify_config.png' })
+      await takeScreenshot(this.page, 'before_verify_config')
 
       // Check for the presence of our configuration name anywhere on the page
       console.log(`Looking for configuration name "${config.name}" on the page`)
@@ -313,7 +321,7 @@ export class JiraAnalyzerPage {
     } catch (error) {
       console.error('Error in createConfiguration:', error)
       // Take screenshot of error state
-      await this.page.screenshot({ path: 'screenshots/error_create_config.png' })
+      await takeScreenshot(this.page, 'error_create_config')
       throw error
     }
   }
@@ -372,7 +380,7 @@ export class JiraAnalyzerPage {
       await analyzeButton.waitFor({ state: 'visible', timeout: 15000 })
     } catch (error) {
       console.error('Analyze button not found:', error)
-      await this.page.screenshot({ path: 'screenshots/analyze_button_not_found.png' })
+      await takeScreenshot(this.page, 'analyze_button_not_found')
       throw new Error('Analyze button not found or not visible')
     }
 
@@ -381,7 +389,7 @@ export class JiraAnalyzerPage {
     console.log('Analyze button clicked successfully')
 
     // Take screenshot after clicking Analyze
-    await this.page.screenshot({ path: 'screenshots/05_after_analyze_click.png' })
+    await takeScreenshot(this.page, 'after_analyze_click')
 
     // Wait for the Lead Time Analysis header which should appear after metrics load
     try {
@@ -395,12 +403,12 @@ export class JiraAnalyzerPage {
       console.log(`Found ${canvasCount} canvas elements on the page`)
 
       // Take a screenshot to show metrics loaded
-      await this.page.screenshot({ path: 'screenshots/metrics_loaded.png' })
+      await takeScreenshot(this.page, 'metrics_loaded')
 
       console.log('Metrics content detected successfully')
     } catch (error) {
       console.error('Failed to detect metrics content:', error)
-      await this.page.screenshot({ path: 'screenshots/metrics_content_not_found.png' })
+      await takeScreenshot(this.page, 'metrics_content_not_found')
 
       // Get what's currently on the page for debugging
       const headings = await this.page.locator('h1, h2, h3').allTextContents()
@@ -410,7 +418,44 @@ export class JiraAnalyzerPage {
     }
 
     // Take screenshot after metrics loaded
-    await this.page.screenshot({ path: 'screenshots/06_after_metrics_loaded.png' })
+    await takeScreenshot(this.page, 'after_metrics_loaded')
+  }
+
+  /**
+   * Edit a configuration
+   * @param configName The name of the configuration to edit
+   */
+  async editConfiguration(configName: string) {
+    try {
+      console.log(`Editing configuration "${configName}"`)
+      await takeScreenshot(this.page, 'before_edit_config')
+
+      // Find and click the Edit button for the specified configuration
+      const editButton = this.page.getByTestId(`edit-${configName}`)
+
+      console.log('Waiting for edit button to be visible...')
+      await editButton.waitFor({ state: 'visible', timeout: 10000 })
+
+      console.log('Clicking edit button')
+      await editButton.click()
+
+      // Take screenshot after clicking Edit
+      await takeScreenshot(this.page, 'after_edit_click')
+
+      // Wait for the form to appear and verify it's for editing
+      console.log('Waiting for edit form to appear')
+      const formTitle = this.page.getByText('Edit Configuration', { exact: true })
+      await formTitle.waitFor({ state: 'visible', timeout: 10000 })
+
+      console.log('Edit form loaded successfully')
+      await takeScreenshot(this.page, 'edit_form_loaded')
+
+      return true
+    } catch (error) {
+      console.error(`Error editing configuration "${configName}":`, error)
+      await takeScreenshot(this.page, 'edit_config_error')
+      throw error
+    }
   }
 
   /**
@@ -478,7 +523,7 @@ export class JiraAnalyzerPage {
         await deleteButton.waitFor({ state: 'visible', timeout: 10000 })
       } catch (error) {
         console.error('Delete button not found or not visible:', error)
-        await this.page.screenshot({ path: 'screenshots/delete_button_not_found.png' })
+        await takeScreenshot(this.page, 'delete_button_not_found')
         throw new Error('Delete button not found or not visible')
       }
 
@@ -487,12 +532,12 @@ export class JiraAnalyzerPage {
         console.log('Delete button clicked successfully')
       } else {
         console.log('Delete button not visible')
-        await this.page.screenshot({ path: 'screenshots/delete_button_not_visible.png' })
+        await takeScreenshot(this.page, 'delete_button_not_visible')
         throw new Error('Delete button not visible')
       }
 
       // Take a screenshot after delete attempt
-      await this.page.screenshot({ path: 'screenshots/07_after_delete.png' })
+      await takeScreenshot(this.page, 'after_delete')
 
       // Wait for page to be fully loaded instead of networkidle
       await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 })
@@ -507,7 +552,7 @@ export class JiraAnalyzerPage {
       })
 
       // Take a screenshot after deletion
-      await this.page.screenshot({ path: 'screenshots/08_after_delete_verification.png' })
+      await takeScreenshot(this.page, 'after_delete_verification')
 
       // Use a simple search for the deleted configuration name
       if (targetConfig) {
@@ -543,13 +588,13 @@ export class JiraAnalyzerPage {
       } else {
         console.log('Add Configuration button not visible, but continuing test')
         // Take a screenshot but don't throw an error to avoid hanging
-        await this.page.screenshot({ path: 'screenshots/add_button_not_visible_after_delete.png' })
+        await takeScreenshot(this.page, 'add_button_not_visible_after_delete')
       }
 
       console.log('Delete operation successfully verified')
     } catch (e: Error | unknown) {
       console.error('Error in deleteConfiguration:', e)
-      await this.page.screenshot({ path: 'screenshots/delete_error.png' })
+      await takeScreenshot(this.page, 'delete_error')
       throw e
     }
   }

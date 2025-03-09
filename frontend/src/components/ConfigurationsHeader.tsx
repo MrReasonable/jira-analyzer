@@ -9,6 +9,7 @@ interface ConfigurationsHeaderProps {
   loading: Accessor<boolean>
   selectedConfig: Accessor<string | undefined>
   onSelect: (name: string) => void
+  onEdit: (name: string) => void
   onDelete: (name: string) => Promise<boolean>
   onAddClick: () => void
 }
@@ -20,6 +21,7 @@ export const ConfigurationsHeader: Component<ConfigurationsHeaderProps> = props 
         configurations={props.configurations}
         loading={props.loading}
         onSelect={props.onSelect}
+        onEdit={props.onEdit}
         onDelete={props.onDelete}
         selectedName={props.selectedConfig}
       />
