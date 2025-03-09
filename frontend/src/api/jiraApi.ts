@@ -232,8 +232,3 @@ export const jiraApi = {
     }
   },
 }
-
-// Add for testing
-export const resetJiraApi = () => {
-  // Reset any internal state if needed
-}
