@@ -1,189 +1,99 @@
-# Jira Analyzer End-to-End Tests
+# Jira Analyzer E2E Tests
 
 This directory contains end-to-end tests for the Jira Analyzer application using Playwright.
 
-## Setup
+## Organization
 
-1. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-2. Install Playwright browsers:
-
-   ```bash
-   pnpm run install:browsers
-   ```
-
-   Note: The `run-tests.sh` script will automatically check if browsers are installed and install them if needed.
+- `tests/` - Contains all test specs
+  - `pages/` - Page object models used by the tests
+  - `utils/` - Utility functions used across tests
 
 ## Running Tests
 
-### Using the run-tests.sh Script (Recommended)
-
-The `run-tests.sh` script handles starting the backend and frontend servers before running the tests, and then cleans up
-afterward. This is the recommended way to run the tests.
+To run the tests, use:
 
 ```bash
-# Run tests in headless mode
-npm run run-tests
-
-# Run tests in headed mode (visible browser)
-npm run run-tests:headed
-
-# Run tests in debug mode (with step-by-step debugging)
-npm run run-tests:debug
-```
-
-From the project root, you can also use the Makefile commands:
-
-```bash
-# Run tests in headless mode
-make e2e-test
-
-# Run tests in headed mode
-make e2e-test-headed
-
-# Run tests in debug mode
-make e2e-test-debug
-```
-
-### Running Tests Directly (Not Recommended)
-
-These commands run the tests directly without starting the servers. You need to start the backend and frontend servers
-manually before running these commands.
-
-```bash
-# Run tests in headless mode
-npm test
-
-# Run tests with UI mode
-npm run test:ui
-
-# Run tests in headed mode
-npm run test:headed
-
-# Run tests in debug mode
-npm run test:debug
-```
-
-## Test Structure
-
-The tests are located in the `tests` directory and are organized as follows:
-
-- `jira-analyzer.spec.ts`: Tests the full application workflow, including:
-  - Creating a Jira configuration
-  - Selecting a configuration
-  - Analyzing metrics
-  - Deleting a configuration
-
-## Mock Jira Server
-
-The end-to-end tests use a mock Jira server to avoid requiring actual Jira credentials. This makes the tests more
-reliable and faster, as they don't depend on external services.
-
-The mock Jira server:
-
-- Provides predefined sample data for all Jira API calls
-- Simulates issues with different states and dates
-- Includes changelogs for cycle time calculation
-- Is automatically enabled when running the tests
-
-The mock implementation is in `backend/app/mock_jira.py` and is activated by setting the `USE_MOCK_JIRA` environment
-variable to `true` in the Docker Compose configuration.
-
-## Configuration
-
-The Playwright configuration is in `playwright.config.ts`. It includes:
-
-- Starting the backend using Docker Compose with mock Jira enabled
-- Starting the frontend development server
-- Using Chromium as the browser
-- Setting timeouts and other test parameters
-- Automatically stopping Docker Compose services after tests complete
-
-## Linting and Formatting
-
-This project uses ESLint and Prettier for code quality and formatting:
-
-```bash
-# Run linting
-npm run lint
-
-# Fix linting issues automatically
-npm run lint:fix
-
-# Format code
-npm run format
-
-# Check if code is formatted correctly
-npm run format:check
-```
-
-From the project root, you can also use the Makefile commands:
-
-```bash
-# Run linting
-make e2e-lint
-
-# Fix linting issues automatically
-make e2e-lint-fix
-
-# Format code
-make e2e-format
-
-# Check if code is formatted correctly
-make e2e-format-check
-```
-
-## Logging
-
-The `run-tests.sh` script now captures backend logs during test execution. This helps with debugging test failures,
-especially when they're related to backend issues.
-
-### Log Location
-
-Backend logs are saved to:
-
-- `e2e-tests/logs/backend.log`
-
-These logs contain all output from the backend server, including:
-
-- API request/response details
-- Error messages
-- Debug information
-- Database operations
-
-### Viewing Logs
-
-After running tests, you can examine the logs to diagnose issues:
-
-```bash
-# View the entire log file
-cat e2e-tests/logs/backend.log
-
-# Search for errors
-grep "ERROR" e2e-tests/logs/backend.log
-
-# Follow logs in real-time during test execution
-tail -f e2e-tests/logs/backend.log
-```
-
-### CI Integration
-
-In CI environments, backend logs are automatically captured and uploaded as artifacts. You can access them from the
-GitHub Actions workflow run page under the "Artifacts" section.
-
-To run these tests in CI, you can use the following command:
-
-```bash
-CI=true npm test
+cd e2e-tests
+pnpm run run-tests
 ```
 
 This will:
 
-- Run tests in headless mode
-- Not reuse existing servers
-- Retry failed tests
-- Capture and upload backend logs
+1. Start the backend and frontend services with Docker
+2. Run the tests with Playwright
+3. Stop the services when done
+
+## Screenshot Organization
+
+The tests use a consistent screenshot organization system:
+
+### Screenshot Helper Utility
+
+We use a screenshot helper utility (`tests/utils/screenshot-helper.ts`) that provides the following features:
+
+- **Test-Specific Folders**: Each test's screenshots are saved in a dedicated folder
+- **Auto-Incrementing Numbers**: Screenshots are prefixed with incrementing numbers (01*, 02*, etc.)
+- **Consistent API**: All tests use the same screenshot helper functions
+
+### Usage
+
+```typescript
+import { takeScreenshot, resetScreenshotCounter } from './utils/screenshot-helper'
+
+// In the beforeEach hook
+test.beforeEach(async ({ page }) => {
+  // Set the screenshot folder name based on the test
+  resetScreenshotCounter('my_test_name')
+})
+
+// During a test
+await takeScreenshot(page, 'descriptive_name')
+```
+
+### Output Structure
+
+Screenshots are organized with this structure:
+
+```sh
+screenshots/
+  test_name_1/
+    01_initial_page_load.png
+    02_form_filled.png
+    03_after_submission.png
+  test_name_2/
+    01_navigation.png
+    02_action_performed.png
+    ...
+```
+
+## Test Structure Guidelines
+
+### Page Object Model
+
+We follow the Page Object Model pattern:
+
+- Page interactions are encapsulated in classes in the `pages/` directory
+- Tests use these page objects rather than directly interacting with elements
+- This makes tests more maintainable and readable
+
+### Test Organization
+
+Each test file should:
+
+1. Have a descriptive name ending with `.spec.ts`
+2. Use a `describe` block to group related tests
+3. Reset the screenshot counter in `beforeEach` with a specific test name
+4. Include detailed test steps with console logs
+5. Use appropriate assertions to verify expected behaviors
+
+### Error Handling
+
+For better test stability:
+
+- Use error handling where appropriate
+- Catch and log errors but continue tests when possible
+- Take screenshots when errors occur for debugging
+
+## Workflow States Testing
+
+For specific information about workflow states drag-and-drop testing, see [WORKFLOW_STATES_TESTING.md](./WORKFLOW_STATES_TESTING.md).

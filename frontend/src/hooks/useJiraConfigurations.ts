@@ -1,5 +1,5 @@
 import { createSignal, createEffect } from 'solid-js'
-import { jiraApi, JiraConfigurationList } from '@api/jiraApi'
+import { jiraApi, JiraConfigurationList, JiraConfiguration } from '@api/jiraApi'
 import { logger } from '@utils/logger'
 
 export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
@@ -8,6 +8,7 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
   const [error, setError] = createSignal<Error | null>(null)
   const [selectedConfig, setSelectedConfig] = createSignal<string | undefined>()
   const [showConfigForm, setShowConfigForm] = createSignal(false)
+  const [configToEdit, setConfigToEdit] = createSignal<JiraConfiguration | undefined>()
 
   const loadConfigurations = async () => {
     setLoading(true)
@@ -69,11 +70,25 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
     }
   }
 
+  const handleConfigEdit = async (name: string) => {
+    logger.debug('Editing Jira configuration', { name })
+    try {
+      const config = await jiraApi.getConfiguration(name)
+      setConfigToEdit(config)
+      setShowConfigForm(true)
+      logger.info('Loaded configuration for editing', { name })
+    } catch (err) {
+      logger.error('Failed to load configuration for editing:', err)
+      setError(err instanceof Error ? err : new Error(String(err)))
+    }
+  }
+
   const handleConfigSaved = async (configName: string) => {
     logger.debug('Configuration saved, refreshing list and selecting new config', {
       name: configName,
     })
     setShowConfigForm(false)
+    setConfigToEdit(undefined)
 
     // Refresh the configurations list
     await loadConfigurations()
@@ -98,8 +113,11 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
     loadConfigurations,
     handleConfigSelect,
     handleConfigDelete,
+    handleConfigEdit,
     showConfigForm,
     setShowConfigForm,
     handleConfigSaved,
+    configToEdit,
+    setConfigToEdit,
   }
 }

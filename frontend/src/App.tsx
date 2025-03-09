@@ -55,6 +55,7 @@ const App: Component = () => {
             loading={configState.loading}
             selectedConfig={configState.selectedConfig}
             onSelect={configState.handleConfigSelect}
+            onEdit={configState.handleConfigEdit}
             onDelete={configState.handleConfigDelete}
             onAddClick={() => configState.setShowConfigForm(true)}
           />
@@ -176,9 +177,10 @@ const App: Component = () => {
                   d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              Add Configuration
+              {configState.configToEdit() ? 'Edit Configuration' : 'Add Configuration'}
             </Dialog.Title>
             <ConfigurationForm
+              initialConfig={configState.configToEdit()}
               onConfigurationSaved={configName => configState.handleConfigSaved(configName)}
             />
             <Dialog.CloseButton class="absolute top-4 right-4 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">

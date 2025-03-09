@@ -33,6 +33,13 @@ export const createSortable = (id: string | number) => {
     id,
     isActiveDraggable: false,
     transform: { x: 0, y: 0 },
+    // Add dragActivators for drag handle functionality
+    dragActivators: (el: HTMLElement) => el,
+    // Method to trigger drag event manually in tests
+    setDragging: (dragging: boolean) => {
+      // This is just a stub for testing - real implementation would set internal state
+      return dragging
+    },
   }
 }
 

@@ -26,7 +26,11 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      'playwright/no-conditional-in-test': 'warn',
+      // In E2E tests, we sometimes need conditionals and waiting
+      'playwright/no-conditional-in-test': 'off', // Disabled - needed for E2E test workflow
+      'playwright/no-conditional-expect': 'off', // Disabled - needed for handling different UI states
+      'playwright/no-skipped-test': 'warn', // Warn about skipped tests
+      'playwright/no-wait-for-timeout': 'off', // Disabled - sometimes needed for stabilizing tests
       'playwright/no-force-option': 'warn',
       'playwright/prefer-web-first-assertions': 'warn',
       'playwright/no-wait-for-selector': 'error', // Disallow waitForSelector
