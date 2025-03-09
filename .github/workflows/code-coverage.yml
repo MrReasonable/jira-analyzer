@@ -51,15 +51,17 @@ jobs:
         working-directory: ./frontend
         run: pnpm run test:coverage
 
-      - name: Upload frontend coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: List coverage files for debugging
+        working-directory: ./frontend
+        run: find coverage -type f | sort
+
+      - name: Upload frontend coverage to Coveralls
+        uses: coverallsapp/github-action@v2
         with:
-          directory: ./frontend/coverage
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN || '' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./frontend/coverage/lcov.info
+          flag-name: frontend
+          base-path: ./frontend
 
   backend-coverage:
     name: Backend Test Coverage
@@ -84,15 +86,17 @@ jobs:
       - name: Run backend tests with coverage
         working-directory: ./backend
         run: |
-          pytest --cov=app --cov-report=xml:coverage.xml tests/
+          pip install pytest-cov coveralls
+          pytest --cov=app --cov-report=lcov:coverage.lcov tests/
 
-      - name: Upload backend coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: List backend coverage files for debugging
+        working-directory: ./backend
+        run: find . -name "coverage*" -type f | sort
+
+      - name: Upload backend coverage to Coveralls
+        uses: coverallsapp/github-action@v2
         with:
-          directory: ./backend
-          files: ./backend/coverage.xml
-          flags: backend
-          name: backend-coverage
-          fail_ci_if_error: false
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./backend/coverage.lcov
+          flag-name: backend
+          base-path: ./backend

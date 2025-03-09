@@ -30,5 +30,10 @@ export default defineConfig({
       }
     },
     css: false,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: './coverage'
+    }
   },
 });

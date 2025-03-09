@@ -157,11 +157,11 @@ triggered. It performs the following actions:
 
 - **Frontend Coverage:**
   - Runs frontend tests with coverage reporting
-  - Uploads the coverage report to Codecov
+  - Uploads the coverage report to Coveralls
 
 - **Backend Coverage:**
   - Runs backend tests with coverage reporting
-  - Uploads the coverage report to Codecov
+  - Uploads the coverage report to Coveralls
 
 ## Dependabot Configuration
 
@@ -191,7 +191,7 @@ Some workflows can be triggered manually from the GitHub Actions tab in the repo
 
 The following secrets need to be configured in the GitHub repository settings:
 
-- `CODECOV_TOKEN`: Token for uploading coverage reports to Codecov
+- `GITHUB_TOKEN`: Token for uploading coverage reports to Coveralls (automatically provided by GitHub)
 
 ### Environment Setup
 
