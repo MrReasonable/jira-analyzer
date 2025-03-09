@@ -2,6 +2,10 @@
 
 A powerful analytics tool for visualizing and understanding Jira workflow metrics.
 
+[![Coverage Status](https://coveralls.io/repos/github/MrReasonable/jira-analyzer/badge.svg?branch=main)](https://coveralls.io/github/MrReasonable/jira-analyzer?branch=main)
+[![CI Status](https://github.com/MrReasonable/jira-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/MrReasonable/jira-analyzer/actions/workflows/ci.yml)
+[![E2E Tests Status](https://github.com/MrReasonable/jira-analyzer/actions/workflows/e2e-tests.yml/badge.svg)](https://github.com/MrReasonable/jira-analyzer/actions/workflows/e2e-tests.yml)
+
 ## Overview
 
 Jira Analyzer is a web application that provides insightful metrics and visualizations for Jira projects. It helps teams
