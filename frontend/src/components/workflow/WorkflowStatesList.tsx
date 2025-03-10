@@ -7,8 +7,8 @@ import {
   SortableProvider,
   DragEvent,
 } from '@thisbeyond/solid-dnd'
-import type { WorkflowState } from '../../types/workflow'
-import { useWorkflowStates } from '../../hooks/useWorkflowStates'
+import type { WorkflowState } from '~/types/workflow'
+import { useWorkflowStates } from '@hooks/useWorkflowStates'
 import WorkflowStateItem from './WorkflowStateItem'
 import WorkflowStateDragOverlay from './WorkflowStateDragOverlay'
 
@@ -25,18 +25,30 @@ export const WorkflowStatesList: Component<WorkflowStatesListProps> = props => {
   // eslint-disable-next-line solid/reactivity
   const stateManager = useWorkflowStates(props.states, props.onChange)
 
-  // Event handlers for drag and drop
+  // Event handlers for drag and drop with enhanced logging and robustness
   const onDragStart = (event: DragEvent) => {
     if (event.draggable) {
+      console.log(`Drag start: dragging item ${event.draggable.id}`)
       stateManager.setActiveItem(String(event.draggable.id))
     }
   }
 
   const onDragEnd = (event: DragEvent) => {
+    console.log(
+      `Drag end detected: draggable=${event.draggable?.id}, droppable=${event.droppable?.id}`
+    )
     if (event.draggable && event.droppable) {
       const fromIndex = stateManager.ids().indexOf(String(event.draggable.id))
       const toIndex = stateManager.ids().indexOf(String(event.droppable.id))
+
+      console.log(`Moving item from index ${fromIndex} to ${toIndex}`)
       stateManager.moveItem(fromIndex, toIndex)
+
+      // Ensure UI updates immediately
+      setTimeout(() => {
+        // Trigger UI update by accessing the items to notify reactive system
+        console.log(`Current items after move: ${stateManager.items().length} items`)
+      }, 50)
     }
     stateManager.setActiveItem(null)
   }

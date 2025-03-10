@@ -1,7 +1,7 @@
 FROM node:23-slim AS build
 
 # Set build arguments
-ARG PNPM_VERSION=10.6.1
+ARG PNPM_VERSION=10.6.2
 ARG NODE_VERSION=23
 
 # Set environment variables

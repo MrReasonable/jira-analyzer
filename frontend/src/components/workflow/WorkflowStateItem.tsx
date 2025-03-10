@@ -31,7 +31,12 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
       <div class="flex items-center justify-between p-3">
         <div class="flex items-center space-x-3">
           {/* Drag handle icon - this makes the handle activate dragging */}
-          <div class="cursor-grab p-1 active:cursor-grabbing" data-dnd-handle data-no-dnd-click>
+          <div
+            class="cursor-grab p-1 active:cursor-grabbing"
+            data-dnd-handle
+            data-no-dnd-click
+            data-testid="workflow-state-drag-handle"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { JiraAnalyzerPage } from './pages/jira-analyzer-page'
-import { takeScreenshot, resetScreenshotCounter } from './utils/screenshot-helper'
+import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
+import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
 
 // Set a reasonable timeout
 test.setTimeout(30000)
