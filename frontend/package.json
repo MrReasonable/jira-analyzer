@@ -20,7 +20,7 @@
   "dependencies": {
     "@kobalte/core": "^0.13.9",
     "@thisbeyond/solid-dnd": "^0.7.5",
-    "axios": "^1.8.1",
+    "axios": "^1.8.2",
     "chart.js": "^4.4.8",
     "solid-js": "^1.9.5"
   },
