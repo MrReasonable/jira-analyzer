@@ -190,6 +190,7 @@ export const ConfigurationForm: Component<Props> = props => {
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jira_email}
           onInput={e => updateField('jira_email', e.currentTarget.value)}
+          autocomplete="email"
           required
         />
       </div>
@@ -205,6 +206,7 @@ export const ConfigurationForm: Component<Props> = props => {
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jira_api_token}
           onInput={e => updateField('jira_api_token', e.currentTarget.value)}
+          autocomplete="current-password"
           required
         />
       </div>
