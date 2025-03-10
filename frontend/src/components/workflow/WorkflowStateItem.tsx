@@ -32,22 +32,25 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
         <div class="flex items-center space-x-3">
           {/* Drag handle icon - this makes the handle activate dragging */}
           <div
-            class="cursor-grab p-1 active:cursor-grabbing"
+            class="cursor-grab rounded bg-gray-100 p-2 hover:bg-gray-200 active:cursor-grabbing"
             data-dnd-handle
             data-no-dnd-click
             data-testid="workflow-state-drag-handle"
+            aria-label={`Drag handle for ${props.item.name}`}
+            role="button"
+            tabindex="0"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="text-gray-400"
+              class="text-gray-600"
             >
               <line x1="3" y1="12" x2="9" y2="12" />
               <line x1="3" y1="6" x2="9" y2="6" />
