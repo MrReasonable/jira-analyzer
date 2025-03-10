@@ -22,5 +22,9 @@
         "MD013": { "line_length": 100 },
         "MD024": false,
         "MD033": false
+    },
+    "sonarlint.connectedMode.project": {
+        "connectionId": "mrreasonable",
+        "projectKey": "MrReasonable_jira-analyzer"
     }
 }

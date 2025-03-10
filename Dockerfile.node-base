@@ -1,6 +1,6 @@
 FROM node:23-slim AS node-base
 
-ARG PNPM_VERSION=10.6.1
+ARG PNPM_VERSION=10.6.2
 
 # Set environment variables
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0

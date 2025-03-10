@@ -2,7 +2,8 @@ import { Component, createSignal, createEffect, For } from 'solid-js'
 import { generateId } from '@utils/idGenerator'
 import { jiraApi, JiraConfiguration } from '@api/jiraApi'
 import { logger } from '@utils/logger'
-import { WorkflowState, WorkflowStatesList } from './WorkflowStatesList'
+import { WorkflowState } from '~/types/workflow'
+import { WorkflowStatesList } from './workflow/WorkflowStatesList'
 
 interface Props {
   initialConfig?: JiraConfiguration
