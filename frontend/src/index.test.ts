@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { logger, LogLevel } from '@utils/logger'
+import { render } from 'solid-js/web'
 
 // Mock the render function
 vi.mock('solid-js/web', () => ({
@@ -102,41 +103,36 @@ describe('index entry point', () => {
     // Mock successful element query
     mockGetElementById.mockReturnValue(mockRoot)
 
-    // Import and spy on the render function
-    const solidWeb = require('solid-js/web')
-    const renderSpy = vi.spyOn(solidWeb, 'render')
-
     // Simulate the behavior of index.tsx
     const root = document.getElementById('root')
     if (root) {
-      solidWeb.render(vi.fn(), root)
+      render(vi.fn(), root)
     }
 
     // Check if getElementById was called with 'root'
     expect(mockGetElementById).toHaveBeenCalledWith('root')
 
-    // Verify render was called
-    expect(renderSpy).toHaveBeenCalled()
+    // Verify render was called with any args and root element
+    expect(render).toHaveBeenCalledWith(expect.anything(), mockRoot)
   })
 
   it('should not render the app when root element does not exist', () => {
+    // Reset mock calls
+    vi.clearAllMocks()
+
     // Mock unsuccessful element query
     mockGetElementById.mockReturnValue(null)
-
-    // Import and spy on the render function
-    const solidWeb = require('solid-js/web')
-    const renderSpy = vi.spyOn(solidWeb, 'render')
 
     // Simulate the behavior of index.tsx
     const root = document.getElementById('root')
     if (root) {
-      solidWeb.render(vi.fn(), root)
+      render(vi.fn(), root)
     }
 
     // Check if getElementById was called with 'root'
     expect(mockGetElementById).toHaveBeenCalledWith('root')
 
     // Verify render was not called
-    expect(renderSpy).not.toHaveBeenCalled()
+    expect(render).not.toHaveBeenCalled()
   })
 })

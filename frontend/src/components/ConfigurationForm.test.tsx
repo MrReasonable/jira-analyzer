@@ -5,7 +5,7 @@ import { jiraApi } from '@api/jiraApi'
 import type { JiraConfiguration } from '@api/jiraApi'
 
 // Mock the WorkflowStatesList component
-vi.mock('./WorkflowStatesList', () => {
+vi.mock('./workflow/WorkflowStatesList', () => {
   return {
     WorkflowState: {},
     WorkflowStatesList: (props: {

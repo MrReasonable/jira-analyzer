@@ -25,7 +25,7 @@ export default defineConfig({
     deps: {
       optimizer: {
         web: {
-          include: ['solid-js']
+          include: ['solid-js', 'solid-js/web', 'solid-js/store']
         }
       }
     },

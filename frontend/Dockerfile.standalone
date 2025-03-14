@@ -1,7 +1,7 @@
 FROM node:23-slim AS build
 
 # Set build arguments
-ARG PNPM_VERSION=10.6.2
+ARG PNPM_VERSION=10.6.3
 ARG NODE_VERSION=23
 
 # Set environment variables
@@ -10,20 +10,19 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /app
 
 # Install common build dependencies
-RUN apt-get update && \
+RUN corepack enable && \
+    apt-get update && \
     apt-get install -y \
-    python3 \
-    make \
     g++ \
-    pkg-config \
-    # Frontend-specific dependencies
-    libpixman-1-dev \
     libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
     libgif-dev \
-    librsvg2-dev && \
-    corepack enable && \
+    libjpeg-dev \
+    libpango1.0-dev \
+    libpixman-1-dev \
+    librsvg2-dev \
+    make \
+    pkg-config \
+    python3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy package files

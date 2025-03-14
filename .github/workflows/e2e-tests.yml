@@ -16,7 +16,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: "10.6.2"
+          version: "10.6.3"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -62,11 +62,6 @@ jobs:
         run: |
           # Set API URL for build
           VITE_API_URL=http://localhost:8000 pnpm run build
-
-      # Build e2e-tests
-      - name: Build e2e-tests
-        working-directory: ./e2e-tests
-        run: pnpm run build
 
       # Start services
       - name: Start backend server
@@ -120,11 +115,12 @@ jobs:
           TEST_HOST: localhost
           TEST_PORT: 4173
           CI: true
-          PLAYWRIGHT_CONFIG_PATH: dist/playwright.config.js
           # Pass API URL to ensure browser in e2e tests can connect to backend
           VITE_API_URL: http://localhost:8000
+          # Disable type stripping to fix TypeScript parameter properties error
+          NODE_OPTIONS: "--no-experimental-strip-types"
         run: |
-          pnpm exec playwright test --config=dist/playwright.config.js
+          pnpm exec playwright test --reporter=list
 
       # Upload artifacts for debugging
       - name: Upload test results

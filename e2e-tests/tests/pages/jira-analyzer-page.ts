@@ -158,7 +158,7 @@ export class JiraAnalyzerPage {
         const count = await configItems.count()
         for (let i = 0; i < count; i++) {
           const text = await configItems.nth(i).textContent()
-          if (text && text.includes(config.name)) {
+          if (text?.includes(config.name)) {
             exists = true
             console.log(`Found configuration in config item at index ${i}`)
             break
@@ -351,45 +351,7 @@ export class JiraAnalyzerPage {
       // Attempt 3: Use direct JavaScript evaluation approach as a last resort
       if (!deleteClicked) {
         console.log('Falling back to JavaScript evaluation approach')
-        const jsResult = await this.page.evaluate(name => {
-          // Try to find the delete button by data-testid first
-          let deleteButton = document.querySelector(
-            `[data-testid="delete-${name}"]`
-          ) as HTMLElement | null
-
-          // If not found, look for any delete button near the configuration name
-          if (!deleteButton) {
-            const elements = Array.from(document.querySelectorAll('h3, div, span, p'))
-            for (const element of elements) {
-              const textContent = element.textContent || ''
-              if (textContent.includes(name)) {
-                // Look for a delete button in parent elements
-                let parent = element.parentElement
-                for (let i = 0; i < 5 && parent; i++) {
-                  // Check up to 5 levels up
-                  const deleteBtn = parent.querySelector(
-                    'button:has-text("Delete"), button.btn-danger, [data-testid*="delete"]'
-                  ) as HTMLElement | null
-                  if (deleteBtn) {
-                    deleteButton = deleteBtn
-                    break
-                  }
-                  parent = parent.parentElement
-                }
-                if (deleteButton) break
-              }
-            }
-          }
-
-          // If found, click it directly
-          if (deleteButton) {
-            deleteButton.click()
-            return true
-          }
-          return false
-        }, configName)
-
-        deleteClicked = jsResult
+        deleteClicked = await this.findAndClickDeleteButton(configName)
       }
 
       if (!deleteClicked) {
@@ -474,10 +436,51 @@ export class JiraAnalyzerPage {
       const targetBB = await dragHandles.nth(targetIndex).boundingBox()
 
       if (!sourceBB || !targetBB) {
-        console.warn('Could not get bounding boxes for drag handles')
+        console.warn('Could not get bounding boxes for drag operation')
         return false
       }
 
+      // Use native mouse actions with more deliberate movements
+      // Start the drag
+      await this.page.mouse.move(sourceBB.x + sourceBB.width / 2, sourceBB.y + sourceBB.height / 2)
+      await this.page.mouse.down()
+      await this.page.waitForTimeout(300) // Wait for drag to start
+
+      // Complete the drag
+      await this.page.waitForTimeout(300)
+      await this.page.mouse.up()
+      await this.page.waitForTimeout(500)
+
+      return true
+    } catch (error) {
+      console.error('Error during drag operation:', error)
+      await takeScreenshot(this.page, 'drag_error')
+      return false
+    }
+  }
+
+  /**
+   * Helper method to find and click delete button using JavaScript evaluation
+   */
+  private async findAndClickDeleteButton(configName: string): Promise<boolean> {
+    return await this.page.evaluate(name => {
+      const deleteButton =
+        document.querySelector(`[data-testid="delete-${name}"]`) ||
+        Array.from(document.querySelectorAll('h3, div, span, p'))
+          .find(element => element.textContent?.includes(name))
+          ?.closest('.rounded-lg')
+          ?.querySelector('button:has-text("Delete"), button.btn-danger, [data-testid*="delete"]')
+
+      if (deleteButton) {
+        ;(deleteButton as HTMLElement).click()
+        return true
+      }
+      return false
+    }, configName)
+  }
+
+  /**
+   * Perform a drag and drop operation on workflow states
       // Use native mouse actions with more deliberate movements
       // Start the drag
       await this.page.mouse.move(sourceBB.x + sourceBB.width / 2, sourceBB.y + sourceBB.height / 2)

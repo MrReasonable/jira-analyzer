@@ -99,7 +99,7 @@ e2e-ci-image: node-base-ci ## Build the e2e-tests CI image
 		-f e2e-tests/Dockerfile --target ci e2e-tests
 
 frontend-test: frontend-dev-image ## Run frontend tests only (run once and exit)
-	docker run --rm -ti \
+	docker run --rm \
 		-v $(PWD)/frontend/src:/frontend/src \
 		-v $(PWD)/frontend/public:/frontend/public \
 		-v $(PWD)/frontend/index.html:/frontend/index.html \
@@ -109,6 +109,7 @@ frontend-test: frontend-dev-image ## Run frontend tests only (run once and exit)
 		-v $(PWD)/frontend/tsconfig.node.json:/frontend/tsconfig.node.json \
 		-v $(PWD)/frontend/vite.config.ts:/frontend/vite.config.ts \
 		-v $(PWD)/frontend/vitest.config.ts:/frontend/vitest.config.ts \
+		-v $(PWD)/frontend/test:/frontend/test \
 		frontend-dev pnpm test
 
 frontend-test-ci: node-base frontend-ci-image ## Run frontend tests in CI mode (non-interactive)
