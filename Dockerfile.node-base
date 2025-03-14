@@ -13,10 +13,10 @@ WORKDIR /app
 # Install common build dependencies
 RUN apt-get update && \
     apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    pkg-config && \
+        g++ \
+        make \
+        pkg-config \
+        python3 && \
     corepack enable && \
     rm -rf /var/lib/apt/lists/*
 

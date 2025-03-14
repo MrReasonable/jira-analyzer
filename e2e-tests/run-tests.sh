@@ -83,7 +83,7 @@ while true; do
 
   # Check if backend is ready by testing the API
   if ! $BACKEND_READY; then
-    if curl -s "http://localhost:8000/api/healthcheck" | grep -q "ok"; then
+    if curl -s --head --fail "http://localhost/api/docs" > /dev/null; then
       echo "✅ Backend API is ready"
       BACKEND_READY=true
     else
@@ -93,7 +93,7 @@ while true; do
 
   # Check if frontend is ready by checking if the server responds
   if ! $FRONTEND_READY; then
-    if curl -s --head --fail "http://localhost:80" > /dev/null; then
+    if curl -s --head --fail "http://localhost" > /dev/null; then
       echo "✅ Frontend is ready"
       FRONTEND_READY=true
     else
@@ -108,7 +108,7 @@ while true; do
   fi
 
   # Wait a bit before checking again
-  sleep 3
+  sleep 1
 done
 
 # Check if node_modules exists and install dependencies if needed
