@@ -173,7 +173,6 @@ export class JiraAnalyzerPage {
         await takeScreenshot(this.page, 'config_not_found')
         // Refresh the page to see if that helps
         await this.page.reload()
-        await this.page.waitForLoadState('networkidle')
         await takeScreenshot(this.page, 'after_page_refresh')
 
         // Allow test to continue but with warning - we'll verify functionality instead

@@ -73,3 +73,5 @@ screenshots/
 # YAML formatting
 yamlfmt
 yamlfmt_*
+
+backend/*.db

@@ -60,4 +60,5 @@ The following improvements have been implemented:
    - Added a new test file `workflow-states-edit.spec.ts` to verify edit functionality
    - Test creates a configuration, edits it, verifies the changes, and cleans up
 
-These improvements enhance both the user experience and the testability of the application by allowing users to modify configurations after creation.
+These improvements enhance both the user experience and the testability of the application by
+allowing users to modify configurations after creation.

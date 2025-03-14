@@ -7,7 +7,7 @@
         "editor.rulers": [100]
     },
     "[markdown]": {
-        "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
         "editor.wordWrap": "on",
         "editor.rulers": [100]
