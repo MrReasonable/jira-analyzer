@@ -19,20 +19,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.13'
           cache: "pip"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "23"
+          node-version: '23'
           cache: "pnpm"
           cache-dependency-path: "**/pnpm-lock.yaml"
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: "10.6.3"
+          version: '10.6.3'
 
       - name: Install frontend dependencies
         working-directory: ./frontend
