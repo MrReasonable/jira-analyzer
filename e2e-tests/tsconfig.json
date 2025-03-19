@@ -15,8 +15,10 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["tests/*"],
-      "@utils/*": ["tests/utils/*"],
-      "@pages/*": ["tests/pages/*"]
+      "@utils/*": ["src/utils/*"],
+      "@pages/*": ["src/pages/*"],
+      "@core/*": ["src/core/*"],
+      "@src/*": ["src/*"]
     }
   },
   "ts-node": {

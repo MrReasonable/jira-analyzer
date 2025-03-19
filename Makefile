@@ -9,6 +9,7 @@ help:
 
 install: ## Install all dependencies for frontend, backend, and e2e-tests
 	cd frontend && pnpm install
+	pip install --upgrade pip
 	cd backend && pip install -r requirements.txt
 	cd e2e-tests && pnpm install && pnpm run install:browsers
 	pip install pre-commit

@@ -8,7 +8,7 @@ import {
   WipMetrics,
   CfdMetrics,
   CycleTimeMetrics,
-} from '@api/jiraApi'
+} from '../api/jiraApi'
 
 // Mock the chart components
 vi.mock('./LeadTimeChart', () => ({

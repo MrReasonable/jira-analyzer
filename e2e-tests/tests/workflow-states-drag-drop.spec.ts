@@ -12,6 +12,7 @@ test.describe('Workflow States Drag and Drop Functionality', () => {
     jiraAnalyzerPage = new JiraAnalyzerPage(page)
     // Reset screenshot counter and set the test name for screenshots folder
     resetScreenshotCounter('workflow_drag_drop')
+    jiraAnalyzerPage.setTestName('workflow_drag_drop')
   })
 
   test('Should allow reordering workflow states via drag and drop', async ({ page }) => {
