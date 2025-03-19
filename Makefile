@@ -1,6 +1,6 @@
 # Makefile for Jira Analyzer project
 
-.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions
+.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
 
 # Show help message for all make commands
 help:
@@ -104,17 +104,14 @@ docker-dev: ## Start development environment using Docker
 
 node-base: ## Build the shared Node.js base image
 	@docker build -q -t node-base \
-	@docker build -q -t node-base \
 		-f Dockerfile.node-base --target node-base .
 
 node-base-ci: ## Build the shared Node.js CI base image
-	@docker build -q -t node-base-ci \
 	@docker build -q -t node-base-ci \
 		-f Dockerfile.node-base --target node-base-ci .
 
 # Image building targets
 frontend-dev-image: node-base ## Build the frontend development image
-	@docker build -q -t frontend-dev \
 	@docker build -q -t frontend-dev \
 		--build-arg USER_ID=$(shell id -u) \
 		--build-arg GROUP_ID=$(shell id -g) \
@@ -122,18 +119,15 @@ frontend-dev-image: node-base ## Build the frontend development image
 
 frontend-ci-image: node-base-ci ## Build the frontend CI image
 	@docker build -q -t frontend-ci \
-	@docker build -q -t frontend-ci \
 		-f frontend/Dockerfile --target ci frontend
 
 e2e-dev-image: node-base ## Build the e2e-tests development image
-	@docker build -q -t e2e-dev \
 	@docker build -q -t e2e-dev \
 		--build-arg USER_ID=$(shell id -u) \
 		--build-arg GROUP_ID=$(shell id -g) \
 		-f e2e-tests/Dockerfile --target development-nonroot e2e-tests
 
 e2e-ci-image: node-base-ci ## Build the e2e-tests CI image
-	@docker build -q -t e2e-ci \
 	@docker build -q -t e2e-ci \
 		-f e2e-tests/Dockerfile --target ci e2e-tests
 
@@ -344,27 +338,26 @@ e2e-type-check-ci: node-base e2e-ci-image ## Run TypeScript type checking for e2
 yaml-lint: ## Lint YAML files
 	@docker build -q -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	@echo "Running YAML linting..."
-	@docker run --rm -ti -v $(PWD):/app backend-dev yamllint -c /app/.yamllint.yml .github docker-compose.yml docker-compose.dev.yml
+	@docker run --rm -ti -v $(PWD):/app --entrypoint /bin/sh backend-dev -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamllint -c /app/.yamllint.yml"
 
 yamlfmt-image: ## Build the yamlfmt Docker image
 	@docker build -q -t yamlfmt -f Dockerfile.yamlfmt .
-	@docker build -q -t yamlfmt -f Dockerfile.yamlfmt .
 
 yaml-format: yamlfmt-image ## Format YAML files
-	@echo "Formatting YAML files..."
-	@docker run --rm -ti -v $(PWD):/app yamlfmt -conf .yamlfmt.yml .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+	@echo "Running step: yaml-format - Formatting YAML files..."
+	@docker run --rm -ti -v $(PWD):/app --entrypoint /bin/sh yamlfmt -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamlfmt -conf /app/.yamlfmt.yml"
 
 yaml-format-check: yamlfmt-image ## Check YAML files formatting
-	@echo "Checking YAML files formatting..."
-	@docker run --rm -ti -v $(PWD):/app yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+	@echo "Running step: yaml-format-check - Checking YAML files formatting..."
+	@docker run --rm -ti -v $(PWD):/app --entrypoint /bin/sh yamlfmt -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamlfmt -conf /app/.yamlfmt.yml -lint"
 
 yaml-format-ci: yamlfmt-image ## Format YAML files in CI mode (non-interactive)
-	@echo "Formatting YAML files in CI mode..."
-	@docker run --rm -v $(PWD):/app yamlfmt -conf .yamlfmt.yml .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+	@echo "Running step: yaml-format-ci - Formatting YAML files in CI mode..."
+	@docker run --rm -v $(PWD):/app --entrypoint /bin/sh yamlfmt -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamlfmt -conf /app/.yamlfmt.yml"
 
 yaml-format-check-ci: yamlfmt-image ## Check YAML files formatting in CI mode (non-interactive)
-	@echo "Checking YAML files formatting in CI mode..."
-	@docker run --rm -v $(PWD):/app yamlfmt -conf .yamlfmt.yml -lint .github/workflows/*.yml .github/dependabot.yml docker-compose.yml docker-compose.dev.yml .yamllint.yml
+	@echo "Running step: yaml-format-check-ci - Checking YAML files formatting in CI mode..."
+	@docker run --rm -v $(PWD):/app --entrypoint /bin/sh yamlfmt -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamlfmt -conf /app/.yamlfmt.yml -lint"
 
 markdown-lint: ## Lint Markdown files
 	@docker build -q -t markdownlint -f Dockerfile.markdownlint .
