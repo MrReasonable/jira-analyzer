@@ -82,8 +82,8 @@ jobs:
         working-directory: ./frontend
         run: |
           # Note: Vite preview command always uses port 4173 regardless of any specified port
-          # Enable verbose debugging in the frontend
-          VITE_API_URL=http://localhost:8000 VITE_DEBUG_LEVEL=verbose \
+          # Use no logging for cleaner CI output
+          VITE_API_URL=http://localhost:8000 VITE_DEBUG_LEVEL=none \
           pnpm run preview -- --host 0.0.0.0 > ../e2e-tests/logs/frontend.log 2>&1 &
           echo $! > ../.frontend_pid
           # Give frontend more time to start
@@ -117,10 +117,14 @@ jobs:
           CI: true
           # Pass API URL to ensure browser in e2e tests can connect to backend
           VITE_API_URL: http://localhost:8000
+          # Set frontend logging to none (completely disable logs) for cleaner CI output
+          VITE_DEBUG_LEVEL: none
           # Disable type stripping to fix TypeScript parameter properties error
           NODE_OPTIONS: "--no-experimental-strip-types"
+          # Disable debug logs for cleaner CI output
+          DEBUG: ""
         run: |
-          pnpm exec playwright test --reporter=list
+          pnpm exec playwright test --quiet --reporter=list
 
       # Upload artifacts for debugging
       - name: Upload test results

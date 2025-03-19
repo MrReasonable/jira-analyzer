@@ -1,5 +1,37 @@
 #!/bin/bash
 
+# Usage information
+usage() {
+  echo "Usage: $0 [options] [playwright-args]"
+  echo ""
+  echo "Options:"
+  echo "  --no-debug    Disable debug logs (useful for CI environments)"
+  echo "  -h, --help    Show this help message"
+  echo ""
+  echo "Any additional arguments are passed directly to Playwright"
+  exit 1
+}
+
+# Parse command line arguments
+DEBUG_ENABLED=true
+PLAYWRIGHT_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-debug)
+      DEBUG_ENABLED=false
+      shift
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      PLAYWRIGHT_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
 # Function to clean up resources
 cleanup() {
   echo "Cleaning up resources..."
@@ -49,10 +81,24 @@ echo "Clearing old log files and screenshots..."
 rm -f "$LOGS_DIR"/*.log
 rm -f "$SCREENSHOTS_DIR"/*.png
 
+# Set debug environment variables based on debug flag
+if [ "$DEBUG_ENABLED" = true ]; then
+  echo "Debug logs enabled"
+  export DEBUG=pw:api
+  # Enable verbose frontend logging
+  export VITE_DEBUG_LEVEL=verbose
+else
+  echo "Debug logs disabled (quiet mode)"
+  # Unset DEBUG if it was previously set
+  unset DEBUG
+  # Set frontend logging to none (completely disable logs)
+  export VITE_DEBUG_LEVEL=none
+fi
+
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
-docker-compose build --quiet -f docker-compose.dev.yml
-cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose.dev.yml build --quiet
+cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true VITE_DEBUG_LEVEL=$VITE_DEBUG_LEVEL docker-compose -f docker-compose.dev.yml up -d
 
 # Start capturing logs in the background
 echo "Capturing backend logs to $LOGS_DIR/backend.log..."
@@ -132,7 +178,6 @@ cd "$SCRIPT_DIR"
 # Set environment variables
 export TEST_HOST=localhost
 export TEST_PORT=80
-export DEBUG=pw:api
 export NODE_OPTIONS="--no-experimental-strip-types"
 
 # Make use of Playwright's built-in timeouts and retries
@@ -148,7 +193,21 @@ echo "Using API URL for tests: http://localhost:8000"
 echo "Starting tests with a 180-second safety timeout..."
 (
   # Start the tests in background with type stripping disabled
-  pnpm exec playwright test "$@" &
+  if [ "$DEBUG_ENABLED" = true ]; then
+    # Run with normal output
+    if [ ${#PLAYWRIGHT_ARGS[@]} -eq 0 ]; then
+      pnpm exec playwright test &
+    else
+      pnpm exec playwright test "${PLAYWRIGHT_ARGS[@]}" &
+    fi
+  else
+    # Run with quiet output
+    if [ ${#PLAYWRIGHT_ARGS[@]} -eq 0 ]; then
+      pnpm exec playwright test --quiet &
+    else
+      pnpm exec playwright test --quiet "${PLAYWRIGHT_ARGS[@]}" &
+    fi
+  fi
   TEST_PID=$!
 
   # Wait for the test to complete or timeout

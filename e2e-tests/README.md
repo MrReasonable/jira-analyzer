@@ -14,7 +14,15 @@ To run the tests, use:
 
 ```bash
 cd e2e-tests
-pnpm run run-tests
+./run-tests.sh --no-debug  # Without debug logs (default)
+./run-tests.sh             # With debug logs
+```
+
+Or use the Makefile targets:
+
+```bash
+make e2e-test      # Run tests without debug logs (default)
+make e2e-test-debug  # Run tests with debug logs
 ```
 
 This will:
@@ -22,6 +30,24 @@ This will:
 1. Start the backend and frontend services with Docker
 2. Run the tests with Playwright
 3. Stop the services when done
+
+### Debug vs. No-Debug Mode
+
+By default, tests run without debug logs for cleaner output. This is suitable for CI environments and regular test runs.
+
+When running without debug logs:
+
+1. Playwright API debug logs are disabled
+2. Frontend logger is set to "none" mode (completely disables logs)
+3. Browser console messages are suppressed
+4. Console output is significantly reduced
+
+When running with debug logs (using `make e2e-test-debug`):
+
+1. Playwright API debug logs are enabled
+2. Frontend logger is set to verbose mode
+3. All browser console messages are displayed
+4. Detailed output is shown for debugging issues
 
 ## Screenshot Organization
 

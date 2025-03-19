@@ -1,6 +1,6 @@
 # Makefile for Jira Analyzer project
 
-.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
+.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
 
 # Show help message for all make commands
 help:
@@ -275,9 +275,13 @@ pre-commit-run: ## Run pre-commit hooks on all files
 	@echo "Running pre-commit hooks on all files..."
 	@pre-commit run --all-files
 
-e2e-test: ## Run end-to-end tests
+e2e-test: ## Run end-to-end tests (without debug logs by default)
 	@echo "Running end-to-end tests..."
-	@cd e2e-tests && pnpm run run-tests
+	@cd e2e-tests && ./run-tests.sh --no-debug
+
+e2e-test-debug: ## Run end-to-end tests with debug output
+	@echo "Running end-to-end tests with debug output..."
+	@cd e2e-tests && ./run-tests.sh
 
 e2e-test-ui: ## Run end-to-end tests with UI mode
 	@echo "Running end-to-end tests in UI mode..."
@@ -287,13 +291,9 @@ e2e-test-headed: ## Run end-to-end tests in headed mode (visible browser)
 	@echo "Running end-to-end tests in headed mode (visible browser)..."
 	@cd e2e-tests && pnpm run run-tests:headed
 
-e2e-test-debug: ## Run end-to-end tests with debug output
-	@echo "Running end-to-end tests with debug output..."
-	@cd e2e-tests && pnpm run run-tests:debug
-
 e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
 	@echo "Running end-to-end tests in CI mode..."
-	@cd e2e-tests && CI=true pnpm run run-tests
+	@cd e2e-tests && CI=true ./run-tests.sh --no-debug
 
 e2e-lint: e2e-dev-image ## Run linting for e2e-tests
 	@echo "Running e2e-tests linting..."
@@ -338,7 +338,7 @@ e2e-type-check-ci: node-base e2e-ci-image ## Run TypeScript type checking for e2
 yaml-lint: ## Lint YAML files
 	@docker build -q -t backend-dev -f backend/Dockerfile --target development-enhanced backend
 	@echo "Running YAML linting..."
-	@docker run --rm -ti -v $(PWD):/app --entrypoint /bin/sh backend-dev -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) -not -name 'pnpm-lock.yaml' -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamllint -c /app/.yamllint.yml"
+	@docker run --rm -ti -v $(PWD):/app --entrypoint /bin/sh backend-dev -c "find /app -type d \( -name 'node_modules' -o -name 'pnpm-store' -o -name '.git' -o -name '.venv' -o -name 'dist' -o -name 'dist-ssr' -o -name 'build' -o -name '.pnpm' -o -name '.npm' -o -name '.cache' -o -name 'vendor' \) -prune -o -type f \( -name '*.yml' -o -name '*.yaml' \) \( -not -name '*pnpm-lock.yaml' \) -not -path '*/generated/*' -not -path '*/auto-generated/*' -not -path '*/dist/*' -not -name '*.generated.yaml' -not -name '*.generated.yml' -print | xargs yamllint -c /app/.yamllint.yml"
 
 yamlfmt-image: ## Build the yamlfmt Docker image
 	@docker build -q -t yamlfmt -f Dockerfile.yamlfmt .
