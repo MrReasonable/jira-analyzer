@@ -28,50 +28,24 @@ export const WorkflowStatesList: Component<WorkflowStatesListProps> = props => {
   // Event handlers for drag and drop with enhanced logging and robustness
   const onDragStart = (event: DragEvent) => {
     if (event.draggable) {
-      console.log(`Drag start: dragging item ${event.draggable.id}`)
       stateManager.setActiveItem(String(event.draggable.id))
     }
   }
 
   const onDragEnd = (event: DragEvent) => {
-    console.log(
-      `Drag end detected: draggable=${event.draggable?.id}, droppable=${event.droppable?.id}`
-    )
-
     try {
-      // Handle normal drag and drop case
+      // Handle drag and drop case
       if (event.draggable && event.droppable) {
         const fromIndex = stateManager.ids().indexOf(String(event.draggable.id))
         const toIndex = stateManager.ids().indexOf(String(event.droppable.id))
 
-        console.log(`Moving item from index ${fromIndex} to ${toIndex}`)
         stateManager.moveItem(fromIndex, toIndex)
 
         // Ensure UI updates immediately
         setTimeout(() => {
           // Trigger UI update by accessing the items to notify reactive system
-          console.log(`Current items after move: ${stateManager.items().length} items`)
+          stateManager.items().length // Access length to maintain reactivity
         }, 50)
-      }
-      // Handle test environment case where droppable might be undefined
-      else if (
-        event.draggable &&
-        !event.droppable &&
-        event.collisions &&
-        event.collisions.length > 0
-      ) {
-        console.log('Using fallback collision-based drop handling for test environment')
-        const draggableId = String(event.draggable.id)
-        const fromIndex = stateManager.ids().indexOf(draggableId)
-
-        // Find the closest collision and use its id
-        const closestDroppableId = String(event.collisions[0].id)
-        const toIndex = stateManager.ids().indexOf(closestDroppableId)
-
-        if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-          console.log(`Using collisions: Moving item from index ${fromIndex} to ${toIndex}`)
-          stateManager.moveItem(fromIndex, toIndex)
-        }
       }
     } catch (error) {
       console.error('Error during drag operation:', error)

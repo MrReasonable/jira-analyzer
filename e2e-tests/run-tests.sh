@@ -51,7 +51,7 @@ rm -f "$SCREENSHOTS_DIR"/*.png
 
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
-cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -f docker-compose.dev.yml up --build -d
+cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true docker-compose -q -f docker-compose.dev.yml up --build -d
 
 # Start capturing logs in the background
 echo "Capturing backend logs to $LOGS_DIR/backend.log..."
