@@ -66,7 +66,7 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
           <button
             type="button"
             onClick={() => props.onToggleStartPoint(props.item.id)}
-            class={`rounded px-2 py-1 text-xs font-medium ${
+            class={`cursor-pointer rounded px-2 py-1 text-xs font-medium ${
               props.item.isStartPoint ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
             }`}
             title={props.item.isStartPoint ? 'Remove as start point' : 'Mark as start point'}
@@ -76,7 +76,7 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
           <button
             type="button"
             onClick={() => props.onToggleEndPoint(props.item.id)}
-            class={`rounded px-2 py-1 text-xs font-medium ${
+            class={`cursor-pointer rounded px-2 py-1 text-xs font-medium ${
               props.item.isEndPoint ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
             }`}
             title={props.item.isEndPoint ? 'Remove as end point' : 'Mark as end point'}
@@ -86,7 +86,7 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
           <button
             type="button"
             onClick={() => props.onRemove(props.item.id)}
-            class="p-1 text-red-500 hover:text-red-700"
+            class="cursor-pointer p-1 text-red-500 hover:text-red-700"
             title="Remove state"
           >
             <svg

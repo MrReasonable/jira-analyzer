@@ -81,31 +81,31 @@ const App: Component = () => {
             <Tabs.Root defaultValue="lead-time" class="w-full">
               <Tabs.List class="mb-4 flex border-b border-gray-200" aria-label="Analytics tabs">
                 <Tabs.Trigger
-                  class="border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
+                  class="cursor-pointer border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
                   value="lead-time"
                 >
                   Lead Time
                 </Tabs.Trigger>
                 <Tabs.Trigger
-                  class="border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
+                  class="cursor-pointer border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
                   value="throughput"
                 >
                   Throughput
                 </Tabs.Trigger>
                 <Tabs.Trigger
-                  class="border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
+                  class="cursor-pointer border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
                   value="wip"
                 >
                   WIP
                 </Tabs.Trigger>
                 <Tabs.Trigger
-                  class="border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
+                  class="cursor-pointer border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
                   value="cfd"
                 >
                   CFD
                 </Tabs.Trigger>
                 <Tabs.Trigger
-                  class="border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
+                  class="cursor-pointer border-b-2 border-transparent px-4 py-2 font-medium text-gray-600 hover:text-blue-600 data-[selected]:border-blue-600 data-[selected]:text-blue-600"
                   value="cycle-time"
                 >
                   Cycle Time
@@ -183,7 +183,7 @@ const App: Component = () => {
               initialConfig={configState.configToEdit()}
               onConfigurationSaved={configName => configState.handleConfigSaved(configName)}
             />
-            <Dialog.CloseButton class="absolute top-4 right-4 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
+            <Dialog.CloseButton class="absolute top-4 right-4 cursor-pointer rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-6 w-6"

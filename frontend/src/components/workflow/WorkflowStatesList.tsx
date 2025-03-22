@@ -80,7 +80,7 @@ export const WorkflowStatesList: Component<WorkflowStatesListProps> = props => {
         <button
           type="button"
           onClick={stateManager.addState}
-          class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm leading-4 font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+          class="inline-flex cursor-pointer items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm leading-4 font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
         >
           Add
         </button>

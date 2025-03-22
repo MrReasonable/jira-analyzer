@@ -155,7 +155,7 @@ export const ConfigurationForm: Component<Props> = props => {
         <input
           id="name"
           type="text"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().name}
           disabled={!!props.initialConfig}
           onInput={e => updateField('name', e.currentTarget.value)}
@@ -171,7 +171,7 @@ export const ConfigurationForm: Component<Props> = props => {
         <input
           id="jira_server"
           type="text"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jira_server}
           onInput={e => updateField('jira_server', e.currentTarget.value)}
           required
@@ -187,7 +187,7 @@ export const ConfigurationForm: Component<Props> = props => {
         <input
           id="jira_email"
           type="email"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jira_email}
           onInput={e => updateField('jira_email', e.currentTarget.value)}
           autocomplete="email"
@@ -203,7 +203,7 @@ export const ConfigurationForm: Component<Props> = props => {
         <input
           id="jira_api_token"
           type="password"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jira_api_token}
           onInput={e => updateField('jira_api_token', e.currentTarget.value)}
           autocomplete="current-password"
@@ -218,7 +218,7 @@ export const ConfigurationForm: Component<Props> = props => {
         </label>
         <textarea
           id="jql_query"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().jql_query}
           onInput={e => updateField('jql_query', e.currentTarget.value)}
           required
@@ -243,7 +243,7 @@ export const ConfigurationForm: Component<Props> = props => {
         </label>
         <select
           id="lead_time_start_state"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().lead_time_start_state}
           onChange={e => updateField('lead_time_start_state', e.currentTarget.value)}
           required
@@ -264,7 +264,7 @@ export const ConfigurationForm: Component<Props> = props => {
         </label>
         <select
           id="lead_time_end_state"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().lead_time_end_state}
           onChange={e => updateField('lead_time_end_state', e.currentTarget.value)}
           required
@@ -285,7 +285,7 @@ export const ConfigurationForm: Component<Props> = props => {
         </label>
         <select
           id="cycle_time_start_state"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().cycle_time_start_state}
           onChange={e => updateField('cycle_time_start_state', e.currentTarget.value)}
           required
@@ -306,7 +306,7 @@ export const ConfigurationForm: Component<Props> = props => {
         </label>
         <select
           id="cycle_time_end_state"
-          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           value={formData().cycle_time_end_state}
           onChange={e => updateField('cycle_time_end_state', e.currentTarget.value)}
           required
@@ -328,7 +328,7 @@ export const ConfigurationForm: Component<Props> = props => {
 
       <button
         type="submit"
-        class="flex w-full items-center justify-center gap-2 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+        class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

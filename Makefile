@@ -52,7 +52,7 @@ DOCKER_IMAGES_TO_REMOVE := \
 	$(YAMLFMT_IMAGE) \
 	$(MARKDOWN_LINT_IMAGE)
 
-.PHONY: help install dev test lint format clean build docker-build docker-dev setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
+.PHONY: help install dev test lint format clean build docker-build setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
 
 # Show help message for all make commands
 help:
@@ -81,7 +81,8 @@ update-versions: ## Update language versions across all configuration files
 
 dev: ## Start development servers for both frontend and backend
 	@echo "Starting development servers for frontend and backend..."
-	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) up -q --build
+	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) build -q
+	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) up
 
 test: ## Run all tests (frontend, backend, and end-to-end)
 	@echo "Running all tests (frontend, backend, and end-to-end)..."
@@ -149,10 +150,6 @@ build: ## Build the production version of the application
 docker-build: ## Build production Docker images
 	@echo "Building all production Docker images..."
 	@$(DOCKER_COMPOSE) build -q
-
-docker-dev: ## Start development environment using Docker
-	@echo "Starting development environment using Docker..."
-	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) up -q --build
 
 node-base: ## Build the shared Node.js base image
 	@$(DOCKER) build -q -t $(NODE_BASE_IMAGE) \

@@ -53,7 +53,7 @@ export const ConfigurationList: Component<Props> = props => {
                     </div>
                     <div class="flex gap-2">
                       <button
-                        class="btn btn-secondary flex items-center gap-1"
+                        class="btn btn-secondary flex cursor-pointer items-center gap-1"
                         onClick={e => {
                           e.stopPropagation() // Prevent click from propagating to parent div
                           logger.info('User selected configuration', { name: config.name })
@@ -78,7 +78,7 @@ export const ConfigurationList: Component<Props> = props => {
                         Select
                       </button>
                       <button
-                        class="btn btn-primary flex items-center gap-1"
+                        class="btn btn-primary flex cursor-pointer items-center gap-1"
                         onClick={e => {
                           e.stopPropagation() // Prevent click from propagating to parent div
                           logger.info('User clicked edit configuration', { name: config.name })
@@ -103,7 +103,7 @@ export const ConfigurationList: Component<Props> = props => {
                         Edit
                       </button>
                       <button
-                        class="btn btn-danger flex items-center gap-1"
+                        class="btn btn-danger flex cursor-pointer items-center gap-1"
                         onClick={e => {
                           e.stopPropagation() // Prevent click from propagating to parent div
                           logger.debug('User clicked delete configuration', { name: config.name })

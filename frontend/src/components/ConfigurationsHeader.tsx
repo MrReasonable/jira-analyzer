@@ -26,7 +26,7 @@ export const ConfigurationsHeader: Component<ConfigurationsHeaderProps> = props 
         selectedName={props.selectedConfig}
       />
       <Button.Root
-        class="btn btn-primary flex items-center gap-2"
+        class="btn btn-primary flex cursor-pointer items-center gap-2"
         onClick={() => {
           logger.info('User clicked Add Configuration button')
           props.onAddClick()
