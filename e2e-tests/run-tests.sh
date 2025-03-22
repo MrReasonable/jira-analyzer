@@ -97,7 +97,7 @@ fi
 
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
-docker-compose -f docker-compose.dev.yml build --quiet
+cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml build --quiet
 cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true VITE_DEBUG_LEVEL=$VITE_DEBUG_LEVEL docker-compose -f docker-compose.dev.yml up -d
 
 # Start capturing logs in the background

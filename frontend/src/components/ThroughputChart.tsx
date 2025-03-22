@@ -56,6 +56,7 @@ const ThroughputChartBase = withChart<ThroughputMetrics>({
       <p>Average Throughput: {data.average.toFixed(1)} issues per day</p>
     </div>
   ),
+  handleError: data => !!data.error,
 })
 
 // Export the component with the expected interface

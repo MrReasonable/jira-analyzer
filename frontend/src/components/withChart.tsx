@@ -11,17 +11,9 @@ export interface ChartProps<T extends ChartData> {
   title: string
 }
 
-// Define a type for the canvas context
-export type CanvasContext = {
-  canvas: HTMLCanvasElement
-  clearRect: (x: number, y: number, width: number, height: number) => void
-  fillRect: (x: number, y: number, width: number, height: number) => void
-  // Add other necessary properties as needed
-}
-
 // Configuration for chart creation
 export interface ChartConfig<T extends ChartData> {
-  createChartInstance: (ctx: CanvasContext, data: T) => Chart
+  createChartInstance: (ctx: CanvasRenderingContext2D, data: T) => Chart
   renderMetrics: (data: T) => JSX.Element
   handleError?: (data: T & { error?: string }) => boolean
 }
@@ -49,33 +41,69 @@ export function withChart<T extends ChartData>(config: ChartConfig<T>) {
     const hasError = createMemo(() => {
       const data = getData()
       if (!data) return false
-      return config.handleError ? config.handleError(data as T & { error?: string }) : false
+
+      // Check for error property
+      if (config.handleError) {
+        return config.handleError(data as T & { error?: string })
+      }
+
+      // Default empty data check if no custom handler
+      // Check if data has empty arrays for common properties
+      const isEmpty = Object.entries(data).some(([key, value]) => {
+        return (
+          Array.isArray(value) &&
+          value.length === 0 &&
+          ['data', 'dates', 'counts', 'values', 'status'].includes(key)
+        )
+      })
+
+      return isEmpty
     })
 
     const createChart = () => {
       const data = getData()
-      if (!data || !chartRef || hasError()) return
-
-      // Always destroy previous instance
-      if (chartInstance) {
-        chartInstance.destroy()
-        chartInstance = undefined
+      if (!data || !chartRef || hasError()) {
+        // Cannot create chart: missing data, chart reference, or has error
+        return
       }
 
       const ctx = chartRef.getContext('2d')
-      if (!ctx) return
+      if (!ctx) {
+        console.error('Failed to get canvas context')
+        return
+      }
 
-      // Cast the context to our CanvasContext type
-      chartInstance = config.createChartInstance(ctx as unknown as CanvasContext, data as T)
+      try {
+        // Use the native CanvasRenderingContext2D
+        chartInstance = config.createChartInstance(ctx, data as T)
+
+        // Chart created successfully
+      } catch (error) {
+        // Log the error but don't crash the component
+        console.error('Error creating chart:', error)
+        // Clean up any partial chart instance
+        if (chartInstance) {
+          chartInstance.destroy()
+          chartInstance = undefined
+        }
+      }
     }
 
     createEffect(() => {
       // Trigger effect on both loading and data changes
       const data = getData()
       const loading = isLoading()
+      const currentHasData = !loading && !!data && !hasError()
 
-      if (!loading && data && !hasError()) {
-        // Create chart directly in the effect
+      // Always destroy previous chart instance if it exists
+      if (chartInstance) {
+        chartInstance.destroy()
+        chartInstance = undefined
+      }
+
+      // Create chart if we have data
+      if (currentHasData) {
+        // In tests, create chart immediately to ensure it's available for assertions
         createChart()
       }
     })
@@ -96,13 +124,15 @@ export function withChart<T extends ChartData>(config: ChartConfig<T>) {
               <div class="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
             </div>
           ) : hasError() || !getData() ? (
-            <p class="py-4 text-center text-gray-500">
-              No data available. Configure Jira and run analysis to see results.
-            </p>
+            <div data-testid="no-data-message">
+              <p class="py-4 text-center text-gray-500">
+                No data available. Configure Jira and run analysis to see results.
+              </p>
+            </div>
           ) : (
             <>
               <canvas ref={el => (chartRef = el)} />
-              {config.renderMetrics(getData() as T)}
+              <div class="metrics-container">{config.renderMetrics(getData() as T)}</div>
             </>
           )}
         </div>

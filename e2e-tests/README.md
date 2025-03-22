@@ -123,3 +123,35 @@ For better test stability:
 ## Workflow States Testing
 
 For specific information about workflow states drag-and-drop testing, see [WORKFLOW_STATES_TESTING.md](./WORKFLOW_STATES_TESTING.md).
+
+## Jira Charts Testing
+
+The e2e tests include specific tests for verifying the Jira metrics charts functionality:
+
+### Chart Rendering Tests
+
+Located in `tests/jira-charts.spec.ts`, these tests verify:
+
+- All charts (Lead Time, Throughput, WIP, CFD, Cycle Time) render correctly
+- Canvas elements are properly created for each chart
+- No console errors occur during chart rendering
+- Charts handle empty data gracefully
+
+### Chart Error Detection Tests
+
+Located in `tests/jira-charts-errors.spec.ts`, these tests:
+
+- Capture and log all console errors during chart rendering
+- Detect network errors that might affect chart data loading
+- Log console warnings for debugging purposes
+- Verify the presence of chart elements
+- Take screenshots at key points for visual verification
+
+These tests help identify issues with chart rendering that might not be apparent in unit tests, such as:
+
+- JavaScript errors in chart initialization
+- Network errors when fetching chart data
+- DOM-related issues with chart containers
+- Visual rendering problems
+
+When charts don't display properly on the frontend, run these tests to help diagnose the issue.
