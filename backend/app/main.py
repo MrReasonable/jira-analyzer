@@ -194,6 +194,29 @@ async def list_configurations(session: AsyncSession = Depends(get_session)):
     return configs
 
 
+@app.get('/jira/projects', response_model=List[dict])
+async def get_jira_projects(jira: JIRA = Depends(get_jira_client)):
+    """Fetch all projects from Jira.
+
+    Args:
+        jira: JIRA client instance.
+
+    Returns:
+        List[dict]: List of projects with their key and name.
+
+    Raises:
+        HTTPException: If the JIRA API request fails.
+    """
+    logger.info('Fetching projects from JIRA')
+    try:
+        projects = jira.projects()
+        logger.debug(f'Found {len(projects)} projects')
+        return [{'key': project.key, 'name': project.name} for project in projects]
+    except Exception as e:
+        logger.error(f'Failed to fetch projects from JIRA: {str(e)}', exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get('/configurations/{name}', response_model=JiraConfigSchema)
 async def get_configuration(name: str, session: AsyncSession = Depends(get_session)):
     """Retrieve a specific Jira configuration by name.

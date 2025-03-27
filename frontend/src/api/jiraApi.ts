@@ -78,6 +78,11 @@ export interface CfdMetrics extends MetricResponse {
   }>
 }
 
+export interface JiraProject {
+  key: string
+  name: string
+}
+
 export interface JiraConfiguration {
   id?: number
   name: string
@@ -85,6 +90,7 @@ export interface JiraConfiguration {
   jira_email: string
   jira_api_token: string
   jql_query: string
+  project_key?: string
   workflow_states: string[]
   lead_time_start_state: string
   lead_time_end_state: string
@@ -99,6 +105,20 @@ export interface JiraConfigurationList {
 }
 
 export const jiraApi = {
+  getProjects: async (configName: string): Promise<JiraProject[]> => {
+    try {
+      logger.debug('Fetching Jira projects', { configName })
+      const response = await api.get('/jira/projects', {
+        params: { config_name: configName },
+      })
+      logger.info('Jira projects fetched successfully')
+      return response.data
+    } catch (err) {
+      logger.error('Failed to fetch Jira projects', err)
+      throw err
+    }
+  },
+
   getLeadTime: async (jql: string, configName?: string): Promise<LeadTimeMetrics> => {
     try {
       logger.debug('Fetching lead time metrics', { jql, configName })

@@ -80,6 +80,7 @@ export class JiraAnalyzerPage {
     email: string
     apiToken: string
     jql: string
+    projectKey?: string
     workflowStates: string
     leadTimeStartState: string
     leadTimeEndState: string
@@ -108,6 +109,42 @@ export class JiraAnalyzerPage {
       await this.page.getByLabel('Jira Email').fill(config.email)
       await this.page.getByLabel('Jira API Token').fill(config.apiToken)
       await this.page.getByLabel('Default JQL Query').fill(config.jql)
+
+      // Handle project selection if projectKey is provided
+      if (config.projectKey) {
+        console.log('Checking for project dropdown...')
+
+        // Check if the project dropdown is already visible
+        const projectDropdown = this.page.getByLabel('Jira Project')
+        const isVisible = await projectDropdown.isVisible().catch(() => false)
+
+        // If not visible, try clicking the Fetch Projects button
+        if (!isVisible) {
+          console.log('Project dropdown not visible, clicking Fetch Projects button')
+          const fetchButton = this.page.getByRole('button', { name: 'Fetch Projects' })
+          if (await fetchButton.isVisible().catch(() => false)) {
+            await fetchButton.click()
+            console.log('Clicked Fetch Projects button')
+
+            // Wait for the dropdown to appear
+            await projectDropdown
+              .waitFor({ state: 'visible', timeout: 5000 })
+              .catch(() =>
+                console.log('Project dropdown still not visible after clicking Fetch Projects')
+              )
+          } else {
+            console.log('Fetch Projects button not found')
+          }
+        }
+
+        // Try to select the project if the dropdown is visible
+        if (await projectDropdown.isVisible().catch(() => false)) {
+          await projectDropdown.selectOption(config.projectKey)
+          console.log(`Selected project: ${config.projectKey}`)
+        } else {
+          console.log('Could not select project, continuing without project selection')
+        }
+      }
 
       // Add workflow states one at a time
       console.log('Adding workflow states')

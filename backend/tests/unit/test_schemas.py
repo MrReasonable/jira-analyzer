@@ -29,6 +29,7 @@ class TestSchemas:
             'jira_email': 'test@example.com',
             'jira_api_token': 'test-token',
             'jql_query': 'project = TEST',
+            'project_key': 'TEST',
             'workflow_states': ['To Do', 'In Progress', 'Done'],
             'lead_time_start_state': 'To Do',
             'lead_time_end_state': 'Done',
@@ -45,6 +46,7 @@ class TestSchemas:
         assert config.jira_email == 'test@example.com'
         assert config.jira_api_token == 'test-token'
         assert config.jql_query == 'project = TEST'
+        assert config.project_key == 'TEST'
         assert config.workflow_states == ['To Do', 'In Progress', 'Done']
         assert config.lead_time_start_state == 'To Do'
         assert config.lead_time_end_state == 'Done'
@@ -61,6 +63,7 @@ class TestSchemas:
                 jira_email='test@example.com',
                 jira_api_token='test-token',
                 jql_query='project = TEST',
+                project_key='TEST',
                 workflow_states=['To Do', 'In Progress', 'Done'],
                 lead_time_start_state='To Do',
                 lead_time_end_state='Done',
@@ -76,6 +79,7 @@ class TestSchemas:
                 jira_email='test@example.com',
                 jira_api_token='test-token',
                 jql_query='project = TEST',
+                project_key='TEST',
                 workflow_states='Invalid',  # Should be a list
                 lead_time_start_state='To Do',
                 lead_time_end_state='Done',
@@ -92,6 +96,7 @@ class TestSchemas:
             'jira_email': 'test@example.com',
             'jira_api_token': 'test-token',
             'jql_query': 'project = TEST',
+            'project_key': 'TEST',
             'workflow_states': ['To Do', 'In Progress', 'Done'],
             'lead_time_start_state': 'To Do',
             'lead_time_end_state': 'Done',
@@ -123,6 +128,7 @@ class TestSchemas:
             'jira_email': 'test@example.com',
             'jira_api_token': 'test-token',
             'jql_query': 'project = TEST',
+            'project_key': 'TEST',
             'workflow_states': ['To Do', 'In Progress', 'Done'],
             'lead_time_start_state': 'To Do',
             'lead_time_end_state': 'Done',
@@ -139,6 +145,7 @@ class TestSchemas:
         assert config.jira_email == 'test@example.com'
         assert config.jira_api_token == 'test-token'
         assert config.jql_query == 'project = TEST'
+        assert config.project_key == 'TEST'
         assert config.workflow_states == ['To Do', 'In Progress', 'Done']
         assert config.lead_time_start_state == 'To Do'
         assert config.lead_time_end_state == 'Done'
@@ -155,6 +162,7 @@ class TestSchemas:
             'jira_email': 'test@example.com',
             'jira_api_token': 'test-token',
             'jql_query': 'project = TEST',
+            'project_key': 'TEST',
             'workflow_states': ['To Do', 'In Progress', 'Done'],
             'lead_time_start_state': 'To Do',
             'lead_time_end_state': 'Done',
@@ -172,6 +180,7 @@ class TestSchemas:
         assert config.jira_email == 'test@example.com'
         assert config.jira_api_token == 'test-token'
         assert config.jql_query == 'project = TEST'
+        assert config.project_key == 'TEST'
         assert config.workflow_states == ['To Do', 'In Progress', 'Done']
         assert config.lead_time_start_state == 'To Do'
         assert config.lead_time_end_state == 'Done'
@@ -188,6 +197,7 @@ class TestSchemas:
             jira_email='test@example.com',
             jira_api_token='test-token',
             jql_query='project = TEST',
+            project_key='TEST',  # Add project_key field
             workflow_states=['To Do', 'In Progress', 'Done'],
             lead_time_start_state='To Do',
             lead_time_end_state='Done',
@@ -205,6 +215,7 @@ class TestSchemas:
         assert config.jira_email == 'test@example.com'
         assert config.jira_api_token == 'test-token'
         assert config.jql_query == 'project = TEST'
+        assert config.project_key == 'TEST'  # Verify project_key
         assert config.workflow_states == ['To Do', 'In Progress', 'Done']
         assert config.lead_time_start_state == 'To Do'
         assert config.lead_time_end_state == 'Done'
@@ -238,6 +249,7 @@ class TestSchemas:
             jira_email='test@example.com',
             jira_api_token='test-token',
             jql_query='project = TEST',
+            project_key='TEST',  # Add project_key field
             workflow_states=['To Do', 'In Progress', 'Done'],
             lead_time_start_state='To Do',
             lead_time_end_state='Done',

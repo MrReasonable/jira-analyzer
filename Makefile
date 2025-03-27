@@ -197,18 +197,42 @@ frontend-test: frontend-dev-image ## Run frontend tests only (run once and exit)
 	@echo "Running frontend tests..."
 	@$(DOCKER) run --rm \
 		$(FRONTEND_VOLUMES) \
+		--memory=6g \
 		$(FRONTEND_DEV_IMAGE) $(PNPM) test
+
+frontend-test-debug: frontend-dev-image ## Run frontend tests with debug output (helps identify hanging tests)
+	@echo "Running frontend tests in debug mode with verbose output..."
+	@$(DOCKER) run --rm \
+		$(FRONTEND_VOLUMES) \
+		--memory=6g \
+		$(FRONTEND_DEV_IMAGE) $(PNPM) test -- --no-parallel --verbose --timeout=30000
+
+frontend-test-single: frontend-dev-image ## Run a single frontend test file (usage: make frontend-test-single TEST_FILE=path/to/test.spec.ts)
+	@echo "Running single frontend test file: $(TEST_FILE)"
+	@$(DOCKER) run --rm \
+		$(FRONTEND_VOLUMES) \
+		--memory=6g \
+		$(FRONTEND_DEV_IMAGE) $(PNPM) test -- $(TEST_FILE) --verbose
+
+frontend-test-sequential: frontend-dev-image ## Run frontend tests sequentially (not in parallel)
+	@echo "Running frontend tests sequentially..."
+	@$(DOCKER) run --rm \
+		$(FRONTEND_VOLUMES) \
+		--memory=6g \
+		$(FRONTEND_DEV_IMAGE) $(PNPM) test -- --no-parallel
 
 frontend-test-ci: node-base frontend-ci-image ## Run frontend tests in CI mode (non-interactive)
 	@echo "Running frontend tests in CI mode..."
 	@$(DOCKER) run --rm \
 		$(FRONTEND_VOLUMES) \
+		--memory=6g \
 		$(FRONTEND_CI_IMAGE) $(PNPM) test
 
 frontend-test-watch: frontend-dev-image ## Run frontend tests in watch mode
 	@echo "Running frontend tests in watch mode..."
 	@$(DOCKER) run --rm -ti \
 		$(FRONTEND_VOLUMES) \
+		--memory=6g \
 		$(FRONTEND_DEV_IMAGE) $(PNPM) test:watch
 
 backend-test: ## Run backend tests only

@@ -1,81 +1,117 @@
-import { test } from '@playwright/test'
-import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
-import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
+import { test, expect } from '@playwright/test'
 
 /**
  * This test verifies the edit functionality for workflow configurations
+ * Using a direct approach without the page object to avoid timeout issues
  */
 test('Should allow editing a workflow configuration', async ({ page }) => {
-  // Set a unique test name for screenshots
-  const testName = 'workflow-states-edit'
-  resetScreenshotCounter(testName)
-
-  console.log('Starting test for editing workflow configuration')
-
-  // Create page object
-  const jiraAnalyzerPage = new JiraAnalyzerPage(page)
-  jiraAnalyzerPage.setTestName(testName)
-
   // Use a unique configuration name with timestamp to avoid conflicts
   const configName = `Edit_Test_${new Date().getTime()}`
 
-  await test.step('Navigate to the application', async () => {
-    // Navigate to the application
-    await jiraAnalyzerPage.goto()
-    // Verify navigation successful
-    test.expect(page.url()).toContain('localhost')
-  })
+  console.log('Step 1: Navigate to the application')
+  await page.goto('/')
+  await page.waitForLoadState('domcontentloaded')
 
-  // Step 1: Create a test configuration to edit
-  console.log('Step 1: Create a new Jira configuration for editing')
-  await jiraAnalyzerPage.createConfiguration({
-    name: configName,
-    server: 'https://test.atlassian.net',
-    email: 'test@example.com',
-    apiToken: 'test-token',
-    jql: 'project = TEST',
-    workflowStates: 'Backlog,In Progress,Review,Done',
-    leadTimeStartState: 'Backlog',
-    leadTimeEndState: 'Done',
-    cycleTimeStartState: 'In Progress',
-    cycleTimeEndState: 'Done',
-  })
+  // Wait for application to be ready
+  await page.getByRole('heading', { name: 'Jira Analyzer' }).waitFor({ state: 'visible' })
 
-  // Step 2: Edit the configuration
-  console.log('Step 2: Edit the configuration')
-  await jiraAnalyzerPage.editConfiguration(configName)
-  console.log('Edit form opened successfully')
+  console.log('Step 2: Create a new Jira configuration')
+  // Click the Add Configuration button
+  await page.getByTestId('add-config-button').click()
 
-  // Update some fields in the edit form
+  // Fill the form
+  await page.getByLabel('Configuration Name').fill(configName)
+  await page.getByLabel('Jira Server URL').fill('https://test.atlassian.net')
+  await page.getByLabel('Jira Email').fill('test@example.com')
+  await page.getByLabel('Jira API Token').fill('test-token')
+  await page.getByLabel('Default JQL Query').fill('project = TEST')
+
+  // Click Fetch Projects button
+  const fetchButton = page.getByRole('button', { name: 'Fetch Projects' })
+  if (await fetchButton.isVisible()) {
+    await fetchButton.click()
+
+    // Wait for project dropdown to appear
+    const projectDropdown = page.getByLabel('Jira Project')
+    await projectDropdown
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .catch(() => console.log('Project dropdown not visible, continuing'))
+
+    // Select project if dropdown is visible
+    if (await projectDropdown.isVisible()) {
+      await projectDropdown.selectOption('TEST')
+    }
+  }
+
+  // Add workflow states
+  for (const state of ['Backlog', 'In Progress', 'Review', 'Done']) {
+    await page.getByPlaceholder('New state name').fill(state)
+    await page.getByRole('button', { name: 'Add' }).click()
+  }
+
+  // Set state dropdowns
+  await page.getByLabel('Lead Time Start State').selectOption('Backlog')
+  await page.getByLabel('Lead Time End State').selectOption('Done')
+  await page.getByLabel('Cycle Time Start State').selectOption('In Progress')
+  await page.getByLabel('Cycle Time End State').selectOption('Done')
+
+  // Submit the form
+  await page.getByRole('button', { name: 'Create Configuration' }).click()
+
+  // Wait for page to refresh
+  await page.waitForLoadState('domcontentloaded')
+
+  console.log('Step 3: Edit the configuration')
+  // Find and click the edit button
+  const editButton = page.getByTestId(`edit-${configName}`)
+  await editButton.waitFor({ state: 'visible' })
+  await editButton.click()
+
+  // Wait for edit form to appear
+  await page.getByText('Edit Configuration').waitFor({ state: 'visible' })
+
+  // Update fields
   await page.getByLabel('Jira Server URL').fill('https://updated.atlassian.net')
   await page.getByLabel('Default JQL Query').fill('project = UPDATED')
 
-  // Take screenshot of the edit form with updated values
-  await takeScreenshot(page, 'edit_form_updated')
-
   // Submit the form
-  console.log('Submitting updated configuration')
-  const updateButton = page.getByRole('button', { name: 'Update Configuration' })
-  await updateButton.click()
+  await page.getByRole('button', { name: 'Update Configuration' }).click()
 
-  // Wait for the form to close and changes to apply
-  await page.waitForLoadState('domcontentloaded', { timeout: 10000 })
+  // Wait for page to refresh
+  await page.waitForLoadState('domcontentloaded')
 
-  // Verify that the configuration has been updated
-  console.log('Step 3: Verify configuration was updated')
-
-  // Check that the configuration card exists
+  // Verify the configuration was updated
   const configElement = page.getByTestId(`config-${configName}`)
-  await configElement.waitFor({ state: 'visible', timeout: 5000 })
-  console.log('Configuration card is visible after update')
+  await configElement.waitFor({ state: 'visible' })
 
-  // Take a screenshot of the updated configuration view
-  await takeScreenshot(page, 'config_updated')
-  console.log('Configuration was successfully updated')
-
-  // Step 4: Clean up - delete the test configuration
+  // Clean up - delete the configuration
   console.log('Step 4: Clean up - delete the test configuration')
-  await jiraAnalyzerPage.deleteConfiguration(configName)
+
+  // Set up dialog handler for confirmation prompts before clicking delete
+  page.once('dialog', async dialog => {
+    console.log(`Accepting dialog: ${dialog.message()}`)
+    await dialog.accept()
+  })
+
+  // Find and click the delete button
+  const deleteButton = page.getByTestId(`delete-${configName}`)
+  await deleteButton.click()
+
+  // Wait for the deletion to complete
+  await page.waitForTimeout(1000)
+
+  // Refresh the page to ensure the UI is updated
+  await page.reload()
+  await page.waitForLoadState('domcontentloaded')
+
+  // Verify the configuration is no longer visible
+  const configExists = await page
+    .getByTestId(`config-${configName}`)
+    .isVisible()
+    .catch(() => false)
+
+  // Assert that the configuration no longer exists
+  expect(configExists).toBe(false)
 
   console.log('Test completed - verified that configuration can be edited')
 })

@@ -9,6 +9,7 @@ export interface JiraConfigurationOptions {
   email: string
   apiToken: string
   jql: string
+  projectKey: string
   workflowStates: string
   leadTimeStartState: string
   leadTimeEndState: string

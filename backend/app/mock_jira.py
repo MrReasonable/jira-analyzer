@@ -166,6 +166,27 @@ class MockJira:
         changelog.histories = histories
         return changelog
 
+    def projects(self):
+        """Get a list of all projects.
+
+        Returns:
+            list: A list of mock Jira projects.
+        """
+        # Create sample projects
+        project1 = Mock()
+        project1.key = 'PROJ'
+        project1.name = 'Sample Project'
+
+        project2 = Mock()
+        project2.key = 'TEST'
+        project2.name = 'Test Project'
+
+        project3 = Mock()
+        project3.key = 'DEV'
+        project3.name = 'Development Project'
+
+        return [project1, project2, project3]
+
     def search_issues(self, jql, maxResults=1000, fields=None, expand=None):
         """Search for issues matching the JQL query.
 

@@ -1,6 +1,6 @@
-import { Component, createSignal, createEffect, For } from 'solid-js'
+import { Component, createSignal, createEffect, For, Show } from 'solid-js'
 import { generateId } from '@utils/idGenerator'
-import { jiraApi, JiraConfiguration } from '@api/jiraApi'
+import { jiraApi, JiraConfiguration, JiraProject } from '@api/jiraApi'
 import { logger } from '@utils/logger'
 import { WorkflowState } from '~/types/workflow'
 import { WorkflowStatesList } from './workflow/WorkflowStatesList'
@@ -12,12 +12,15 @@ interface Props {
 
 export const ConfigurationForm: Component<Props> = props => {
   const [error, setError] = createSignal<string | null>(null)
+  const [projects, setProjects] = createSignal<JiraProject[]>([])
+  const [loadingProjects, setLoadingProjects] = createSignal(false)
   const [formData, setFormData] = createSignal({
     name: props.initialConfig?.name || '',
     jira_server: props.initialConfig?.jira_server || '',
     jira_email: props.initialConfig?.jira_email || '',
     jira_api_token: props.initialConfig?.jira_api_token || '',
     jql_query: props.initialConfig?.jql_query || '',
+    project_key: props.initialConfig?.project_key || '',
     lead_time_start_state: props.initialConfig?.lead_time_start_state || '',
     lead_time_end_state: props.initialConfig?.lead_time_end_state || '',
     cycle_time_start_state: props.initialConfig?.cycle_time_start_state || '',
@@ -42,6 +45,87 @@ export const ConfigurationForm: Component<Props> = props => {
   }
 
   const [workflowStates, setWorkflowStates] = createSignal<WorkflowState[]>(initialWorkflowStates())
+
+  // Function to fetch projects when Jira credentials are entered
+  const fetchProjects = async () => {
+    // Only try to fetch projects if we have a configuration name, server URL, email, and API token
+    if (
+      formData().name &&
+      formData().jira_server &&
+      formData().jira_email &&
+      formData().jira_api_token
+    ) {
+      try {
+        setLoadingProjects(true)
+        setError(null)
+
+        // Create a temporary configuration to fetch projects
+        const tempConfig: JiraConfiguration = {
+          name: formData().name,
+          jira_server: formData().jira_server,
+          jira_email: formData().jira_email,
+          jira_api_token: formData().jira_api_token,
+          jql_query: '',
+          workflow_states: [],
+          lead_time_start_state: '',
+          lead_time_end_state: '',
+          cycle_time_start_state: '',
+          cycle_time_end_state: '',
+        }
+
+        // Save the temporary configuration
+        if (!props.initialConfig) {
+          await jiraApi.createConfiguration(tempConfig)
+        }
+
+        // Fetch projects using the configuration name
+        const projectsList = await jiraApi.getProjects(formData().name)
+        setProjects(projectsList)
+
+        // If we have a project key from the initial config, use it
+        if (props.initialConfig?.project_key) {
+          updateField('project_key', props.initialConfig.project_key)
+        }
+        // Otherwise, if we have projects and no project key is selected, select the first one
+        else if (projectsList.length > 0 && !formData().project_key) {
+          updateField('project_key', projectsList[0].key)
+        }
+      } catch (err) {
+        let errorMessage = 'Failed to fetch projects'
+        if (err instanceof Error) {
+          errorMessage = err.message
+        }
+        setError(errorMessage)
+        logger.error('Failed to fetch projects:', err)
+      } finally {
+        setLoadingProjects(false)
+      }
+    }
+  }
+
+  // Automatically fetch projects when the component is mounted if the required fields are filled
+  createEffect(() => {
+    if (
+      formData().name &&
+      formData().jira_server &&
+      formData().jira_email &&
+      formData().jira_api_token
+    ) {
+      fetchProjects()
+    }
+  })
+
+  // Effect to update JQL query when project is selected
+  createEffect(() => {
+    const projectKey = formData().project_key
+    if (projectKey) {
+      // Only update JQL if it doesn't already contain a project clause
+      const currentJql = formData().jql_query
+      if (!currentJql.includes('project =')) {
+        updateField('jql_query', `project = ${projectKey} AND type = Story`)
+      }
+    }
+  })
 
   // Update lead/cycle time states when workflow states are modified
   createEffect(() => {
@@ -87,8 +171,20 @@ export const ConfigurationForm: Component<Props> = props => {
     e.preventDefault()
     setError(null)
 
-    // Validate all fields are filled
-    if (Object.values(formData()).some(value => !value)) {
+    // Validate all required fields are filled (project_key is optional)
+    const data = formData()
+    if (
+      !data.name ||
+      !data.jira_server ||
+      !data.jira_email ||
+      !data.jira_api_token ||
+      !data.jql_query ||
+      !data.lead_time_start_state ||
+      !data.lead_time_end_state ||
+      !data.cycle_time_start_state ||
+      !data.cycle_time_end_state ||
+      workflowStates().length === 0
+    ) {
       setError('All fields are required')
       return
     }
@@ -99,6 +195,7 @@ export const ConfigurationForm: Component<Props> = props => {
       jira_email: formData().jira_email,
       jira_api_token: formData().jira_api_token,
       jql_query: formData().jql_query,
+      project_key: formData().project_key,
       workflow_states: workflowStates().map(state => state.name),
       lead_time_start_state: formData().lead_time_start_state,
       lead_time_end_state: formData().lead_time_end_state,
@@ -146,7 +243,7 @@ export const ConfigurationForm: Component<Props> = props => {
   }
 
   return (
-    <form class="space-y-4" onSubmit={handleSubmit}>
+    <form role="form" class="space-y-4" onSubmit={handleSubmit}>
       {/* Name field */}
       <div role="group" class="space-y-1">
         <label for="name" class="block text-sm font-medium text-gray-700">
@@ -200,16 +297,59 @@ export const ConfigurationForm: Component<Props> = props => {
         <label for="jira_api_token" class="block text-sm font-medium text-gray-700">
           Jira API Token
         </label>
-        <input
-          id="jira_api_token"
-          type="password"
-          class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          value={formData().jira_api_token}
-          onInput={e => updateField('jira_api_token', e.currentTarget.value)}
-          autocomplete="current-password"
-          required
-        />
+        <div class="flex gap-2">
+          <input
+            id="jira_api_token"
+            type="password"
+            class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            value={formData().jira_api_token}
+            onInput={e => updateField('jira_api_token', e.currentTarget.value)}
+            autocomplete="current-password"
+            required
+          />
+          <button
+            type="button"
+            class="mt-1 inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+            onClick={fetchProjects}
+            disabled={
+              loadingProjects() ||
+              !formData().name ||
+              !formData().jira_server ||
+              !formData().jira_email ||
+              !formData().jira_api_token
+            }
+          >
+            {loadingProjects() ? 'Loading...' : 'Fetch Projects'}
+          </button>
+        </div>
       </div>
+
+      {/* Project dropdown - only shown when projects are loaded */}
+      <Show when={projects().length > 0}>
+        <div role="group" class="space-y-1">
+          <label for="project_key" class="block text-sm font-medium text-gray-700">
+            Jira Project
+          </label>
+          <select
+            id="project_key"
+            class="mt-1 block w-full cursor-pointer rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            value={formData().project_key}
+            onChange={e => updateField('project_key', e.currentTarget.value)}
+            required
+          >
+            <option value="" disabled>
+              Select a project
+            </option>
+            <For each={projects()}>
+              {project => (
+                <option value={project.key}>
+                  {project.key} - {project.name}
+                </option>
+              )}
+            </For>
+          </select>
+        </div>
+      </Show>
 
       {/* JQL Query field */}
       <div role="group" class="space-y-1">

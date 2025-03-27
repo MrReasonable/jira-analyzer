@@ -33,6 +33,7 @@ class MockSettings:
     jira_email = None
     jira_api_token = None
     jql_query = 'project = PROJ AND type = Story'
+    project_key = 'PROJ'
     workflow_states = ['Backlog', 'In Progress', 'Done']
     lead_time_start_state = 'Backlog'
     lead_time_end_state = 'Done'
@@ -80,6 +81,7 @@ def setup_test_db():
                 jira_email='test@example.com',
                 jira_api_token='test-token',
                 jql_query='project = TEST',
+                project_key='TEST',  # Add project_key field
                 workflow_states=['Backlog', 'In Progress', 'Done'],
                 lead_time_start_state='Backlog',
                 lead_time_end_state='Done',

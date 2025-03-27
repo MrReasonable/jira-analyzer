@@ -33,6 +33,7 @@ test.describe('Workflow States Drag and Drop Functionality', () => {
         email: 'test@example.com',
         apiToken: 'test-token',
         jql: 'project = TEST AND type = Story',
+        projectKey: 'TEST',
         workflowStates: 'Backlog,In Progress,Review,Done',
         leadTimeStartState: 'Backlog',
         leadTimeEndState: 'Done',

@@ -45,6 +45,7 @@ class JiraConfiguration(Base):
     jira_email = Column(String, nullable=False)
     jira_api_token = Column(String, nullable=False)
     jql_query = Column(String, nullable=False)
+    project_key = Column(String, nullable=False)  # Selected Jira project key
     workflow_states = Column(JSON, nullable=False)  # List of states
     lead_time_start_state = Column(String, nullable=False)
     lead_time_end_state = Column(String, nullable=False)

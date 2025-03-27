@@ -29,6 +29,14 @@ export default defineConfig({
         }
       }
     },
+    pool: 'forks', // Use forks instead of threads for better memory isolation
+    poolOptions: {
+      forks: {
+        isolate: true, // Isolate each test file in its own process
+      },
+    },
+    maxWorkers: 2, // Limit the number of concurrent workers
+    minWorkers: 1, // Ensure at least one worker
     css: false,
     coverage: {
       provider: 'v8',

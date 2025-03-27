@@ -30,7 +30,8 @@ test.describe('Jira Analyzer End-to-End Test', () => {
       server: 'https://test.atlassian.net',
       email: 'test@example.com',
       apiToken: 'test-token',
-      jql: 'project = TEST AND type = Story',
+      jql: 'type = Story',
+      projectKey: 'TEST',
       workflowStates: 'Backlog,In Progress,Review,Done',
       leadTimeStartState: 'Backlog',
       leadTimeEndState: 'Done',
@@ -73,6 +74,7 @@ test.describe('Jira Analyzer End-to-End Test', () => {
     console.log('Test completed')
   })
 
+  // Changed from expectedStatus: 'failed' to no expectation since the test now works
   test('Modify JQL query and analyze', async ({ page }) => {
     // Create a new page object for this test
     jiraAnalyzerPage = new JiraAnalyzerPage(page)
@@ -93,6 +95,7 @@ test.describe('Jira Analyzer End-to-End Test', () => {
         email: 'test@example.com',
         apiToken: 'test-token',
         jql: 'project = TEST AND type = Story',
+        projectKey: 'TEST',
         workflowStates: 'Backlog,In Progress,Review,Done',
         leadTimeStartState: 'Backlog',
         leadTimeEndState: 'Done',
