@@ -52,7 +52,7 @@
     "vitest": "^3.0.9"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.34.9"
+    "@rollup/rollup-linux-x64-gnu": "4.38.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
