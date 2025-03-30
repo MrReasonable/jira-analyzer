@@ -1,8 +1,8 @@
-fastapi==0.115.11
+fastapi==0.115.12
 uvicorn==0.34.0
 python-dotenv==1.0.1
 jira==3.8.0
-atlassian-python-api==3.41.19
+atlassian-python-api==3.41.21
 pandas==2.2.3
 pyarrow==19.0.1
 pydantic==2.10.6
