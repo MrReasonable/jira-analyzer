@@ -1,0 +1,12 @@
+[tools]
+direnv = "latest"
+node = "23"
+python = "latest"
+ruff = "latest"
+
+[settings]
+python.uv_venv_auto = true
+
+[env]
+_.python.venv = { path = "backend/.venv", create = true }
+PROJECT_NAME = "{{config_root | basename}}"
