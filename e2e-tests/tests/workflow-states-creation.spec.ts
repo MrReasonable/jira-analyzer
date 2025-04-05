@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
 import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
+import { TestConfig } from '../src/core/test-config'
 
-// Set a reasonable timeout
-test.setTimeout(30000)
+// Set timeout from TestConfig
+test.setTimeout(TestConfig.timeouts.test)
 
 test.describe('Workflow States During Configuration Creation', () => {
   let jiraAnalyzerPage: JiraAnalyzerPage
@@ -27,56 +28,109 @@ test.describe('Workflow States During Configuration Creation', () => {
     console.log('Step 2: Click Add Configuration button')
     // Find and click the Add Configuration button
     const addButton = page.getByTestId('add-config-button')
-    await addButton.waitFor({ state: 'visible', timeout: 10000 })
+    await addButton.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
     await takeScreenshot(page, 'before_add_config_click')
     await addButton.click()
 
     // Wait for the configuration form to appear
     const configNameField = page.getByLabel('Configuration Name')
-    await configNameField.waitFor({ state: 'visible', timeout: 10000 })
+    await configNameField.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
     await takeScreenshot(page, 'config_form_open')
 
-    // Fill in the required fields but don't submit yet
+    // Fill in the credentials step fields
     await configNameField.fill('Workflow States Test')
     await page.getByLabel('Jira Server URL').fill('https://test.atlassian.net')
     await page.getByLabel('Jira Email').fill('test@example.com')
     await page.getByLabel('Jira API Token').fill('test-token')
-    await page.getByLabel('Default JQL Query').fill('project = TEST AND type = Story')
+    await takeScreenshot(page, 'credentials_filled')
+
+    // Navigate to the next step (Project & Query)
+    console.log('Navigating to Project & Query step')
+    const nextButton = page.getByRole('button', { name: 'Next' })
+    await nextButton.click()
+    await takeScreenshot(page, 'project_step')
+
+    // Now fill the JQL query field in Step 2
+    console.log('Filling JQL query field')
+    await page
+      .locator('textarea#jql_query')
+      .waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
+    await page.locator('textarea#jql_query').fill(TestConfig.testData.defaultJql)
+    console.log('Filled JQL query field')
     await takeScreenshot(page, 'form_filled')
 
-    console.log('Step 3: Add workflow states and test drag-and-drop')
+    console.log('Step 3: Complete the configuration form')
 
-    // Find the input field for adding workflow states
-    const stateInput = page
-      .getByLabel('Add a new workflow state')
-      .or(page.getByPlaceholder('New state name'))
-      .or(page.getByTestId('new-state-input'))
+    // Submit the form to create the configuration
+    console.log('Submitting the configuration form')
+    const createButton = page.getByRole('button', { name: /Create Configuration/i })
+    await createButton.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
+    await createButton.click()
 
-    await stateInput.waitFor({ state: 'visible', timeout: 5000 })
+    // Wait for the configuration to be created and the form to close
+    await page.waitForTimeout(TestConfig.timeouts.uiUpdate)
+    await takeScreenshot(page, 'config_created')
 
-    // Add first state: Backlog
-    await stateInput.fill('Backlog')
-    await page.getByRole('button', { name: 'Add' }).click()
-    await takeScreenshot(page, 'added_backlog')
+    console.log('Step 4: Edit the configuration to add workflow states')
 
-    // Add second state: In Progress
-    await stateInput.fill('In Progress')
-    await page.getByRole('button', { name: 'Add' }).click()
-    await takeScreenshot(page, 'added_in_progress')
+    // Try multiple strategies to find the edit button
+    console.log('Looking for edit button for the newly created configuration')
 
-    // Add third state: Review
-    await stateInput.fill('Review')
-    await page.getByRole('button', { name: 'Add' }).click()
-    await takeScreenshot(page, 'added_review')
+    // First try by role
+    let editButton = page.getByRole('button', { name: 'Edit' }).first()
+    let buttonFound = await editButton.isVisible({ timeout: 1000 }).catch(() => false)
 
-    // Add fourth state: Done
-    await stateInput.fill('Done')
-    await page.getByRole('button', { name: 'Add' }).click()
-    await takeScreenshot(page, 'added_done')
+    // If not found, try by test ID
+    if (!buttonFound) {
+      console.log('Edit button not found by role, trying by test ID')
+      editButton = page.getByTestId('edit-Workflow States Test')
+      buttonFound = await editButton.isVisible({ timeout: 1000 }).catch(() => false)
+    }
+
+    // If still not found, try by CSS selector
+    if (!buttonFound) {
+      console.log('Edit button not found by test ID, trying by CSS selector')
+      const editButtons = page.locator('button:has(svg[data-testid="EditIcon"])')
+      const count = await editButtons.count()
+
+      if (count > 0) {
+        console.log(`Found ${count} edit buttons by CSS selector, using the first one`)
+        editButton = editButtons.first()
+        buttonFound = true
+      }
+    }
+
+    // If button is found, click it
+    if (buttonFound) {
+      console.log('Edit button found, clicking it')
+      await editButton.click()
+    } else {
+      console.warn('Edit button not found, test may fail')
+      await takeScreenshot(page, 'edit_button_not_found')
+    }
+
+    // Wait for the workflow editor to appear
+    console.log('Waiting for workflow editor')
+    await page
+      .getByText('Edit Workflow States')
+      .waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
+    await takeScreenshot(page, 'workflow_editor_open')
+
+    // Now find the input field for adding workflow states
+    console.log('Looking for workflow state input field')
+    const stateInput = page.getByTestId('new-state-input')
+    await stateInput.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
+
+    // Add workflow states from TestConfig
+    for (const state of TestConfig.testData.defaultWorkflowStates) {
+      await stateInput.fill(state)
+      await page.getByRole('button', { name: 'Add' }).click()
+      await takeScreenshot(page, `added_${state.toLowerCase().replace(/\s+/g, '_')}`)
+    }
 
     // Check if all states are added
     const startStateDropdown = page.getByLabel('Lead Time Start State')
-    await startStateDropdown.waitFor({ state: 'visible', timeout: 5000 })
+    await startStateDropdown.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
     const options = await startStateDropdown.locator('option').allInnerTexts()
     console.log('Workflow states added:', options)
 
@@ -135,7 +189,7 @@ test.describe('Workflow States During Configuration Creation', () => {
             await takeScreenshot(page, 'drag_started')
 
             // Add a small delay to ensure the drag is registered
-            await page.waitForFunction(() => true, { timeout: 300 })
+            await page.waitForFunction(() => true, { timeout: TestConfig.timeouts.uiUpdate })
 
             // Drag to the second item position with small steps for smoother dragging
             // Using more steps and a slower movement to give the drag event system time to react
@@ -147,13 +201,13 @@ test.describe('Workflow States During Configuration Creation', () => {
             await takeScreenshot(page, 'during_drag')
 
             // Add another small delay before releasing
-            await page.waitForFunction(() => true, { timeout: 300 })
+            await page.waitForFunction(() => true, { timeout: TestConfig.timeouts.uiUpdate })
 
             // Release to complete the drag
             await page.mouse.up()
 
             // Give time for the reordering to take effect
-            await page.waitForFunction(() => true, { timeout: 500 })
+            await page.waitForFunction(() => true, { timeout: TestConfig.timeouts.uiUpdate })
 
             await takeScreenshot(page, 'after_drag')
 
@@ -206,21 +260,25 @@ test.describe('Workflow States During Configuration Creation', () => {
 
     // We don't actually submit the form as that would create a configuration in the database
     // Just close the dialog to clean up
-    const closeButton = page
-      .getByRole('button', { name: 'Close' })
-      .or(page.locator('button[aria-label="Close"]'))
+    console.log('Closing the configuration form')
 
+    // Use a single, reliable selector for the close button
+    const closeButton = page.getByRole('button', { name: 'Close' })
+
+    // Try to click the close button
     await test.step('Close the configuration form', async () => {
-      await closeButton.isVisible().then(async visible => {
-        if (visible) {
-          await closeButton.click()
-          console.log('Closed configuration form without saving')
-        } else {
-          // Click outside the modal to close it
-          await page.mouse.click(10, 10)
-          console.log('Clicked outside form to close it')
-        }
-      })
+      try {
+        await closeButton.click()
+        console.log('Closed configuration form using Close button')
+      } catch (error) {
+        console.log(
+          'Close button not found, clicking outside the modal:',
+          error instanceof Error ? error.message : String(error)
+        )
+        // Click outside the modal to close it
+        await page.mouse.click(10, 10)
+        console.log('Clicked outside form to close it')
+      }
     })
 
     await takeScreenshot(page, 'test_completed')

@@ -40,7 +40,6 @@ coverage.xml
 .pytest_cache
 .env
 .venv
-venv/
 ENV/
 .ruff_cache/
 .mypy_cache/

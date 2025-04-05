@@ -91,5 +91,38 @@ This project is licensed under the terms in the LICENSE file.
 - **frontend/**: SolidJS frontend application
 - **backend/**: Python/FastAPI backend application
 - **e2e-tests/**: End-to-end tests using Playwright
+  - Contains [Test Performance Guidelines](e2e-tests/TEST_PERFORMANCE.md) for optimizing test execution
 - **.github/**: GitHub Actions workflows and configuration
   - Contains detailed [GitHub Actions documentation](.github/WORKFLOWS.md)
+
+## E2E Testing
+
+The project includes comprehensive end-to-end tests using Playwright.
+These tests verify theapplication's functionality from a user's perspective.
+
+### Test Performance Optimizations
+
+We've implemented several optimizations to improve E2E test performance:
+
+- **Page Object Pattern**: Using an optimized page object model that reduces timeouts and improves reliability
+- **Test Categorization**: Tests are tagged as `@slow` or `@fast` to allow selective execution
+- **Reduced Wait Times**: Consolidated wait operations and optimized verification steps
+- **Selective Screenshots**: Taking screenshots only at critical points to reduce overhead
+
+For more details, see the [Test Performance Guidelines](e2e-tests/TEST_PERFORMANCE.md).
+
+### Running E2E Tests
+
+```bash
+# Run all tests
+make e2e-tests
+
+# Run only fast tests
+cd e2e-tests && npx playwright test --grep-invert "@slow"
+
+# Run only slow tests
+cd e2e-tests && npx playwright test --grep "@slow"
+
+# Run tests with visual feedback
+cd e2e-tests && npx playwright test --headed
+```

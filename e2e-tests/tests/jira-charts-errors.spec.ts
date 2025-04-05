@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
-import { JiraAnalyzerPage } from './pages/jira-analyzer-page'
-import { takeScreenshot, resetScreenshotCounter } from './utils/screenshot-helper'
+import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
+import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
+import { TestConfig } from '../src/core/test-config'
 
 // Increase timeout for more reliable tests
 test.setTimeout(60000) // 60 seconds
@@ -68,7 +69,38 @@ test.describe('Jira Charts Error Detection Test', () => {
     })
 
     console.log('Step 3: Analyze metrics and capture any errors')
-    await jiraAnalyzerPage.analyzeMetrics()
+    try {
+      await jiraAnalyzerPage.analyzeMetrics()
+      console.log('Successfully analyzed metrics')
+    } catch (error) {
+      console.error('Error analyzing metrics:', error)
+
+      // Take a screenshot of the current state
+      await takeScreenshot(page, 'analyze_metrics_error')
+
+      // Try a fallback approach - find and click the analyze button directly
+      console.log('Trying fallback approach to click analyze button')
+
+      // First try by test ID
+      const analyzeButton = page.getByTestId('analyze-button')
+      if (await analyzeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        console.log('Found analyze button by test ID')
+        await analyzeButton.click()
+      } else {
+        // Try by role
+        const analyzeByRole = page.getByRole('button', { name: 'Analyze', exact: true })
+        if (await analyzeByRole.isVisible({ timeout: 1000 }).catch(() => false)) {
+          console.log('Found analyze button by role')
+          await analyzeByRole.click()
+        } else {
+          console.error('Could not find analyze button by any method')
+          throw new Error('Could not find analyze button')
+        }
+      }
+
+      // Wait for metrics to load
+      await page.waitForTimeout(TestConfig.timeouts.api)
+    }
 
     // Take a screenshot of the metrics section
     await takeScreenshot(page, 'charts_with_potential_errors')

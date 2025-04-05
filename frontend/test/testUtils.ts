@@ -60,13 +60,10 @@ export const mockData = {
 // Setup mock functions for jiraApi
 export const setupJiraApiMocks = async () => {
   // Import the mocked jiraApi from handlers
-  const { mockHandlers } = await import('./mocks/handlers')
+  const { mockHandlers, mockJiraApi } = await import('./mocks/handlers')
 
   // Reset all mocks using the mockHandlers.resetMocks function
   mockHandlers.resetMocks()
 
-  // Import the mocked jiraApi
-  const { jiraApi } = await import('../src/api/jiraApi')
-
-  return jiraApi
+  return mockJiraApi
 }

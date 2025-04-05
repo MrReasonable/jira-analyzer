@@ -75,7 +75,8 @@ export const WorkflowStatesList: Component<WorkflowStatesListProps> = props => {
           value={stateManager.newStateName()}
           onInput={e => stateManager.setNewStateName(e.currentTarget.value)}
           placeholder="New state name"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          class="w-full cursor-text rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          data-testid="new-state-input"
         />
         <button
           type="button"

@@ -3,17 +3,19 @@ import { logger } from '@utils/logger'
 
 // Setup API with more robust configuration
 export const getApiBaseUrl = () => {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  // Use the environment variable VITE_API_URL or fallback to localhost with BACKEND_PORT
+  const apiUrl = import.meta.env.VITE_API_URL || `http://localhost/api`
   console.debug(`Using API base URL: ${apiUrl}`)
   return apiUrl
 }
 
 // Export for testing
 export const api = axios.create({
-  baseURL: `${getApiBaseUrl()}/api`,
+  // Ensure we don't duplicate the /api path if it's already in the URL
+  baseURL: `${getApiBaseUrl()}`,
   // Add timeout and better error handling for e2e tests
   timeout: 10000,
-  withCredentials: false, // Important for CORS in test environments
+  withCredentials: true, // Important for sending cookies with requests
 })
 
 // Log requests in debug/verbose mode
@@ -104,17 +106,106 @@ export interface JiraConfigurationList {
   jira_email: string
 }
 
+export interface JiraCredentials {
+  name: string
+  jira_server: string
+  jira_email: string
+  jira_api_token: string
+}
+
+export interface CredentialsResponse {
+  status: string
+  message: string
+}
+
+// Configure axios to send cookies with requests
+api.defaults.withCredentials = true
+
 export const jiraApi = {
+  validateCredentials: async (credentials: JiraCredentials): Promise<CredentialsResponse> => {
+    try {
+      logger.debug('Validating Jira credentials', { name: credentials.name })
+      const response = await api.post<CredentialsResponse>('/validate-credentials', credentials)
+
+      // The JWT token is now set as an HTTP-only cookie by the server
+      logger.info('Jira credentials validated successfully')
+      return response.data
+    } catch (err) {
+      logger.error('Failed to validate Jira credentials', err)
+      throw err
+    }
+  },
+
+  // Method to fetch projects directly using credentials
+  getProjectsWithCredentials: async (credentials: JiraCredentials): Promise<JiraProject[]> => {
+    try {
+      logger.debug('Fetching Jira projects with credentials', { name: credentials.name })
+
+      // Use the new endpoint that accepts credentials directly
+      logger.info('Sending credentials directly to fetch projects')
+      const response = await api.post('/jira/projects-with-credentials', credentials)
+
+      logger.info('Jira projects fetched successfully with credentials')
+      return response.data
+    } catch (err) {
+      // Enhanced error logging
+      if (err && typeof err === 'object' && 'response' in err && err.response) {
+        // Use a more specific type for axios error response
+        const response = err.response as {
+          status?: number
+          statusText?: string
+          data?: unknown
+        }
+        logger.error('Failed to fetch projects with credentials - API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data,
+        })
+      } else {
+        logger.error('Failed to fetch projects with credentials - non-API error:', err)
+      }
+      throw err
+    }
+  },
+
   getProjects: async (configName: string): Promise<JiraProject[]> => {
     try {
       logger.debug('Fetching Jira projects', { configName })
+
+      // Log the request details
+      logger.info(`Making API request to /jira/projects with config_name=${configName}`)
+
       const response = await api.get('/jira/projects', {
         params: { config_name: configName },
       })
+
+      // Log the response details
+      logger.info('Jira projects API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        dataLength: response.data ? response.data.length : 0,
+        data: response.data,
+      })
+
       logger.info('Jira projects fetched successfully')
       return response.data
     } catch (err) {
-      logger.error('Failed to fetch Jira projects', err)
+      // Enhanced error logging
+      if (err && typeof err === 'object' && 'response' in err && err.response) {
+        // Use a more specific type for axios error response
+        const response = err.response as {
+          status?: number
+          statusText?: string
+          data?: unknown
+        }
+        logger.error('Failed to fetch projects - API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          data: response.data,
+        })
+      } else {
+        logger.error('Failed to fetch projects - non-API error:', err)
+      }
       throw err
     }
   },

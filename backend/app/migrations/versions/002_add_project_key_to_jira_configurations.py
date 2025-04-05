@@ -1,6 +1,6 @@
 """add_project_key_to_jira_configurations.
 
-Revision ID: 710de75fcfac
+Revision ID: 002
 Revises: 001
 Create Date: 2025-03-22 06:49:34.668933
 

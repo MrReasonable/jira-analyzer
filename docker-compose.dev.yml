@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jira-analyzer-postgres-dev
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=jira_analyzer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -9,24 +26,33 @@ services:
     ports:
       - "5678:5678" # Python debugger port
     expose:
-      - "8000" # Expose to other containers, but not to host
+      - "${BACKEND_PORT:-8000}" # Expose to other containers, but not to host
     environment:
       # Server Configuration
       - HOST=0.0.0.0
-      - PORT=8000
+      - PORT=${BACKEND_PORT:-8000}
       - CORS_ORIGINS=["http://localhost:${FRONTEND_PORT:-80}", "http://localhost:5173", "http://caddy:80"]
+      # Database Configuration
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=jira_analyzer
       # Development Configuration
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
       # Testing Configuration
       - USE_MOCK_JIRA=${USE_MOCK_JIRA:-true}
       - USE_IN_MEMORY_DB=${USE_IN_MEMORY_DB:-false}
+      # Logging Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - ./backend:/app
       - jira-analyzer-data:/app/data
-    # Override the default command to remove --wait-for-client
+    # Command without --wait-for-client to allow immediate startup
     command:
       - "python"
+      - "-Xfrozen_modules=off"
       - "-m"
       - "debugpy"
       - "--listen"
@@ -37,10 +63,15 @@ services:
       - "--host"
       - "0.0.0.0"
       - "--port"
-      - "8000"
+      - "${BACKEND_PORT:-8000}"
       - "--reload"
+      - "--log-level"
+      - "info"
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:${BACKEND_PORT:-8000}/health')"]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -66,7 +97,7 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5173', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -88,6 +119,7 @@ services:
 
 volumes:
   jira-analyzer-data:
+  postgres-data: # Persistent volume for PostgreSQL data
   caddy_data: # Persistent volume for Caddy SSL certificates
   caddy_config: # Persistent volume for Caddy configuration
 

@@ -5,9 +5,54 @@ and serialization. These schemas ensure type safety and data validation for
 the API endpoints.
 """
 
-from typing import List
+from typing import Generic, List, TypeVar
 
 from pydantic import BaseModel, Field
+
+# Define a generic type variable for use with PaginatedResponse
+T = TypeVar('T')
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic schema for paginated responses.
+
+    This model is used for endpoints that return paginated lists of items.
+    It includes metadata about the pagination state along with the items.
+
+    Attributes:
+        items: List of items of type T.
+        total: Total number of items available.
+        skip: Number of items skipped (for pagination).
+        limit: Maximum number of items returned (for pagination).
+    """
+
+    items: List[T] = Field(..., description='List of items')
+    total: int = Field(..., description='Total number of items available')
+    skip: int = Field(..., description='Number of items skipped')
+    limit: int = Field(..., description='Maximum number of items returned')
+
+
+class JiraCredentials(BaseModel):
+    """Schema for validating Jira credentials.
+
+    This model is used for the first step of configuration where only
+    credentials are validated without requiring project selection.
+    """
+
+    name: str = Field(..., description='Unique name for this configuration')
+    jira_server: str = Field(..., description='Jira server URL')
+    jira_email: str = Field(..., description='Jira email/username')
+    jira_api_token: str = Field(..., description='Jira API token')
+
+
+class CredentialsResponse(BaseModel):
+    """Response schema for the credentials validation endpoint.
+
+    The JWT token is set as an HTTP-only cookie and not included in the response body.
+    """
+
+    status: str = Field(..., description='Status of the validation')
+    message: str = Field(..., description='Success or error message')
 
 
 class JiraConfigurationBase(BaseModel):

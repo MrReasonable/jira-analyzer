@@ -23,13 +23,13 @@ class LogLevel(str, Enum):
     CRITICAL = 'CRITICAL'
 
 
-# Map string log levels to logging module constants
+# Map string log levels to logging module constants (case-insensitive)
 LOG_LEVEL_MAP = {
-    LogLevel.DEBUG: logging.DEBUG,
-    LogLevel.INFO: logging.INFO,
-    LogLevel.WARNING: logging.WARNING,
-    LogLevel.ERROR: logging.ERROR,
-    LogLevel.CRITICAL: logging.CRITICAL,
+    LogLevel.DEBUG.lower(): logging.DEBUG,
+    LogLevel.INFO.lower(): logging.INFO,
+    LogLevel.WARNING.lower(): logging.WARNING,
+    LogLevel.ERROR.lower(): logging.ERROR,
+    LogLevel.CRITICAL.lower(): logging.CRITICAL,
 }
 
 
@@ -49,15 +49,15 @@ def get_logger(name: str, level: Optional[LogLevel] = None) -> logging.Logger:
     else:
         # Determine log level from environment or use INFO as default
         env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
-        # Ensure env_level is a valid LogLevel
-        env_level = (
-            LogLevel(env_level_str)
-            if env_level_str in [e.value for e in LogLevel]
-            else LogLevel.INFO
-        )
-        selected_level: LogLevel = level or env_level
-        # Use explicit cast to avoid mypy errors
-        log_level = LOG_LEVEL_MAP.get(selected_level, logging.INFO)
+        # Convert to lowercase for case-insensitive comparison
+        env_level_lower = env_level_str.lower()
+        # Check if it's a valid log level
+        if env_level_lower in LOG_LEVEL_MAP:
+            selected_level_lower = level.lower() if level else env_level_lower
+            log_level = LOG_LEVEL_MAP.get(selected_level_lower, logging.INFO)
+        else:
+            # Default to INFO if not valid
+            log_level = logging.INFO
 
     # Create logger
     logger = logging.getLogger(name)
@@ -102,15 +102,17 @@ def configure_logging(level: Optional[LogLevel] = None) -> None:
     else:
         # Determine log level from parameter or environment
         env_level_str = os.environ.get('LOG_LEVEL', LogLevel.INFO)
-        # Ensure env_level is a valid LogLevel
-        env_level = (
-            LogLevel(env_level_str)
-            if env_level_str in [e.value for e in LogLevel]
-            else LogLevel.INFO
-        )
-        config_level = level or env_level
-        # Use explicit cast to avoid mypy errors
-        log_level = LOG_LEVEL_MAP.get(config_level, logging.INFO)
+        # Convert to lowercase for case-insensitive comparison
+        env_level_lower = env_level_str.lower()
+        # Check if it's a valid log level
+        if env_level_lower in LOG_LEVEL_MAP:
+            selected_level_lower = level.lower() if level else env_level_lower
+            log_level = LOG_LEVEL_MAP.get(selected_level_lower, logging.INFO)
+            config_level = level or LogLevel(env_level_str.upper())
+        else:
+            # Default to INFO if not valid
+            log_level = logging.INFO
+            config_level = LogLevel.INFO
 
     # Configure root logger
     root_logger = logging.getLogger()

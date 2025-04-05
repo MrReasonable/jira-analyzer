@@ -6,6 +6,7 @@ import { createConfiguration, deleteConfiguration, editConfiguration } from '../
 import { analyzeMetrics, getJqlQuery, setJqlQuery } from '../core/jql'
 import { JiraConfigurationOptions } from '../core/types'
 import { dragWorkflowState } from '../core/workflow-states'
+import { verifyChartsRendered } from '../core/chart-verification'
 
 /**
  * Page object for the Jira Analyzer application
@@ -80,5 +81,14 @@ export class JiraAnalyzerPage {
    */
   async dragWorkflowState(sourceIndex: number, targetIndex: number): Promise<boolean> {
     return await dragWorkflowState(this.context, sourceIndex, targetIndex)
+  }
+
+  /**
+   * Verify that charts are rendered on the page
+   *
+   * @returns Promise resolving to true if charts are rendered, false otherwise
+   */
+  async verifyChartsRendered(): Promise<boolean> {
+    return await verifyChartsRendered(this.context)
   }
 }

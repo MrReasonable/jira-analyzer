@@ -1,5 +1,6 @@
 import { takeScreenshot } from '../utils/screenshot-helper'
 import { TestContext } from './types'
+import { TestConfig } from './test-config'
 
 /**
  * Add a single workflow state to the configuration
@@ -14,7 +15,7 @@ export async function addWorkflowState(context: TestContext, stateName: string):
   try {
     // Find the input field with a single, reliable selector
     const stateInput = page.getByPlaceholder('New state name')
-    await stateInput.waitFor({ state: 'visible', timeout: 5000 })
+    await stateInput.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
     await stateInput.fill(stateName)
 
     // Click the add button
@@ -23,7 +24,7 @@ export async function addWorkflowState(context: TestContext, stateName: string):
 
     // Verify state was added (brief check only)
     const leadTimeDropdown = page.getByLabel('Lead Time Start State')
-    await leadTimeDropdown.waitFor({ state: 'visible', timeout: 3000 })
+    await leadTimeDropdown.waitFor({ state: 'visible', timeout: TestConfig.timeouts.element })
 
     console.log(`Added workflow state: ${stateName}`)
     return true
@@ -108,7 +109,7 @@ export async function dragWorkflowState(
     // Start the drag
     await page.mouse.move(sourceBB.x + sourceBB.width / 2, sourceBB.y + sourceBB.height / 2)
     await page.mouse.down()
-    await page.waitForTimeout(300) // Wait for drag to start
+    await page.waitForTimeout(TestConfig.timeouts.uiUpdate) // Wait for drag to start
 
     // Move in smaller steps
     const steps = 10
@@ -124,9 +125,9 @@ export async function dragWorkflowState(
     }
 
     // Complete the drag
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(TestConfig.timeouts.uiUpdate)
     await page.mouse.up()
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(TestConfig.timeouts.uiUpdate)
 
     // Verify drag results
     const newStateNames = await getWorkflowStateNames(context)

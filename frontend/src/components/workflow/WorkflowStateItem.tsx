@@ -1,6 +1,6 @@
 import { Component } from 'solid-js'
 import { createSortable, transformStyle } from '@thisbeyond/solid-dnd'
-import type { WorkflowState } from '../../types/workflow'
+import type { WorkflowState } from '~types/workflow'
 
 interface WorkflowStateItemProps {
   item: WorkflowState

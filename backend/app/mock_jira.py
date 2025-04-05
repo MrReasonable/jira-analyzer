@@ -203,6 +203,20 @@ class MockJira:
         # For simplicity, we'll just return all sample issues
         return self.sample_issues[:maxResults]
 
+    def myself(self):
+        """Get information about the current user.
+
+        This method is used to validate the connection to Jira.
+
+        Returns:
+            Mock: A mock user object.
+        """
+        user = Mock()
+        user.displayName = 'Mock User'
+        user.emailAddress = 'mock.user@example.com'
+        user.key = 'mock-user'
+        return user
+
 
 async def get_mock_jira_client(
     session: AsyncSession = Depends(get_session),

@@ -1,5 +1,5 @@
 import { Component, Accessor } from 'solid-js'
-import { TextField, Button } from '@kobalte/core'
+import { Button } from '@kobalte/core'
 import { logger } from '@utils/logger'
 
 interface JqlInputProps {
@@ -25,19 +25,21 @@ export const JqlInput: Component<JqlInputProps> = props => {
 
   return (
     <div class="flex items-center gap-4">
-      <TextField.Root class="flex-1">
-        <TextField.Label class="sr-only">JQL Query</TextField.Label>
-        <TextField.Input
-          class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+      <div class="flex-1">
+        <label class="sr-only" for="jql_input">
+          JQL Query
+        </label>
+        <input
+          id="jql_input"
+          class="block w-full cursor-text rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           placeholder="Enter JQL Query"
           value={props.jql()}
-          // Remove the onChange prop as it's not compatible with the expected type
           onInput={e => handleJqlChange(e.currentTarget.value)}
-          data-testid="jql-input"
-          aria-labelledby="jql-query-heading"
+          data-testid="jql_input"
+          aria-labelledby="jql_query_heading"
           disabled={!props.configSelected()}
         />
-      </TextField.Root>
+      </div>
       <Button.Root
         class="flex cursor-pointer items-center gap-2 rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         onClick={handleAnalyzeClick}

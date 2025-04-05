@@ -38,7 +38,7 @@ export const ConfigurationList: Component<Props> = props => {
               {config => (
                 <div
                   data-testid={`config-${config.name}`}
-                  class={`rounded-lg border p-4 ${props.selectedName && props.selectedName() === config.name ? 'border-blue-500 bg-blue-50' : 'border-gray-200'} cursor-pointer transition-all duration-200 hover:shadow-md`}
+                  class={`rounded-lg border p-4 ${props.selectedName && props.selectedName() === config.name ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-gray-200'} cursor-pointer transition-all duration-200 hover:shadow-md`}
                   onClick={() => {
                     logger.info('User clicked on configuration card', { name: config.name })
                     props.onSelect(config.name)
@@ -46,7 +46,14 @@ export const ConfigurationList: Component<Props> = props => {
                 >
                   <div class="flex items-center justify-between">
                     <div>
-                      <h3 class="font-semibold">{config.name}</h3>
+                      <h3 class="font-semibold">
+                        {config.name}
+                        {props.selectedName && props.selectedName() === config.name && (
+                          <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                            Active
+                          </span>
+                        )}
+                      </h3>
                       <p class="text-sm text-gray-500">
                         {config.jira_email} @ {config.jira_server}
                       </p>

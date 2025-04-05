@@ -16,7 +16,7 @@ describe('JqlInput', () => {
       />
     ))
 
-    expect(screen.getByTestId('jql-input')).toBeInTheDocument()
+    expect(screen.getByTestId('jql_input')).toBeInTheDocument()
     expect(screen.getByTestId('analyze-button')).toBeInTheDocument()
   })
 
@@ -32,7 +32,7 @@ describe('JqlInput', () => {
       />
     ))
 
-    expect(screen.getByTestId('jql-input')).toBeDisabled()
+    expect(screen.getByTestId('jql_input')).toBeDisabled()
   })
 
   it('disables analyze button when loading', () => {
@@ -78,7 +78,7 @@ describe('JqlInput', () => {
       />
     ))
 
-    const input = screen.getByTestId('jql-input')
+    const input = screen.getByTestId('jql_input')
     fireEvent.input(input, { target: { value: 'project = NEW' } })
 
     expect(onJqlChange).toHaveBeenCalledWith('project = NEW')

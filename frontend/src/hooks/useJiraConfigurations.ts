@@ -1,6 +1,7 @@
 import { createSignal, createEffect } from 'solid-js'
 import { jiraApi, JiraConfigurationList, JiraConfiguration } from '@api/jiraApi'
 import { logger } from '@utils/logger'
+import { showNotification } from '@components/NotificationManager'
 
 export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
   const [configurations, setConfigurations] = createSignal<JiraConfigurationList[]>([])
@@ -34,9 +35,14 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
       setSelectedConfig(name)
       onJqlChange(config.jql_query)
       logger.info('Jira configuration selected', { name })
+      showNotification(`Configuration "${name}" loaded`, 'info')
     } catch (err) {
       logger.error('Failed to load configuration:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
+      showNotification(
+        `Failed to load configuration: ${err instanceof Error ? err.message : String(err)}`,
+        'error'
+      )
     }
   }
 
@@ -58,10 +64,15 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
       await loadConfigurations()
 
       logger.info('Jira configuration deleted', { name })
+      showNotification(`Configuration "${name}" deleted`, 'success')
       return true
     } catch (err) {
       logger.error('Failed to delete configuration:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
+      showNotification(
+        `Failed to delete configuration: ${err instanceof Error ? err.message : String(err)}`,
+        'error'
+      )
 
       // We'll display the error through the error signal, no need for alert
       // The error will be shown in the UI through the error accessor
@@ -97,11 +108,21 @@ export function useJiraConfigurations(onJqlChange: (jql: string) => void) {
     await handleConfigSelect(configName)
 
     logger.info('New configuration selected automatically', { name: configName })
+    showNotification(`Configuration "${configName}" saved and selected`, 'success')
   }
 
   // Load configurations on initialization
   createEffect(() => {
+    // Immediately load configurations when the component mounts
     loadConfigurations()
+
+    // Set up a periodic refresh to ensure configurations are up-to-date
+    const refreshInterval = setInterval(() => {
+      loadConfigurations()
+    }, 30000) // Refresh every 30 seconds
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(refreshInterval)
   })
 
   return {

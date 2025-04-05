@@ -1,5 +1,6 @@
 import { takeScreenshot } from '../utils/screenshot-helper'
 import { TestContext } from './types'
+import { TestConfig } from './test-config'
 
 /**
  * Navigate to the Jira Analyzer application
@@ -22,17 +23,19 @@ export async function navigateToApp(context: TestContext): Promise<void> {
 
     console.log('Navigating to application using baseURL configuration')
     // Use baseURL from playwright.config.ts by using relative URL
-    const response = await page.goto('/', { timeout: 30000 })
+    const response = await page.goto('/', { timeout: TestConfig.timeouts.test })
     console.log(`Navigation response status: ${response?.status()}`)
 
     // Wait for page to be fully loaded
     console.log('Waiting for page to load (domcontentloaded)')
-    await page.waitForLoadState('domcontentloaded', { timeout: 10000 }).catch(() => {
-      console.log('DOMContentLoaded timeout, but continuing test')
-    })
+    await page
+      .waitForLoadState('domcontentloaded', { timeout: TestConfig.timeouts.pageLoad })
+      .catch(() => {
+        console.log('DOMContentLoaded timeout, but continuing test')
+      })
 
     console.log('Waiting for page to load (load event)')
-    await page.waitForLoadState('load', { timeout: 10000 }).catch(() => {
+    await page.waitForLoadState('load', { timeout: TestConfig.timeouts.pageLoad }).catch(() => {
       console.log('Load event timeout, but continuing test')
     })
 
@@ -47,7 +50,7 @@ export async function navigateToApp(context: TestContext): Promise<void> {
     console.log('Waiting for Jira Analyzer heading to be visible')
     await page
       .getByRole('heading', { name: 'Jira Analyzer' })
-      .waitFor({ state: 'visible', timeout: 15000 })
+      .waitFor({ state: 'visible', timeout: TestConfig.timeouts.api })
       .catch(async e => {
         console.error('Could not find Jira Analyzer heading:', e)
         await takeScreenshot(page, 'heading_not_found')

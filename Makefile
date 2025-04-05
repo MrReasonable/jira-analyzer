@@ -52,7 +52,7 @@ DOCKER_IMAGES_TO_REMOVE := \
 	$(YAMLFMT_IMAGE) \
 	$(MARKDOWN_LINT_IMAGE)
 
-.PHONY: help install dev test lint format clean build docker-build setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci test-github-actions test-github-actions-ci test-github-actions-e2e
+.PHONY: help install dev test lint format clean build docker-build setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci caddy-format test-github-actions test-github-actions-ci test-github-actions-e2e logs logs-follow logs-frontend logs-backend
 
 # Show help message for all make commands
 help:
@@ -63,13 +63,13 @@ install: ## Install all dependencies for frontend, backend, and e2e-tests
 	@echo "Installing frontend dependencies..."
 	cd $(FRONTEND_DIR) && $(PNPM) install
 	@echo "Upgrading pip..."
-	pip install --upgrade pip
+	uv pip install --upgrade pip
 	@echo "Installing backend dependencies..."
-	cd $(BACKEND_DIR) && pip install -r requirements.txt
+	cd $(BACKEND_DIR) && PATH="$$(brew --prefix libpq)/bin:$$PATH" LDFLAGS="-L$$(brew --prefix libpq)/lib" CPPFLAGS="-I$$(brew --prefix libpq)/include" uv pip install -r requirements.txt
 	@echo "Installing e2e-tests dependencies and browsers..."
 	cd $(E2E_DIR) && $(PNPM) install && $(PNPM) run install:browsers
 	@echo "Installing pre-commit..."
-	pip install pre-commit
+	uv pip install pre-commit
 
 setup-pre-commit: ## Install pre-commit hooks
 	@echo "Setting up pre-commit hooks..."
@@ -79,9 +79,12 @@ update-versions: ## Update language versions across all configuration files
 	@echo "Updating language versions across configuration files..."
 	node update-versions.js
 
-dev: ## Start development servers for both frontend and backend
-	@echo "Starting development servers for frontend and backend..."
+dev: node-base ## Start development servers for both frontend and backend (with migrations)
+	@echo "Building development servers for frontend and backend..."
 	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) build -q
+	@echo "Running database migrations..."
+	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) run --rm backend alembic -c /app/alembic.ini upgrade head
+	@echo "Migrations completed, starting containers..."
 	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) up
 
 test: ## Run all tests (frontend, backend, and end-to-end)
@@ -100,13 +103,14 @@ lint: ## Run linting for frontend, backend, e2e-tests, YAML and Markdown files
 	@$(MAKE) yaml-lint
 	@$(MAKE) markdown-lint
 
-format: ## Format code in frontend, backend, e2e-tests, YAML and Markdown files
+format: ## Format code in frontend, backend, e2e-tests, YAML, Markdown files, and Caddyfile
 	@echo "Formatting code in all components..."
 	@$(MAKE) frontend-format
 	@$(MAKE) backend-format
 	@$(MAKE) e2e-format
 	@$(MAKE) yaml-format
 	@$(MAKE) markdown-format
+	@$(MAKE) caddy-format
 
 clean: ## Clean up build artifacts, cache, logs, temporary files, and Docker resources
 	@echo "Cleaning up frontend build artifacts and temporary files..."
@@ -146,6 +150,14 @@ build: ## Build the production version of the application
 	@$(DOCKER) build -q -t $(JIRA_FRONTEND_IMAGE) -f $(FRONTEND_DIR)/Dockerfile --target nginx $(FRONTEND_DIR)
 	@echo "Building production backend Docker image..."
 	@$(DOCKER) build -q -t $(JIRA_BACKEND_IMAGE) -f $(BACKEND_DIR)/Dockerfile --target production $(BACKEND_DIR)
+
+prod: ## Start production servers (with migrations)
+	@echo "Starting production servers..."
+	$(DOCKER_COMPOSE) -f $(PROD_COMPOSE_FILE) build -q
+	@echo "Running database migrations..."
+	$(DOCKER_COMPOSE) -f $(PROD_COMPOSE_FILE) run --rm backend alembic -c /app/alembic.ini upgrade head
+	@echo "Migrations completed, starting containers..."
+	$(DOCKER_COMPOSE) -f $(PROD_COMPOSE_FILE) up
 
 docker-build: ## Build production Docker images
 	@echo "Building all production Docker images..."
@@ -262,11 +274,11 @@ backend-fast-test: ## Run backend tests with optimizations
 
 frontend-lint: frontend-dev-image ## Run frontend linting only
 	@echo "Running frontend linting..."
-	@$(DOCKER) run --rm -ti -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_DEV_IMAGE) sh -c "$(PNPM) run lint && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
+	@$(DOCKER) run --rm -ti -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_DEV_IMAGE) sh -c "$(PNPM) run lint"
 
 frontend-lint-ci: node-base frontend-ci-image ## Run frontend linting in CI mode (non-interactive)
 	@echo "Running frontend linting in CI mode..."
-	@$(DOCKER) run --rm -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_CI_IMAGE) sh -c "$(PNPM) run lint && npx eslint --format stylish '*.{js,jsx,ts,tsx,json}'"
+	@$(DOCKER) run --rm -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_CI_IMAGE) sh -c "$(PNPM) run lint"
 
 backend-lint: ## Run backend linting only
 	@$(DOCKER) build -q -t $(BACKEND_DEV_IMAGE) -f $(BACKEND_DIR)/Dockerfile --target development-enhanced $(BACKEND_DIR)
@@ -288,11 +300,11 @@ frontend-format-ci: node-base frontend-ci-image ## Format frontend code in CI mo
 
 frontend-lint-fix: frontend-dev-image ## Auto-fix frontend linting issues
 	@echo "Auto-fixing frontend linting issues..."
-	@$(DOCKER) run --rm -ti -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_DEV_IMAGE) sh -c "$(PNPM) run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
+	@$(DOCKER) run --rm -ti -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_DEV_IMAGE) sh -c "$(PNPM) run lint:fix"
 
 frontend-lint-fix-ci: node-base frontend-ci-image ## Auto-fix frontend linting issues in CI mode (non-interactive)
 	@echo "Auto-fixing frontend linting issues in CI mode..."
-	@$(DOCKER) run --rm -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_CI_IMAGE) sh -c "$(PNPM) run lint:fix && npx eslint --fix --format stylish '*.{js,jsx,ts,tsx,json}'"
+	@$(DOCKER) run --rm -v $(PWD)/$(FRONTEND_DIR):/app $(FRONTEND_CI_IMAGE) sh -c "$(PNPM) run lint:fix"
 
 frontend-type-check: frontend-dev-image ## Run TypeScript type checking
 	@echo "Running frontend TypeScript type checking..."
@@ -457,3 +469,44 @@ test-github-actions-ci: ## Test GitHub Actions CI workflow locally using act
 test-github-actions-e2e: ## Test GitHub Actions E2E workflow locally using act
 	@echo "Running GitHub Actions E2E tests workflow locally..."
 	@$(GITHUB_ACTIONS_SCRIPT) -w e2e-tests.yml --container-architecture $(CONTAINER_ARCH)
+
+caddy-format: ## Format Caddyfile
+	@echo "Formatting Caddyfile..."
+	@$(DOCKER) run --rm -v $(PWD)/$(FRONTEND_DIR)/Caddyfile:/etc/caddy/Caddyfile caddy:2-alpine caddy fmt --overwrite /etc/caddy/Caddyfile
+
+# Database migration commands
+run-migrations: ## Run database migrations
+	@echo "Running database migrations..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) exec -T backend alembic -c /app/alembic.ini upgrade head || \
+	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) run --rm backend alembic -c /app/alembic.ini upgrade head
+
+run-migrations-prod: ## Run database migrations in production
+	@echo "Running database migrations in production..."
+	@$(DOCKER_COMPOSE) -f $(PROD_COMPOSE_FILE) exec -T backend alembic -c /app/alembic.ini upgrade head || \
+	$(DOCKER_COMPOSE) -f $(PROD_COMPOSE_FILE) run --rm backend alembic -c /app/alembic.ini upgrade head
+
+create-migration: ## Create a new migration (usage: make create-migration name=migration_name)
+	@echo "Creating new migration: $(name)..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) exec -T backend alembic -c /app/alembic.ini revision --autogenerate -m "$(name)" || \
+	$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) run --rm backend alembic -c /app/alembic.ini revision --autogenerate -m "$(name)"
+
+# Log viewing commands
+logs: ## Show logs for all services
+	@echo "Showing logs for all services..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) logs
+
+logs-follow: ## Follow logs for all services
+	@echo "Following logs for all services..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) logs -f
+
+logs-frontend: ## Show logs for frontend service
+	@echo "Showing logs for frontend service..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) logs frontend
+
+logs-backend: ## Show logs for backend service
+	@echo "Showing logs for backend service..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) logs backend
+
+logs-migrations: ## Show logs for migrations service
+	@echo "Showing logs for migrations service..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) logs migrations

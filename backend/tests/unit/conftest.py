@@ -9,6 +9,53 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.models import Base
+
+
+@pytest_asyncio.fixture
+async def db_session():
+    """Provide a database session for tests.
+
+    This fixture creates a new database session for each test and rolls back
+    any changes made during the test to ensure test isolation.
+
+    Returns:
+        AsyncSession: A database session for the test.
+    """
+    # Create an in-memory SQLite database for testing
+    engine = create_async_engine('sqlite+aiosqlite:///:memory:', echo=False)
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    # Create a session
+    session = async_session()
+
+    # Set up the container with the session provider
+    from app.container import container
+
+    container.session_provider.override(session)
+
+    try:
+        # Return the session for the test to use
+        yield session
+    finally:
+        # Clean up after the test
+        await session.rollback()
+        await session.close()
+
+        # Drop all tables
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+
+        # Dispose the engine
+        await engine.dispose()
 
 
 @pytest.fixture

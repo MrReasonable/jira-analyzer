@@ -3,11 +3,12 @@ FROM python:3.13-slim AS base
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including PostgreSQL client libraries
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     g++ \
+    libpq-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -111,11 +112,12 @@ FROM python:3.13-alpine AS alpine
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including PostgreSQL client libraries
 RUN apk add --no-cache \
     gcc \
     musl-dev \
-    python3-dev
+    python3-dev \
+    postgresql-dev
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .

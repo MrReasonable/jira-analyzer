@@ -12,6 +12,8 @@ from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from app.config import get_settings
+
 # Import models for migration support
 from app.models import Base
 
@@ -47,7 +49,9 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option('sqlalchemy.url')
+    # Use the database URL from the application settings
+    settings = get_settings()
+    url = settings.database_url
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -78,9 +82,16 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # Use the database URL from the application settings
+    settings = get_settings()
+    db_url = settings.database_url
+
+    config_section = config.get_section(config.config_ini_section)
+    config_section['sqlalchemy.url'] = db_url
+
     connectable = AsyncEngine(
         engine_from_config(
-            config.get_section(config.config_ini_section),
+            config_section,
             prefix='sqlalchemy.',
             poolclass=pool.NullPool,
             future=True,

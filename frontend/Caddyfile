@@ -1,62 +1,74 @@
 # Caddyfile configuration for local development
 
 :80 {
-    # Reverse proxy for API requests with OpenAPI docs
+	# Reverse proxy for API requests with OpenAPI docs
 
-    # Redirect /api to /api/docs for convenience
-    handle /api {
-        redir * /api/docs permanent
-    }
+	# Redirect /api to /api/docs for convenience
+	handle /api {
+		redir * /api/docs permanent
+	}
 
-    # Handle OpenAPI JSON endpoint explicitly
-    handle /api/openapi.json {
-        # Don't strip prefix - pass the full URL
-        reverse_proxy backend:8000 {
-            header_up X-Forwarded-Prefix "/api"
-        }
-    }
+	# Handle OpenAPI JSON endpoint explicitly
+	handle /api/openapi.json {
+		# Don't strip prefix - pass the full URL
+		reverse_proxy backend:{$BACKEND_PORT:8000} {
+			header_up X-Forwarded-Prefix "/api"
+		}
+	}
 
-    # Handle API documentation
-    handle /api/docs* {
-        reverse_proxy backend:8000 {
-            header_up X-Forwarded-Prefix "/api"
-        }
-    }
+	# Handle API documentation
+	handle /api/docs* {
+		reverse_proxy backend:{$BACKEND_PORT:8000} {
+			header_up X-Forwarded-Prefix "/api"
+		}
+	}
 
-    handle /api/redoc* {
-        reverse_proxy backend:8000 {
-            header_up X-Forwarded-Prefix "/api"
-        }
-    }
+	handle /api/redoc* {
+		reverse_proxy backend:{$BACKEND_PORT:8000} {
+			header_up X-Forwarded-Prefix "/api"
+		}
+	}
 
-    # Handle all other API requests
-    handle /api/* {
-        uri strip_prefix /api
-        reverse_proxy backend:8000
-    }
+	# Handle ping endpoint (doesn't require database access)
+	handle /api/ping {
+		uri strip_prefix /api
+		reverse_proxy backend:{$BACKEND_PORT:8000}
+	}
 
-    # Reverse proxy for frontend requests
-    handle * {
-        reverse_proxy frontend:5173
-    }
+	# Handle health check endpoint
+	handle /api/health {
+		uri strip_prefix /api
+		reverse_proxy backend:{$BACKEND_PORT:8000}
+	}
 
-    # Enable gzip compression
-    encode gzip
+	# Handle all other API requests
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy backend:{$BACKEND_PORT:8000}
+	}
 
-    # Add security headers
-    header {
-        # Enable HTTP Strict Transport Security (HSTS)
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        # Disable content-type sniffing
-        X-Content-Type-Options "nosniff"
-        # Enable XSS protection
-        X-XSS-Protection "1; mode=block"
-        # Prevent clickjacking
-        X-Frame-Options "DENY"
-    }
+	# Reverse proxy for frontend requests
+	handle * {
+		reverse_proxy frontend:5173
+	}
 
-    # Basic logging
-    log {
-        output stdout
-    }
+	# Enable gzip compression
+	encode gzip
+
+	# Add security headers
+	header {
+		# Enable HTTP Strict Transport Security (HSTS)
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		# Disable content-type sniffing
+		X-Content-Type-Options "nosniff"
+		# Enable XSS protection
+		X-XSS-Protection "1; mode=block"
+		# Prevent clickjacking
+		X-Frame-Options "DENY"
+	}
+
+	# Basic logging
+	log {
+		output stdout
+	}
 }

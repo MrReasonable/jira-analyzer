@@ -1,12 +1,15 @@
 """Configuration management for the Jira Analyzer application.
 
 This module handles all configuration settings for the application, including server
-configuration, CORS settings, and Jira-specific parameters. It uses pydantic_settings
-for type-safe configuration management with environment variable support.
+configuration, CORS settings, database settings, and Jira-specific parameters.
+It uses pydantic_settings for type-safe configuration management with environment
+variable support.
 """
 
+import json
+import os
 from functools import lru_cache
-from typing import List, Optional
+from typing import List
 
 from pydantic_settings import BaseSettings
 
@@ -25,20 +28,40 @@ class Settings(BaseSettings):
     # where network access is controlled by Docker networking
     host: str = '0.0.0.0'  # nosec B104
     port: int = 8000
-    cors_origins: List[str] = ['http://localhost:5173']  # Default Vite dev server
+    cors_origins_default: List[str] = ['http://localhost:5173']  # Default Vite dev server
 
-    # Jira Configuration - Optional since we'll use database configurations
-    jira_server: Optional[str] = None
-    jira_email: Optional[str] = None
-    jira_api_token: Optional[str] = None
-    jql_query: str = 'project = PROJ AND type = Story'  # Default JQL
-    workflow_states: List[str] = ['Backlog', 'In Progress', 'Done']  # Default workflow
+    @property
+    def cors_origins(self) -> List[str]:
+        """Return the CORS origins, ensuring they are loaded from the environment if specified."""
+        env_value = os.getenv('CORS_ORIGINS')
+        if env_value:
+            try:
+                return json.loads(env_value)
+            except json.JSONDecodeError:
+                raise ValueError('Invalid JSON format for CORS_ORIGINS environment variable')
+        return self.cors_origins_default
+
+    # Database Configuration is now handled in db_config.py to avoid circular dependencies
+
+    # JWT Configuration
+    jwt_secret_key: str = 'supersecretkey'  # Should be overridden in production via env var
+    jwt_algorithm: str = 'HS256'
+    jwt_expiration_minutes: int = 60 * 24  # 24 hours
+
+    # Default workflow states for metrics calculations
+    # These are used as fallbacks if not specified in the database configuration
+    workflow_states: List[str] = ['Backlog', 'In Progress', 'Done']
     lead_time_start_state: str = 'Backlog'
     lead_time_end_state: str = 'Done'
     cycle_time_start_state: str = 'In Progress'
     cycle_time_end_state: str = 'Done'
 
-    model_config = {'env_file': '.env'}
+    model_config = {
+        'env_file': '.env',
+        'extra': 'allow'
+        if os.getenv('TEST_ENVIRONMENT', '').lower() in ('true', '1', 'yes')
+        else 'ignore',  # Only allow extra fields in test environment
+    }
 
 
 @lru_cache()

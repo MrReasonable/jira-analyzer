@@ -40,6 +40,11 @@ class MockSettings:
     cycle_time_start_state = 'In Progress'
     cycle_time_end_state = 'Done'
 
+    # JWT settings for authentication
+    jwt_secret_key = 'test_secret_key'
+    jwt_algorithm = 'HS256'
+    jwt_expiration_minutes = 60
+
 
 # Global variables to store database objects for reuse
 _test_engine = None
@@ -116,23 +121,46 @@ async def db_session():
     This fixture creates a new database session for each test and rolls back
     any changes made during the test to ensure test isolation.
 
-    Yields:
+    Returns:
         AsyncSession: A database session for the test.
     """
     global _test_async_session
 
-    async with _test_async_session() as session:
-        # Start a nested transaction
-        transaction = await session.begin_nested()
+    session = _test_async_session()
+    # Start a nested transaction
+    transaction = await session.begin_nested()
 
-        # Yield the session for the test to use
-        yield session
-
-        # Roll back the transaction after the test
+    try:
+        # Return the session for the test to use
+        return session
+    finally:
+        # This will execute after the test completes
+        # The pytest-asyncio plugin will handle waiting for this
         await transaction.rollback()
-
-        # Close the session
         await session.close()
+
+
+@pytest.fixture(scope='session', autouse=True)
+def mock_container():
+    """Mock the container to avoid async generator warnings.
+
+    This fixture patches the container's session_provider to avoid
+    warnings about coroutine methods never being awaited.
+    """
+    from unittest.mock import AsyncMock
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    # Create a mock session
+    mock_session = AsyncMock(spec=AsyncSession)
+
+    # Create a mock for the session_provider
+    mock_db_provider = Mock()  # Using Mock from unittest.mock
+    mock_db_provider.return_value = mock_session
+
+    # Patch the container's session_provider
+    with patch('app.container.container.session_provider', mock_db_provider):
+        yield
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -148,50 +176,134 @@ def mock_settings():
 
 
 @pytest.fixture
-def test_client():
+def jwt_token():
+    """Create a JWT token for testing.
+
+    This fixture creates a JWT token with the 'test_config' configuration name
+    that can be used for authentication in tests.
+
+    Returns:
+        str: A JWT token for testing.
+    """
+    from app.auth import create_access_token
+    from app.config import get_settings
+
+    # Create a token with the test configuration name
+    token_data = {'config_name': 'test_config'}
+    settings = get_settings()
+    return create_access_token(token_data, settings)
+
+
+@pytest.fixture
+def test_client(jwt_token, mock_jira_client_dependency):
     """Create a test client for the FastAPI application.
 
     This fixture creates a test client that can be used to make requests to the
-    application during testing.
+    application during testing. It includes a JWT token cookie for authentication.
+
+    Args:
+        jwt_token: A JWT token for authentication.
+        mock_jira_client_dependency: A mock JIRA client dependency that initializes the session_provider.
 
     Returns:
         TestClient: A test client for the FastAPI application.
     """
     # Import here to avoid circular imports
+    from app.auth import JWT_COOKIE_NAME
     from app.main import app
 
-    return TestClient(app)
+    client = TestClient(app)
+
+    # Set the JWT token cookie for all requests
+    client.cookies.set(JWT_COOKIE_NAME, jwt_token)
+
+    return client
 
 
 @pytest.fixture
 def mock_jira_client_dependency():
-    """Mock the get_jira_client dependency in the FastAPI app.
+    """Mock the JiraClientService in the DI container.
 
-    This fixture patches the get_jira_client dependency in the FastAPI app
+    This fixture patches the JiraClientService in the DI container
     to return a mock JIRA client. This is necessary because the TestClient
-    will use the real get_jira_client function otherwise.
+    will use the real JiraClientService otherwise.
 
     Returns:
         Mock: A mock JIRA client.
     """
-    from app.main import app, get_jira_client
+    import os
+    from unittest.mock import AsyncMock
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    from app.container import container
+    from app.dependencies import get_jira_client_repository, get_jira_client_service
+    from app.main import app
+
+    # Set environment variable to use mock Jira
+    os.environ['USE_MOCK_JIRA'] = 'true'
+
+    # Create a mock session
+    mock_session = AsyncMock(spec=AsyncSession)
+
+    # Initialize the session_provider in the container
+    container.session_provider.override(mock_session)
 
     # Create a mock JIRA client
     mock_client = Mock()
 
-    # Store the original dependency
-    original_dependency = app.dependency_overrides.get(get_jira_client)
+    # Create a mock JiraClientRepository
+    mock_repository = Mock()
 
-    # Override the dependency
-    app.dependency_overrides[get_jira_client] = lambda: mock_client
+    # Create an async mock for get_by_name
+    async def mock_get_by_name(config_name):
+        return Mock(
+            name='test_config',
+            jira_server='https://test.atlassian.net',
+            jira_email='test@example.com',
+            jira_api_token='test-token',
+        )
+
+    # Use the async mock for get_by_name
+    mock_repository.get_by_name = mock_get_by_name
+
+    # Create a mock JiraClientService that returns the mock client
+    mock_service = Mock()
+
+    # Create async mocks for the service methods
+    async def mock_get_client_from_auth(request, credentials, settings, config_name):
+        return mock_client
+
+    async def mock_get_client_by_config_name(config_name):
+        return mock_client
+
+    # Use the async mocks for the service methods
+    mock_service.get_client_from_auth = mock_get_client_from_auth
+    mock_service.get_client_by_config_name = mock_get_client_by_config_name
+    mock_service.repository = mock_repository
+
+    # Override the dependencies in FastAPI
+    original_service_dependency = app.dependency_overrides.get(get_jira_client_service)
+    original_repository_dependency = app.dependency_overrides.get(get_jira_client_repository)
+
+    app.dependency_overrides[get_jira_client_service] = lambda: mock_service
+    app.dependency_overrides[get_jira_client_repository] = lambda: mock_repository
 
     yield mock_client
 
-    # Restore the original dependency after the test
-    if original_dependency:
-        app.dependency_overrides[get_jira_client] = original_dependency
+    # Restore the original dependencies
+    if original_service_dependency:
+        app.dependency_overrides[get_jira_client_service] = original_service_dependency
     else:
-        del app.dependency_overrides[get_jira_client]
+        del app.dependency_overrides[get_jira_client_service]
+
+    if original_repository_dependency:
+        app.dependency_overrides[get_jira_client_repository] = original_repository_dependency
+    else:
+        del app.dependency_overrides[get_jira_client_repository]
+
+    # Reset environment variable
+    os.environ.pop('USE_MOCK_JIRA', None)
 
 
 @pytest.fixture

@@ -34,24 +34,19 @@ class TestDatabase:
             mock_init_in_memory.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_init_db_in_memory(self):
+    @patch('app.database.init_file_based_db')
+    @patch('app.database.init_in_memory_db')
+    async def test_init_db_in_memory(self, mock_init_in_memory, mock_init_file_based):
         """Test that init_db calls the correct initialization function for in-memory DB."""
-        # Create mock functions
-        mock_init_in_memory = AsyncMock()
-        mock_init_file_based = AsyncMock()
+        # Mock the DATABASE_URL to use in-memory database
+        with patch('app.database.DATABASE_URL', 'sqlite+aiosqlite:///:memory:'):
+            # Call init_db
+            await init_db()
 
-        # Patch the module-level USE_IN_MEMORY_DB variable directly
-        with patch('app.database.USE_IN_MEMORY_DB', True):
-            # Patch the initialization functions
-            with patch('app.database.init_in_memory_db', mock_init_in_memory):
-                with patch('app.database.init_file_based_db', mock_init_file_based):
-                    # Call init_db
-                    await init_db()
-
-                    # Verify that the in-memory initialization was called
-                    mock_init_in_memory.assert_called_once()
-                    # Verify that the file-based initialization was not called
-                    mock_init_file_based.assert_not_called()
+            # Verify that the in-memory initialization was called
+            mock_init_in_memory.assert_called_once()
+            # Verify that the file-based initialization was not called
+            mock_init_file_based.assert_not_called()
 
     @pytest.mark.asyncio
     @patch('asyncio.get_event_loop')
@@ -153,34 +148,25 @@ class TestDatabase:
         with pytest.raises(Exception, match='Test exception'):
             await session.execute('SELECT 1')
 
-    def test_database_url(self):
+    @patch('app.db_config.get_database_url')
+    def test_database_url(self, mock_get_database_url):
         """Test that the database URL is set correctly."""
-        # Save original environment
-        original_env = os.environ.get('USE_IN_MEMORY_DB')
+        # Test with in-memory database
+        mock_get_database_url.return_value = 'sqlite+aiosqlite:///:memory:'
 
-        try:
-            # Test with in-memory database
-            os.environ['USE_IN_MEMORY_DB'] = 'true'
+        # Need to reload the module to get the updated DATABASE_URL
+        import importlib
 
-            # Need to reload the module to get the updated DATABASE_URL
-            import importlib
+        import app.database
 
-            import app.database
+        importlib.reload(app.database)
 
-            importlib.reload(app.database)
+        assert app.database.DATABASE_URL == 'sqlite+aiosqlite:///:memory:'
 
-            assert app.database.DATABASE_URL == 'sqlite+aiosqlite:///:memory:'
+        # Test with file-based database
+        mock_get_database_url.return_value = 'sqlite+aiosqlite:///./jira_analyzer.db'
 
-            # Test with file-based database
-            os.environ['USE_IN_MEMORY_DB'] = 'false'
+        # Need to reload the module to get the updated DATABASE_URL
+        importlib.reload(app.database)
 
-            # Need to reload the module to get the updated DATABASE_URL
-            importlib.reload(app.database)
-
-            assert app.database.DATABASE_URL == 'sqlite+aiosqlite:///./jira_analyzer.db'
-        finally:
-            # Restore original environment
-            if original_env is not None:
-                os.environ['USE_IN_MEMORY_DB'] = original_env
-            else:
-                del os.environ['USE_IN_MEMORY_DB']
+        assert app.database.DATABASE_URL == 'sqlite+aiosqlite:///./jira_analyzer.db'

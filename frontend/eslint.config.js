@@ -6,7 +6,9 @@ import tsEslint from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 
 export default [
-  { ignores: ['node_modules', 'dist', 'build', '.solid', '.eslintrc.js'] },
+  {
+    ignores: ['node_modules', 'dist', 'build', '.solid', '.eslintrc.js'],
+  },
   js.configs.recommended,
   {
     files: ['**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx'],
@@ -45,12 +47,19 @@ export default [
       'prefer-const': 'error',
     },
   },
-  // Disable specific rules for test files
+  // Adjust rules for test files
   {
     files: ['**/test/**', '**/*.test.{ts,tsx}'],
     rules: {
       'solid/reactivity': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': 'off', // Allow 'any' type in test files
+      '@typescript-eslint/no-unused-vars': ['error', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_',
+        'ignoreRestSiblings': false,
+        'args': 'all',
+        'caughtErrors': 'all'
+      }], // Enforce no unused variables in test files with stricter settings
     },
   },
   eslintConfigPrettier,

@@ -123,7 +123,7 @@ jobs:
       - name: Setup Python virtual environment
         working-directory: ./backend
         run: |
-          python -m venv .venv
+          python -m .venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           echo "VIRTUAL_ENV=$PWD/.venv" >> $GITHUB_ENV

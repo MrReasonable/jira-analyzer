@@ -1,8 +1,9 @@
 """Database configuration and session management for the Jira Analyzer application.
 
 This module sets up the SQLAlchemy async database engine and provides utilities
-for database initialization and session management. It uses SQLite with async
-support through aiosqlite and Alembic for database migrations.
+for database initialization and session management. It supports both PostgreSQL
+and SQLite with async support through asyncpg/aiosqlite and uses Alembic for
+database migrations.
 """
 
 import asyncio
@@ -19,22 +20,28 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from .db_config import get_database_url
 from .logger import get_logger
 from .models import Base
 
 # Create module-level logger
 logger = get_logger(__name__)
 
-# Check if we're running in test mode
-USE_IN_MEMORY_DB = os.environ.get('USE_IN_MEMORY_DB', 'false').lower() == 'true'
+# Get database URL from db_config
+DATABASE_URL = get_database_url()
 
-# Use in-memory SQLite database for tests, file-based for normal operation
-if USE_IN_MEMORY_DB:
-    DATABASE_URL = 'sqlite+aiosqlite:///:memory:'
-    logger.info('Using in-memory database for testing')
+# Log the database connection type
+if 'sqlite' in DATABASE_URL:
+    if ':memory:' in DATABASE_URL:
+        logger.info('Using in-memory SQLite database for testing')
+    else:
+        logger.info(f'Using file-based SQLite database: {DATABASE_URL}')
 else:
-    DATABASE_URL = 'sqlite+aiosqlite:///./jira_analyzer.db'
-    logger.info(f'Using file-based database: {DATABASE_URL}')
+    # For security, don't log the full connection string with credentials
+    db_type = DATABASE_URL.split('://')[0]
+    db_host = DATABASE_URL.split('@')[-1].split('/')[0]
+    db_name = DATABASE_URL.split('/')[-1]
+    logger.info(f'Using {db_type} database at {db_host}, database name: {db_name}')
 
 # Set echo=False in production to reduce log noise
 engine = create_async_engine(DATABASE_URL, echo=False)
@@ -67,7 +74,7 @@ async def init_in_memory_db(db_engine: Optional[AsyncEngine] = None) -> None:
 async def init_file_based_db(
     event_loop: Optional[asyncio.AbstractEventLoop] = None, alembic_config: Optional[Config] = None
 ) -> None:
-    """Initialize a file-based database using Alembic migrations.
+    """Initialize a database using Alembic migrations.
 
     Args:
         event_loop: The event loop to use. If None, the current event loop is used.
@@ -83,7 +90,9 @@ async def init_file_based_db(
             logger.debug(f'Base directory: {base_dir}')
 
             # Create an Alembic configuration object
-            alembic_config = Config(os.path.join(base_dir, 'alembic.ini'))
+            alembic_ini_path = os.path.join(base_dir, 'alembic.ini')
+            logger.debug(f'Alembic config path: {alembic_ini_path}')
+            alembic_config = Config(alembic_ini_path)
 
         logger.debug('Alembic configuration loaded')
 
@@ -92,13 +101,53 @@ async def init_file_based_db(
 
         # Define the migration function
         def run_migrations():
-            command.upgrade(alembic_config, 'head')
+            logger.debug('Starting Alembic migrations')
+            try:
+                # For SQLite, check if the database file exists
+                if 'sqlite' in DATABASE_URL:
+                    db_path = './jira_analyzer.db'
+                    if os.path.exists(db_path) and os.path.getsize(db_path) > 0:
+                        logger.debug(f'SQLite database file exists: {db_path}')
+                    else:
+                        logger.debug(f'SQLite database file does not exist or is empty: {db_path}')
+                else:
+                    # For PostgreSQL, we don't need to check for file existence
+                    logger.debug('Using PostgreSQL database')
+
+                # Check if the database already has the latest migrations
+                # by running a "current" command to see the current revision
+                try:
+                    logger.debug('Checking current database revision')
+                    current = command.current(alembic_config)
+                    logger.debug(f'Current database revision: {current}')
+                except Exception as e:
+                    logger.warning(f'Could not get current revision: {str(e)}')
+                    logger.debug('This may be normal for a new database')
+                    current = None
+
+                # Run the upgrade to head
+                logger.debug('Running upgrade to head')
+                command.upgrade(alembic_config, 'head')
+
+                logger.debug('Alembic migrations executed successfully')
+            except Exception as e:
+                logger.error(f'Error during Alembic migrations: {str(e)}', exc_info=True)
+                raise
 
         # Run the migrations using asyncio to run the command in a thread
-        with ThreadPoolExecutor() as pool:
-            await loop.run_in_executor(pool, run_migrations)
-
-        logger.info('Database migrations completed successfully')
+        logger.debug('Running migrations in thread pool')
+        try:
+            with ThreadPoolExecutor() as pool:
+                # Add a timeout to prevent hanging
+                await asyncio.wait_for(
+                    loop.run_in_executor(pool, run_migrations),
+                    timeout=30,  # 30 seconds timeout
+                )
+            logger.info('Database migrations completed successfully')
+        except asyncio.TimeoutError:
+            logger.error('Database migrations timed out after 30 seconds')
+            # Continue with SQLAlchemy fallback
+            raise Exception('Database migrations timed out')
     except Exception as e:
         logger.error(f'File-based database initialization failed: {str(e)}', exc_info=True)
         raise
@@ -114,10 +163,29 @@ async def init_db() -> None:
     This function should be called when the application starts.
     """
     try:
-        if USE_IN_MEMORY_DB:
+        # Check if we're using in-memory database
+        if ':memory:' in DATABASE_URL:
             await init_in_memory_db()
         else:
-            await init_file_based_db()
+            try:
+                logger.info('Attempting to initialize database with Alembic migrations')
+                await init_file_based_db()
+                logger.info('Alembic migrations completed successfully')
+            except Exception as migration_error:
+                logger.error(f'Alembic migrations failed: {str(migration_error)}', exc_info=True)
+                logger.warning('Falling back to SQLAlchemy create_all for database initialization')
+
+                # Fallback to SQLAlchemy create_all if migrations fail
+                try:
+                    async with engine.begin() as conn:
+                        logger.info('Creating database tables with SQLAlchemy')
+                        await conn.run_sync(Base.metadata.create_all)
+                    logger.info('Database tables created successfully with SQLAlchemy')
+                except Exception as fallback_error:
+                    logger.error(
+                        f'SQLAlchemy fallback failed: {str(fallback_error)}', exc_info=True
+                    )
+                    raise fallback_error
     except Exception as e:
         logger.error(f'Database initialization failed: {str(e)}', exc_info=True)
         raise
