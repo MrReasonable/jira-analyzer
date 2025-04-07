@@ -5,7 +5,7 @@ jira==3.8.0
 atlassian-python-api==4.0.3
 pandas==2.2.3
 pyarrow==19.0.1
-pydantic==2.11.1
+pydantic==2.11.2
 pydantic-settings==2.8.1
 python-multipart==0.0.20
 # starlette is automatically installed as a dependency of fastapi
@@ -13,13 +13,13 @@ sqlalchemy==2.0.40
 alembic==1.15.2
 # Database drivers
 # psycopg2-binary==2.9.9  # PostgreSQL driver - Incompatible with Python 3.13
-psycopg==3.1.18  # Modern PostgreSQL driver with Python 3.13 support
-psycopg-c==3.1.18  # C implementation for psycopg (will be built from source)
+psycopg==3.2.6  # Modern PostgreSQL driver with Python 3.13 support
+psycopg-c==3.2.6  # C implementation for psycopg (will be built from source)
 # psycopg-binary==3.1.18  # Binary implementation - No wheels available for Python 3.13
 aiosqlite==0.21.0  # Keep SQLite for testing
 httpx==0.28.1
 greenlet==3.1.1
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 dependency-injector==4.46.0
 
 # Development dependencies
@@ -31,6 +31,6 @@ flake8-quotes==3.4.0
 isort==6.0.1
 pytest==8.3.5
 pytest-asyncio==0.26.0
-pytest-cov==6.0.0
+pytest-cov==6.1.1
 pre-commit==4.2.0
 yamllint==1.37.0
