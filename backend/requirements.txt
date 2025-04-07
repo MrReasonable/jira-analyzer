@@ -13,7 +13,7 @@ sqlalchemy==2.0.40
 alembic==1.15.2
 # Database drivers
 # psycopg2-binary==2.9.9  # PostgreSQL driver - Incompatible with Python 3.13
-psycopg==3.1.18  # Modern PostgreSQL driver with Python 3.13 support
+psycopg==3.2.6  # Modern PostgreSQL driver with Python 3.13 support
 psycopg-c==3.1.18  # C implementation for psycopg (will be built from source)
 # psycopg-binary==3.1.18  # Binary implementation - No wheels available for Python 3.13
 aiosqlite==0.21.0  # Keep SQLite for testing
