@@ -10,27 +10,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
     groups:
-      dev-dependencies:
+      all-dependencies:
         patterns:
-          - "*eslint*"
-          - "*prettier*"
-          - "*test*"
-          - "vitest"
-          - "vite"
-        update-types:
-          - "minor"
-          - "patch"
-      production-dependencies:
-        patterns:
-          - "solid-js"
-          - "axios"
-          - "chart.js"
-          - "@kobalte/core"
-        update-types:
-          - "minor"
-          - "patch"
+          - "*"
     commit-message:
       prefix: "npm"
       include: "scope"
@@ -44,31 +28,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 1
     groups:
-      dev-dependencies:
+      all-dependencies:
         patterns:
-          - "black"
-          - "flake8*"
-          - "isort"
-          - "pytest*"
-          - "pre-commit"
-        update-types:
-          - "minor"
-          - "patch"
-      production-dependencies:
-        patterns:
-          - "fastapi"
-          - "uvicorn"
-          - "pydantic*"
-          - "sqlalchemy"
-          - "alembic"
-          - "jira"
-          - "atlassian-python-api"
-          - "pandas"
-        update-types:
-          - "minor"
-          - "patch"
+          - "*"
     commit-message:
       prefix: "pip"
       include: "scope"
@@ -76,13 +40,35 @@ updates:
       - "dependencies"
       - "backend"
 
+  # E2E dependency updates (assuming they're npm based in an e2e directory)
+  - package-ecosystem: "npm"
+    directory: "/e2e"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "npm"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "e2e"
+
   # GitHub Actions updates
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     commit-message:
       prefix: "github-actions"
       include: "scope"
@@ -95,6 +81,11 @@ updates:
     directory: "/frontend"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     commit-message:
       prefix: "docker"
       include: "scope"
@@ -106,6 +97,11 @@ updates:
     directory: "/backend"
     schedule:
       interval: "monthly"
+    open-pull-requests-limit: 1
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
     commit-message:
       prefix: "docker"
       include: "scope"
