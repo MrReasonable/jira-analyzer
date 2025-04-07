@@ -5,7 +5,7 @@ jira==3.8.0
 atlassian-python-api==4.0.3
 pandas==2.2.3
 pyarrow==19.0.1
-pydantic==2.11.1
+pydantic==2.11.2
 pydantic-settings==2.8.1
 python-multipart==0.0.20
 # starlette is automatically installed as a dependency of fastapi
