@@ -19,7 +19,7 @@ psycopg-c==3.1.18  # C implementation for psycopg (will be built from source)
 aiosqlite==0.21.0  # Keep SQLite for testing
 httpx==0.28.1
 greenlet==3.1.1
-python-jose[cryptography]==3.3.0
+python-jose[cryptography]==3.4.0
 dependency-injector==4.46.0
 
 # Development dependencies
