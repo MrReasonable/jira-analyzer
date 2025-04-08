@@ -16,7 +16,7 @@ from ..schemas import (
     JiraConfigurationUpdate,
     PaginatedResponse,
 )
-from ..services.caching import cache_result
+from ..services.caching import cache_result, clear_cache
 from ..services.configuration_service import ConfigurationService
 
 # Create module-level logger
@@ -58,7 +58,11 @@ async def create_configuration(
     Raises:
         HTTPException: If configuration creation fails.
     """
-    return await config_service.create(config)
+    result = await config_service.create(config)
+    # Clear configurations cache after creating a new configuration
+    clear_cache('configurations')
+    logger.info('Cleared configurations cache after creating new configuration')
+    return result
 
 
 @router.get(
@@ -150,7 +154,11 @@ async def update_configuration(
     Raises:
         HTTPException: If configuration is not found or update fails.
     """
-    return await config_service.update(name, config)
+    result = await config_service.update(name, config)
+    # Clear configurations cache after updating a configuration
+    clear_cache('configurations')
+    logger.info('Cleared configurations cache after updating configuration')
+    return result
 
 
 @router.delete(
@@ -178,3 +186,6 @@ async def delete_configuration(
         HTTPException: If configuration is not found or deletion fails.
     """
     await config_service.delete(name)
+    # Clear configurations cache after deleting a configuration
+    clear_cache('configurations')
+    logger.info('Cleared configurations cache after deleting configuration')

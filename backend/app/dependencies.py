@@ -4,13 +4,12 @@ This module defines dependency injection functions that can be used with FastAPI
 Depends() function to provide dependencies to route handlers.
 """
 
-from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .container import Container, container, get_session_context
+from .container import Container, container
 from .repositories.configuration_repository import ConfigurationRepository
 from .repositories.jira_client_repository import JiraClientRepository
 from .services.configuration_service import ConfigurationService
@@ -49,18 +48,19 @@ def get_container_dep(container: Container = Depends(get_container)) -> Containe
     return container
 
 
-@asynccontextmanager
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Get a database session.
 
     This function is used as a FastAPI dependency to provide a database session
-    to route handlers. It uses the container's db_session_factory to create a
-    session and ensures it's properly closed after use.
+    to route handlers. It uses the session generator from database.py to create
+    and manage the session lifetime automatically.
 
-    Yields:
+    Returns:
         AsyncSession: A database session.
     """
-    async with get_session_context() as session:
+    from .database import get_session
+
+    async for session in get_session():
         yield session
 
 
