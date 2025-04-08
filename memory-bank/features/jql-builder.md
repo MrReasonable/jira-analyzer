@@ -118,31 +118,31 @@ JQL validation occurs at multiple levels:
 
 ### Project Filtering
 
-```
+```sql
 project = "PROJECT_KEY"
 ```
 
 ### Status Filtering
 
-```
+```sql
 status IN ("In Progress", "Review", "Testing")
 ```
 
 ### Date Range Filtering
 
-```
+```sql
 created >= "2023-01-01" AND created <= "2023-12-31"
 ```
 
 ### Issue Type Filtering
 
-```
+```sql
 issuetype IN ("Story", "Bug", "Task")
 ```
 
 ### Complex Filtering
 
-```
+```sql
 project = "PROJECT_KEY" AND issuetype = "Story" AND status CHANGED TO "Done" DURING ("2023-01-01", "2023-12-31") ORDER BY resolved DESC
 ```
 

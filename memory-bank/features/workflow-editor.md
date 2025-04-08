@@ -319,7 +319,7 @@ Lead time measures the total time from when an issue is created until it reaches
 
 The calculation is based on timestamps of when issues entered these specific states:
 
-```
+```text
 Lead Time = Time entered End State - Time entered Start State
 ```
 
@@ -332,7 +332,7 @@ Cycle time measures the time an issue spends in active development. In the workf
 
 The calculation is:
 
-```
+```text
 Cycle Time = Time entered End State - Time entered Start State
 ```
 

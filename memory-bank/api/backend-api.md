@@ -8,7 +8,7 @@ Documentation of FastAPI endpoints exposed by the Jira Analyzer backend. This AP
 
 All API endpoints are accessible under the base URL:
 
-```
+```text
 http://localhost/api
 ```
 
