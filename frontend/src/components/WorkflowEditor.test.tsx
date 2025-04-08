@@ -41,6 +41,14 @@ describe('WorkflowEditor', () => {
     isSaving: () => false,
   }
 
+  const withJiraProps = {
+    ...defaultProps,
+    projectKey: 'TEST',
+    onImportFromJira: vi.fn(),
+    isImportingFromJira: () => false,
+    importError: () => null,
+  }
+
   it('renders the workflow editor', () => {
     render(() => <WorkflowEditor {...defaultProps} />)
 
@@ -90,5 +98,57 @@ describe('WorkflowEditor', () => {
       { id: '2', name: 'In Progress', isStartPoint: false, isEndPoint: false },
       { id: '3', name: 'Done', isStartPoint: false, isEndPoint: true },
     ])
+  })
+
+  it('renders import section when project key and import function are provided', () => {
+    render(() => <WorkflowEditor {...withJiraProps} />)
+
+    expect(screen.getByText('Import from Jira')).toBeInTheDocument()
+    expect(screen.getByText('Import Workflow')).toBeInTheDocument()
+  })
+
+  it('does not render import section when project key is missing', () => {
+    const propsWithoutProject = {
+      ...withJiraProps,
+      projectKey: undefined,
+    }
+
+    render(() => <WorkflowEditor {...propsWithoutProject} />)
+
+    expect(screen.queryByText('Import from Jira')).not.toBeInTheDocument()
+  })
+
+  it('handles import button click', () => {
+    render(() => <WorkflowEditor {...withJiraProps} />)
+
+    const importButton = screen.getByText('Import Workflow')
+    fireEvent.click(importButton)
+
+    expect(withJiraProps.onImportFromJira).toHaveBeenCalledWith('TEST')
+  })
+
+  it('disables import button when importing', () => {
+    const props = {
+      ...withJiraProps,
+      isImportingFromJira: () => true,
+    }
+
+    render(() => <WorkflowEditor {...props} />)
+
+    const importButton = screen.getByText('Importing...')
+    expect(importButton).toBeDisabled()
+  })
+
+  it('displays error message when import fails', () => {
+    const props = {
+      ...withJiraProps,
+      importError: () => 'Failed to fetch workflow states',
+    }
+
+    render(() => <WorkflowEditor {...props} />)
+
+    expect(
+      screen.getByText('Error importing workflow: Failed to fetch workflow states')
+    ).toBeInTheDocument()
   })
 })
