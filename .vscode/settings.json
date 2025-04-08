@@ -44,5 +44,7 @@
             "envManager": "ms-python.python:venv",
             "packageManager": "ms-python.python:pip"
         }
-    ]
+    ],
+    "cline.modelSettings.o3Mini.reasoningEffort": "high",
+    "terminal.integrated.defaultProfile.osx": "bash"
 }

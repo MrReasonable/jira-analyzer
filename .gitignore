@@ -52,7 +52,7 @@ coverage/
 
 # IDEs and editors
 .idea/
-.vscode/
+# .vscode/ - Committed for consistent project settings
 *.swp
 *.swo
 *~
