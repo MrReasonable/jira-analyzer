@@ -65,6 +65,7 @@ Thumbs.db
 *.log
 tmp/
 .aider*
+backend/pyvenv.cfg
 
 # Testing
 screenshots/
