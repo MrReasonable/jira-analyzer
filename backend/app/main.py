@@ -58,12 +58,14 @@ async def lifespan(app: FastAPI):
 
         # Set up the container with the session provider
         # This is needed for the new container structure
-        from .database import get_session
+        from .database import async_session
 
         # Create a session for the container to use during initialization
-        async for session in get_session():
+        session = async_session()
+        try:
             container.session_provider.override(session)
-            break
+        finally:
+            await session.close()
 
         # Initialize the DI container resources
         container.init_resources()
