@@ -9,13 +9,12 @@ database migrations.
 import asyncio
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import AsyncGenerator, Optional
+from typing import Optional
 
 from alembic import command
 from alembic.config import Config
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
-    AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
@@ -71,6 +70,36 @@ async def init_in_memory_db(db_engine: Optional[AsyncEngine] = None) -> None:
         raise
 
 
+def _run_migrations(alembic_config: Config) -> None:
+    """Execute database migrations using Alembic."""
+    logger.debug('Starting Alembic migrations')
+    try:
+        if 'sqlite' in DATABASE_URL:
+            db_path = './jira_analyzer.db'
+            if os.path.exists(db_path) and os.path.getsize(db_path) > 0:
+                logger.debug(f'SQLite database file exists: {db_path}')
+            else:
+                logger.debug(f'SQLite database file does not exist or is empty: {db_path}')
+        else:
+            logger.debug('Using PostgreSQL database')
+
+        try:
+            logger.debug('Checking current database revision')
+            # Don't assign the result as it doesn't return a value
+            command.current(alembic_config)
+            logger.debug('Current database revision checked')
+        except Exception as e:
+            logger.warning(f'Could not get current revision: {str(e)}')
+            logger.debug('This may be normal for a new database')
+
+        logger.debug('Running upgrade to head')
+        command.upgrade(alembic_config, 'head')
+        logger.debug('Alembic migrations executed successfully')
+    except Exception as e:
+        logger.error(f'Error during Alembic migrations: {str(e)}', exc_info=True)
+        raise
+
+
 async def init_file_based_db(
     event_loop: Optional[asyncio.AbstractEventLoop] = None, alembic_config: Optional[Config] = None
 ) -> None:
@@ -83,71 +112,25 @@ async def init_file_based_db(
     try:
         logger.info('Initializing database with Alembic migrations')
 
-        # Get or create the Alembic configuration
         if alembic_config is None:
-            # Get the directory of the current file
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            logger.debug(f'Base directory: {base_dir}')
-
-            # Create an Alembic configuration object
             alembic_ini_path = os.path.join(base_dir, 'alembic.ini')
-            logger.debug(f'Alembic config path: {alembic_ini_path}')
             alembic_config = Config(alembic_ini_path)
+            logger.debug(f'Created Alembic config from: {alembic_ini_path}')
 
-        logger.debug('Alembic configuration loaded')
-
-        # Get the event loop if not provided
         loop = event_loop or asyncio.get_event_loop()
 
-        # Define the migration function
-        def run_migrations():
-            logger.debug('Starting Alembic migrations')
-            try:
-                # For SQLite, check if the database file exists
-                if 'sqlite' in DATABASE_URL:
-                    db_path = './jira_analyzer.db'
-                    if os.path.exists(db_path) and os.path.getsize(db_path) > 0:
-                        logger.debug(f'SQLite database file exists: {db_path}')
-                    else:
-                        logger.debug(f'SQLite database file does not exist or is empty: {db_path}')
-                else:
-                    # For PostgreSQL, we don't need to check for file existence
-                    logger.debug('Using PostgreSQL database')
-
-                # Check if the database already has the latest migrations
-                # by running a "current" command to see the current revision
-                try:
-                    logger.debug('Checking current database revision')
-                    current = command.current(alembic_config)
-                    logger.debug(f'Current database revision: {current}')
-                except Exception as e:
-                    logger.warning(f'Could not get current revision: {str(e)}')
-                    logger.debug('This may be normal for a new database')
-                    current = None
-
-                # Run the upgrade to head
-                logger.debug('Running upgrade to head')
-                command.upgrade(alembic_config, 'head')
-
-                logger.debug('Alembic migrations executed successfully')
-            except Exception as e:
-                logger.error(f'Error during Alembic migrations: {str(e)}', exc_info=True)
-                raise
-
-        # Run the migrations using asyncio to run the command in a thread
         logger.debug('Running migrations in thread pool')
         try:
             with ThreadPoolExecutor() as pool:
-                # Add a timeout to prevent hanging
                 await asyncio.wait_for(
-                    loop.run_in_executor(pool, run_migrations),
-                    timeout=30,  # 30 seconds timeout
+                    loop.run_in_executor(pool, _run_migrations, alembic_config),
+                    timeout=30,
                 )
             logger.info('Database migrations completed successfully')
         except asyncio.TimeoutError:
             logger.error('Database migrations timed out after 30 seconds')
-            # Continue with SQLAlchemy fallback
-            raise Exception('Database migrations timed out')
+            raise TimeoutError('Database migrations timed out')
     except Exception as e:
         logger.error(f'File-based database initialization failed: {str(e)}', exc_info=True)
         raise
@@ -191,11 +174,11 @@ async def init_db() -> None:
         raise
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_session():
     """Create and yield a new database session.
 
-    This is an async context manager that provides a database session
-    for use in FastAPI dependency injection.
+    This provides a database session as an async generator for use in FastAPI dependency injection.
+    It automatically closes the session when the context is exited.
 
     Yields:
         AsyncSession: An async SQLAlchemy session for database operations.
@@ -204,7 +187,6 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         try:
             yield session
-            logger.debug('Database session closed')
         except Exception as e:
             logger.error(f'Error in database session: {str(e)}', exc_info=True)
             raise
