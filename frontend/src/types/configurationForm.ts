@@ -43,6 +43,7 @@ export interface UseConfigurationFormReturn {
   checkingCredentials: () => boolean
   credentialsValid: () => boolean
   setCredentialsValid: (valid: boolean) => void // Added for testing purposes
+  setProjects: (projects: JiraProject[]) => void // Added for testing purposes
 
   // Step navigation
   isFirstStep: () => boolean
