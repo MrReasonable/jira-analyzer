@@ -1,5 +1,30 @@
 # Jira Analyzer Active Context
 
+> **Executive Summary:** Current development focuses on workflow management functionality, configuration form enhancement, and backend API optimization. Recent work includes implementing the WorkflowEditor component, enhancing configuration management hooks, and refining the dependency injection container. Next steps include completing workflow state validation, finalizing the configuration form submission process, and improving error messaging.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](./INDEX.md)
+- [Project Brief](./projectbrief.md)
+- [Product Context](./productContext.md)
+- [System Patterns](./systemPatterns.md)
+- [Tech Context](./techContext.md)
+- [Progress](./progress.md)
+- [SOLID Principles](./patterns/solid.md)
+- [CQRS Pattern](./patterns/cqrs.md)
+- [Functional Programming](./patterns/functional-programming.md)
+-->
+
+## Table of Contents
+
+- [Current Work Focus](#current-work-focus)
+- [Recent Changes](#recent-changes)
+- [Next Steps](#next-steps)
+- [Active Decisions and Considerations](#active-decisions-and-considerations)
+- [Important Patterns and Preferences](#important-patterns-and-preferences)
+- [Learnings and Project Insights](#learnings-and-project-insights)
+
 ## Current Work Focus
 
 The development is currently focused on:
@@ -35,7 +60,11 @@ The development is currently focused on:
    - Improved error handling in the Jira API integration
    - Added rate limiting middleware to protect against API abuse
 
-3. **Testing and Quality**
+3. **Documentation and Quality**
+
+   - Implemented documentation anchor verification system for code-doc synchronization
+   - Added pre-commit hooks to verify documentation anchors and update INDEX.md
+   - Created bidirectional links between code and documentation
    - Added comprehensive test coverage for workflow management
    - Implemented end-to-end tests for configuration workflows
    - Enhanced chart rendering tests for metrics visualization
@@ -68,6 +97,9 @@ The development is currently focused on:
    - Using custom hooks for state management instead of a global state library
    - Maintaining separate routes for different API concerns
    - Implementing server-side validation to complement client-side validation
+   - Adopting SOLID principles and CQRS pattern for all new code (Added)
+   - Enforcing functional decomposition where appropriate (Added)
+   - Implementing comprehensive testing standards (Added)
 
 2. **Performance Considerations**
 
@@ -114,6 +146,15 @@ The development is currently focused on:
    - Workflow state management requires careful consideration of edge cases
 
 3. **User Feedback**
+
    - Configuration saving needs clearer success/failure indicators
    - Workflow state editing is more intuitive with visual representations
    - JQL input benefits from validation and suggestions
+
+4. **Collaborative Development Approach**
+
+   - Critical thinking and questioning improves code quality
+   - Technical decisions should be challenged when they appear to contradict best practices
+   - Constructive disagreement leads to better solutions than automatic agreement
+   - Team members should function as collaborative partners rather than order-takers
+   - All suggestions, regardless of source, should be evaluated on technical merit

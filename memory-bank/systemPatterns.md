@@ -1,5 +1,94 @@
 # Jira Analyzer System Patterns
 
+> **Executive Summary:** Jira Analyzer follows a containerized microservices architecture with SolidJS frontend and FastAPI backend. It implements SOLID principles, CQRS pattern, and functional programming approaches to ensure maintainability and scalability. The system uses custom hooks for state management and dependency injection for service management.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](./INDEX.md)
+- [Project Brief](./projectbrief.md)
+- [Product Context](./productContext.md)
+- [Tech Context](./techContext.md)
+- [Active Context](./activeContext.md)
+- [Progress](./progress.md)
+- [SOLID Principles](./patterns/solid.md)
+- [CQRS Pattern](./patterns/cqrs.md)
+- [Functional Programming](./patterns/functional-programming.md)
+-->
+
+## Table of Contents
+
+- [SOLID Implementation Patterns](#solid-implementation-patterns-added)
+- [CQRS Implementation](#cqrs-implementation-added)
+- [System Architecture](#system-architecture)
+- [Key Technical Decisions](#key-technical-decisions)
+- [Design Patterns in Use](#design-patterns-in-use)
+- [Component Relationships](#component-relationships)
+- [Critical Implementation Paths](#critical-implementation-paths)
+
+## SOLID Implementation Patterns (Added)
+
+```mermaid
+graph TD
+    SOLID --> SRP["Single Responsibility Principle"]
+    SOLID --> OCP["Open/Closed Principle"]
+    SOLID --> LSP["Liskov Substitution Principle"]
+    SOLID --> ISP["Interface Segregation Principle"]
+    SOLID --> DIP["Dependency Inversion Principle"]
+
+    SRP --> SRPFront["Frontend: One concern per hook/component"]
+    SRP --> SRPBack["Backend: Focused services and repositories"]
+
+    OCP --> OCPFront["Frontend: Component composition over modification"]
+    OCP --> OCPBack["Backend: Service interfaces and implementations"]
+
+    LSP --> LSPFront["Frontend: Consistent component props contracts"]
+    LSP --> LSPBack["Backend: Proper inheritance hierarchies"]
+
+    ISP --> ISPFront["Frontend: Granular custom hooks"]
+    ISP --> ISPBack["Backend: Focused repository interfaces"]
+
+    DIP --> DIPFront["Frontend: Props injection and context"]
+    DIP --> DIPBack["Backend: Dependency injection container"]
+```
+
+## CQRS Implementation (Added)
+
+Command Query Responsibility Segregation (CQRS) pattern will be implemented to separate read and write operations:
+
+```mermaid
+graph TD
+    Client --> Commands
+    Client --> Queries
+
+    subgraph "Command Side"
+        Commands --> Validators["Command Validators"]
+        Validators --> Handlers["Command Handlers"]
+        Handlers --> Models["Write Models"]
+        Models --> DB[("Database")]
+    end
+
+    subgraph "Query Side"
+        Queries --> Services["Query Services"]
+        Services --> ReadModels["Read Models/DTOs"]
+        DB --> ReadModels
+    end
+```
+
+### Command Side Implementation
+
+- Command objects represent intent to change state
+- Validation occurs before processing
+- Command handlers contain business logic
+- Write models focus on data consistency
+
+### Query Side Implementation
+
+- Query services optimize for read performance
+- Read models/DTOs shaped for specific UI needs
+- Potential for separate read stores or caching
+- No side effects or state changes
+
 ## System Architecture
 
 ### Containerized Microservices Architecture

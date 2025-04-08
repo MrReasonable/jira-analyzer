@@ -1,5 +1,32 @@
 # Backend API
 
+> **Executive Summary:** The Jira Analyzer backend API is built with FastAPI and provides endpoints for managing Jira configurations, validating credentials, interacting with the Jira API, and retrieving workflow metrics. It uses JWT token-based authentication and implements rate limiting and caching for optimal performance.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](../INDEX.md)
+- [Project Brief](../projectbrief.md)
+- [Product Context](../productContext.md)
+- [System Patterns](../systemPatterns.md)
+- [Tech Context](../techContext.md)
+- [Error Handling](./error-handling.md)
+- [Jira Integration](./jira-integration.md)
+- [API Schemas](./schemas/)
+-->
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Base URL](#base-url)
+- [Authentication](#authentication)
+- [Endpoints](#endpoints)
+  - [Configuration Endpoints](#configuration-endpoints)
+  - [Jira Connection Endpoints](#jira-connection-endpoints)
+  - [Metrics Endpoints](#metrics-endpoints)
+- [Request Rate Limiting](#request-rate-limiting)
+- [Error Responses](#error-responses)
+
 ## Overview
 
 Documentation of FastAPI endpoints exposed by the Jira Analyzer backend. This API provides functionalities for managing Jira configurations, interacting with the Jira API, and retrieving workflow metrics.

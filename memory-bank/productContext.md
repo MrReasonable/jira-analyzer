@@ -1,5 +1,25 @@
 # Jira Analyzer Product Context
 
+> **Executive Summary:** Jira Analyzer bridges the gap between raw Jira data and actionable team insights by transforming issue data into meaningful visualizations. It solves problems of limited native reporting, configuration complexity, workflow visibility gaps, and data accessibility to help teams optimize their development processes.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](./INDEX.md)
+- [Project Brief](./projectbrief.md)
+- [System Patterns](./systemPatterns.md)
+- [Tech Context](./techContext.md)
+- [Active Context](./activeContext.md)
+- [Progress](./progress.md)
+-->
+
+## Table of Contents
+
+- [Why This Project Exists](#why-this-project-exists)
+- [Problems It Solves](#problems-it-solves)
+- [How It Should Work](#how-it-should-work)
+- [User Experience Goals](#user-experience-goals)
+
 ## Why This Project Exists
 
 Jira Analyzer exists to bridge the gap between raw Jira data and actionable team insights. While Jira excels at issue tracking and workflow management, its native reporting capabilities often fall short for teams seeking deeper workflow analytics. Development teams need specialized metrics to optimize their processes, but these insights are buried in Jira's data structure and require significant effort to extract manually.

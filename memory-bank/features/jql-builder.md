@@ -1,5 +1,30 @@
 # JQL Builder
 
+> **Executive Summary:** The JQL Builder feature enables users to create, validate, and manage Jira Query Language queries that filter which issues are included in metrics calculations. It provides real-time validation, syntax highlighting, and suggestions to help users create effective queries. The implementation includes frontend validation, backend validation, and integration with the Jira API.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](../INDEX.md)
+- [Project Brief](../projectbrief.md)
+- [Product Context](../productContext.md)
+- [System Patterns](../systemPatterns.md)
+- [Tech Context](../techContext.md)
+- [Configuration Management](./configuration-management.md)
+- [Metrics Visualization](./metrics-visualization.md)
+- [Backend API](../api/backend-api.md)
+-->
+
+## Table of Contents
+
+- [Overview](#overview)
+- [User Workflow](#user-workflow)
+- [Technical Implementation](#technical-implementation)
+- [Common JQL Patterns](#common-jql-patterns)
+- [Edge Cases and Limitations](#edge-cases-and-limitations)
+- [Best Practices](#best-practices)
+- [Future Enhancements](#future-enhancements)
+
 ## Overview
 
 The JQL (Jira Query Language) Builder feature allows users to create, validate, and manage JQL queries that filter which Jira issues are included in metrics calculations. JQL is a powerful, SQL-like language that allows for precise selection of issues based on various criteria such as project, issue type, status, and custom fields.

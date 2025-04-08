@@ -62,16 +62,28 @@ class JiraConfigurationBase(BaseModel):
     schemas. It includes fields for connection details and workflow settings.
     """
 
+    # DOC-SYNC: api/schemas/configurations.md#configuration-object
+    # DOC-ANCHOR: CONFIG_NAME_FIELD
     name: str = Field(..., description='Unique name for this configuration')
+    # DOC-ANCHOR: CONFIG_SERVER_FIELD
     jira_server: str = Field(..., description='Jira server URL')
+    # DOC-ANCHOR: CONFIG_EMAIL_FIELD
     jira_email: str = Field(..., description='Jira email/username')
+    # DOC-ANCHOR: CONFIG_TOKEN_FIELD
     jira_api_token: str = Field(..., description='Jira API token')
+    # DOC-ANCHOR: CONFIG_JQL_FIELD
     jql_query: str = Field(..., description='Default JQL query')
+    # DOC-ANCHOR: CONFIG_PROJECT_FIELD
     project_key: str = Field(..., description='Selected Jira project key')
+    # DOC-ANCHOR: CONFIG_WORKFLOW_FIELD
     workflow_states: List[str] = Field(..., description='List of workflow states')
+    # DOC-ANCHOR: CONFIG_LEAD_START_FIELD
     lead_time_start_state: str = Field(..., description='Starting state for lead time')
+    # DOC-ANCHOR: CONFIG_LEAD_END_FIELD
     lead_time_end_state: str = Field(..., description='Ending state for lead time')
+    # DOC-ANCHOR: CONFIG_CYCLE_START_FIELD
     cycle_time_start_state: str = Field(..., description='Starting state for cycle time')
+    # DOC-ANCHOR: CONFIG_CYCLE_END_FIELD
     cycle_time_end_state: str = Field(..., description='Ending state for cycle time')
 
 

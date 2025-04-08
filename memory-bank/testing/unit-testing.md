@@ -1,5 +1,46 @@
 # Unit Testing
 
+> **Executive Summary:** Jira Analyzer uses Vitest for frontend unit tests and pytest for backend tests. Tests follow the Arrange-Act-Assert pattern and FIRST principles (Fast, Independent, Repeatable, Self-validating, Timely). The project emphasizes testing behavior over implementation details, proper mocking of external dependencies, and testing both success and failure paths.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](../INDEX.md)
+- [Project Brief](../projectbrief.md)
+- [Product Context](../productContext.md)
+- [System Patterns](../systemPatterns.md)
+- [Tech Context](../techContext.md)
+- [SOLID Principles](../patterns/solid.md)
+- [Functional Programming](../patterns/functional-programming.md)
+-->
+
+## Quick Reference
+
+| Aspect             | Frontend (Vitest)                                            | Backend (pytest)                                             |
+| ------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Test Structure** | `it("should...", () => { /* Arrange, Act, Assert */ })`      | `def test_something(): # Arrange, Act, Assert`               |
+| **Mocking**        | `vi.mock()`, `MockAdapter` for axios                         | `pytest.mock()`, `unittest.mock`                             |
+| **Test Location**  | Co-located with source: `src/api/jiraApi.test.ts`            | In tests directory: `tests/unit/test_jira_service.py`        |
+| **Running Tests**  | `npm test`, `npm test -- --coverage`                         | `pytest`, `pytest --cov=app`                                 |
+| **Best Practice**  | Test behavior not implementation, mock external dependencies | Test behavior not implementation, mock external dependencies |
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Testing Framework](#testing-framework)
+- [Directory Structure](#directory-structure)
+- [Writing Effective Tests](#writing-effective-tests)
+  - [Test Structure](#test-structure)
+  - [Behavior vs. Implementation Testing](#behavior-vs-implementation-testing)
+  - [Mocking Approaches](#mocking-approaches)
+  - [Test for Success and Failure Paths](#test-for-success-and-failure-paths)
+  - [Use Realistic Test Data](#use-realistic-test-data)
+- [FIRST Principles](#first-principles-added)
+- [Best Practices](#best-practices)
+- [Running Tests](#running-tests)
+  - [Commands and Options](#commands-and-options)
+  - [CI Integration](#ci-integration)
+
 ## Overview
 
 Unit testing in the Jira Analyzer project focuses on validating the behavior of individual units of code in isolation. Our approach emphasizes testing the contract (inputs and outputs) rather than implementation details, allowing for more maintainable and less brittle tests.
@@ -123,6 +164,39 @@ const mockProjects = [
   { key: "DEV", name: "Development Project" },
 ];
 ```
+
+## FIRST Principles (Added)
+
+All unit tests must follow the FIRST principles:
+
+1. **Fast**: Tests should execute quickly
+
+   - Keep tests focused on a single unit
+   - Avoid unnecessary setup and teardown
+   - Use appropriate mocks to avoid slow external dependencies
+
+2. **Independent**: Tests should not depend on each other
+
+   - Each test should set up its own test data
+   - Tests should be runnable in any order
+   - Avoid shared state between tests
+
+3. **Repeatable**: Tests should yield the same results each time
+
+   - Avoid dependencies on external systems
+   - Don't rely on specific environment configurations
+   - Use fixed seeds for any random data
+
+4. **Self-validating**: Tests should automatically determine pass/fail
+
+   - Include explicit assertions
+   - Avoid tests that require manual verification
+   - Tests should fail with clear error messages
+
+5. **Timely**: Tests should be written at the same time as the code
+   - Practice test-driven development where appropriate
+   - Never commit code without corresponding tests
+   - Update tests when requirements change
 
 ## Best Practices
 

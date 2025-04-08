@@ -1,5 +1,40 @@
 # Jira Analyzer Technical Context
 
+> **Executive Summary:** Jira Analyzer uses SolidJS and TypeScript for the frontend with TailwindCSS for styling, and Python 3.11+ with FastAPI for the backend. The project is containerized with Docker, uses GitHub Actions for CI/CD, and follows strict testing standards including FIRST principles. Development requires Docker, Git, and a Jira instance for testing.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](./INDEX.md)
+- [Project Brief](./projectbrief.md)
+- [Product Context](./productContext.md)
+- [System Patterns](./systemPatterns.md)
+- [Active Context](./activeContext.md)
+- [Progress](./progress.md)
+- [Unit Testing](./testing/unit-testing.md)
+- [SOLID Principles](./patterns/solid.md)
+- [CQRS Pattern](./patterns/cqrs.md)
+- [Functional Programming](./patterns/functional-programming.md)
+-->
+
+## Table of Contents
+
+- [Technologies Used](#technologies-used)
+  - [Frontend Stack](#frontend-stack)
+  - [Backend Stack](#backend-stack)
+  - [Infrastructure & DevOps](#infrastructure--devops)
+- [Development Setup](#development-setup)
+  - [Local Development Environment](#local-development-environment)
+- [Technical Constraints](#technical-constraints)
+  - [Performance Considerations](#performance-considerations)
+- [Dependencies](#dependencies)
+  - [External Dependencies](#external-dependencies)
+  - [Internal Dependencies](#internal-dependencies)
+- [Tool Usage Patterns](#tool-usage-patterns)
+  - [Development Tools](#development-tools)
+  - [Testing Approaches](#testing-approaches)
+- [Testing Standards](#testing-standards-added)
+
 ## Technologies Used
 
 ### Frontend Stack
@@ -163,3 +198,43 @@
   - User journey simulations with Playwright
   - Visual regression testing
   - Performance testing guidelines
+
+## Testing Standards (Added)
+
+All new code must adhere to these testing standards:
+
+### FIRST Principles
+
+- **Fast**: Tests should run quickly to enable frequent execution
+- **Independent**: Tests should not depend on each other
+- **Repeatable**: Tests should yield the same results regardless of environment
+- **Self-validating**: Tests should automatically determine if they pass or fail
+- **Timely**: Tests should be written at the same time as the code
+
+### Functional Decomposition in Tests
+
+```mermaid
+graph TD
+    Test[Test Structure] --> Arrange["Arrange: Set up test context"]
+    Test --> Act["Act: Execute the code under test"]
+    Test --> Assert["Assert: Verify the expected outcome"]
+
+    Arrange --> PureFunctions["Use pure functions for setup"]
+    Act --> SingleAction["Test only one behavior per test"]
+    Assert --> Deterministic["Assertions must be deterministic"]
+```
+
+### Test Coverage Requirements
+
+- **Line Coverage**: Minimum 90% for new code
+- **Branch Coverage**: All conditional branches must be tested
+- **Mutation Testing**: Critical paths must pass mutation tests
+- **Contract Testing**: API boundaries must have contract tests
+
+### Testing Anti-patterns to Avoid
+
+- **Flaky Tests**: Tests that sometimes pass and sometimes fail
+- **Overlapping Tests**: Multiple tests verifying the same behavior
+- **Slow Tests**: Tests that take too long to run
+- **Brittle Tests**: Tests that break with minor implementation changes
+- **Test Duplication**: Copy-pasted test code without abstraction

@@ -1,5 +1,29 @@
 # Configuration Management
 
+> **Executive Summary:** Configuration Management in Jira Analyzer enables users to create, edit, save, and delete configurations for metrics calculation. Each configuration includes Jira credentials, workflow state definitions, and JQL queries. The feature uses a multi-step form process with validation and provides a seamless user experience for managing analysis parameters.
+
+<!--
+Last Updated: 08/04/2025
+Related Documents:
+- [Memory Bank Index](../INDEX.md)
+- [Project Brief](../projectbrief.md)
+- [Product Context](../productContext.md)
+- [System Patterns](../systemPatterns.md)
+- [Tech Context](../techContext.md)
+- [Active Context](../activeContext.md)
+- [JQL Builder](./jql-builder.md)
+- [Workflow Editor](./workflow-editor.md)
+-->
+
+## Table of Contents
+
+- [Overview](#overview)
+- [User Workflow](#user-workflow)
+- [Technical Implementation](#technical-implementation)
+- [Edge Cases and Limitations](#edge-cases-and-limitations)
+- [Best Practices](#best-practices)
+- [Future Enhancements](#future-enhancements)
+
 ## Overview
 
 Configuration Management in Jira Analyzer allows users to create, edit, save, and delete configurations that define how metrics are calculated and visualized. Each configuration contains credentials for connecting to a Jira instance, workflow state definitions, and JQL queries for filtering issues.
