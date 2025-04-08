@@ -99,6 +99,9 @@ const App: Component = () => {
           setEditingWorkflow={workflowManager.setEditingWorkflow}
           saveCurrentConfig={configSaver.saveCurrentConfig}
           savingConfig={configSaver.savingConfig}
+          fetchWorkflowStatesFromJira={workflowManager.fetchWorkflowStatesFromJira}
+          loadingWorkflow={workflowManager.loadingWorkflow}
+          workflowError={workflowManager.workflowError}
           jql={metricsState.jql}
           onJqlChange={metricsState.setJql}
           onAnalyze={handleAnalyze}

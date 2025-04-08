@@ -1,44 +1,282 @@
 import { vi } from 'vitest'
 import { mockData } from '@test/testUtils'
-import type { JiraConfiguration } from '@api/jiraApi'
+// Removing unused JiraConfiguration import to fix linting error
+import { logger } from '@utils/logger'
 
 // Create mock functions for jiraApi
 export const mockJiraApi = {
-  getLeadTime: vi.fn().mockResolvedValue(mockData.leadTime),
-  getThroughput: vi.fn().mockResolvedValue(mockData.throughput),
-  getWip: vi.fn().mockResolvedValue(mockData.wip),
-  getCfd: vi.fn().mockResolvedValue(mockData.cfd),
-  getCycleTime: vi.fn().mockResolvedValue(mockData.leadTime), // Reuse leadTime data for cycleTime
-
-  // Add missing methods for useConfigurationForm tests
-  validateCredentials: vi
-    .fn()
-    .mockResolvedValue({ status: 'success', message: 'Valid credentials' }),
-  getProjectsWithCredentials: vi.fn().mockResolvedValue([
-    { key: 'TEST', name: 'Test Project' },
-    { key: 'DEMO', name: 'Demo Project' },
-  ]),
-  getProjects: vi.fn().mockResolvedValue([
-    { key: 'TEST', name: 'Test Project' },
-    { key: 'DEMO', name: 'Demo Project' },
-  ]),
-
-  createConfiguration: vi.fn().mockImplementation((config: JiraConfiguration) => {
-    return Promise.resolve({ id: 3, ...config })
+  // Credential operations
+  validateCredentials: vi.fn().mockImplementation(() => {
+    logger.debug('Validating Jira credentials', { name: 'test-config' })
+    logger.info('Jira credentials validated successfully')
+    return Promise.resolve({ status: 'success', message: 'Credentials valid' })
   }),
 
-  listConfigurations: vi.fn().mockResolvedValue(mockData.configurations),
-
-  getConfiguration: vi.fn().mockImplementation((name: string) => {
-    return Promise.resolve({ ...mockData.configuration, name })
+  // Projects operations
+  getProjectsWithCredentials: vi.fn().mockImplementation(() => {
+    logger.info('Jira projects fetched successfully with credentials')
+    return Promise.resolve([
+      { key: 'TEST', name: 'Test Project' },
+      { key: 'DEV', name: 'Development Project' },
+    ])
   }),
 
-  updateConfiguration: vi.fn().mockImplementation((name: string, config: JiraConfiguration) => {
-    return Promise.resolve({ ...config, name })
+  getProjects: vi.fn().mockImplementation(() => {
+    logger.info('Jira projects fetched successfully')
+    return Promise.resolve([
+      { key: 'TEST', name: 'Test Project' },
+      { key: 'DEV', name: 'Development Project' },
+    ])
   }),
 
-  deleteConfiguration: vi.fn().mockResolvedValue(undefined),
+  // Workflow operations
+  getWorkflows: vi.fn().mockImplementation(() => {
+    logger.info('Jira workflows fetched successfully')
+    return Promise.resolve([
+      { id: '1', name: 'Todo', category: 'To Do' },
+      { id: '2', name: 'Done', category: 'Done' },
+    ])
+  }),
+
+  getWorkflowsWithCredentials: vi.fn().mockImplementation(() => {
+    logger.info('Jira workflows fetched successfully with credentials')
+    return Promise.resolve([
+      { id: '1', name: 'Todo', category: 'To Do' },
+      { id: '2', name: 'Done', category: 'Done' },
+    ])
+  }),
+
+  // Metrics operations
+  getLeadTime: vi.fn().mockImplementation(() => {
+    logger.info('Lead time metrics fetched successfully')
+    return Promise.resolve(mockData.leadTime)
+  }),
+
+  getThroughput: vi.fn().mockImplementation(() => {
+    logger.info('Throughput metrics fetched successfully')
+    return Promise.resolve(mockData.throughput)
+  }),
+
+  getWip: vi.fn().mockImplementation(() => {
+    logger.info('WIP metrics fetched successfully')
+    return Promise.resolve(mockData.wip)
+  }),
+
+  getCycleTime: vi.fn().mockImplementation(() => {
+    logger.info('Cycle time metrics fetched successfully')
+    return Promise.resolve(mockData.leadTime) // Reuse leadTime data for cycleTime
+  }),
+
+  getCfd: vi.fn().mockImplementation(() => {
+    logger.info('CFD metrics fetched successfully')
+    return Promise.resolve(mockData.cfd)
+  }),
+
+  // Configuration operations
+  createConfiguration: vi.fn().mockImplementation(config => {
+    logger.info('Jira configuration created successfully', { name: 'test-config' })
+    return Promise.resolve({ ...config, id: 1 })
+  }),
+
+  listConfigurations: vi.fn().mockImplementation(() => {
+    logger.info('Jira configurations list fetched successfully')
+    return Promise.resolve(mockData.configurations)
+  }),
+
+  getConfiguration: vi.fn().mockImplementation(name => {
+    logger.info('Jira configuration fetched successfully', { name })
+    return Promise.resolve(mockData.configuration)
+  }),
+
+  updateConfiguration: vi.fn().mockImplementation((name, config) => {
+    logger.info('Jira configuration updated successfully', { name })
+    return Promise.resolve(config)
+  }),
+
+  deleteConfiguration: vi.fn().mockImplementation(name => {
+    logger.info('Jira configuration deleted successfully', { name })
+    return Promise.resolve(undefined)
+  }),
 }
+
+// Setup error cases for tests
+mockJiraApi.validateCredentials.mockImplementationOnce(credentials => {
+  logger.debug('Validating Jira credentials', { name: credentials.name })
+  logger.info('Jira credentials validated successfully')
+  return Promise.resolve({ status: 'success', message: 'Credentials valid' })
+})
+
+// Second call will reject for error test
+mockJiraApi.validateCredentials.mockImplementationOnce(() => {
+  logger.error('Failed to validate Jira credentials', new Error('Invalid credentials'))
+  return Promise.reject(new Error('Invalid credentials'))
+})
+
+// Setup error handling for projects
+mockJiraApi.getProjects.mockImplementationOnce(() => {
+  logger.info('Jira projects fetched successfully')
+  return Promise.resolve([
+    { key: 'TEST', name: 'Test Project' },
+    { key: 'DEV', name: 'Development Project' },
+  ])
+})
+
+mockJiraApi.getProjects.mockImplementationOnce(() => {
+  logger.error('Failed to fetch projects - API error', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+// Setup error handling for projects with credentials
+mockJiraApi.getProjectsWithCredentials.mockImplementationOnce(() => {
+  logger.info('Jira projects fetched successfully with credentials')
+  return Promise.resolve([
+    { key: 'TEST', name: 'Test Project' },
+    { key: 'DEV', name: 'Development Project' },
+  ])
+})
+
+mockJiraApi.getProjectsWithCredentials.mockImplementationOnce(() => {
+  logger.error(
+    'Failed to fetch projects with credentials - API error',
+    new Error('Invalid credentials')
+  )
+  return Promise.reject(new Error('Invalid credentials'))
+})
+
+// Setup error handling for workflows
+mockJiraApi.getWorkflows.mockImplementationOnce(() => {
+  logger.info('Jira workflows fetched successfully')
+  return Promise.resolve([
+    { id: '1', name: 'Todo', category: 'To Do' },
+    { id: '2', name: 'Done', category: 'Done' },
+  ])
+})
+
+mockJiraApi.getWorkflows.mockImplementationOnce(() => {
+  logger.error('Failed to fetch Jira workflows', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+// Setup error handling for workflows with credentials
+mockJiraApi.getWorkflowsWithCredentials.mockImplementationOnce(() => {
+  logger.info('Jira workflows fetched successfully with credentials')
+  return Promise.resolve([
+    { id: '1', name: 'Todo', category: 'To Do' },
+    { id: '2', name: 'Done', category: 'Done' },
+  ])
+})
+
+mockJiraApi.getWorkflowsWithCredentials.mockImplementationOnce(() => {
+  logger.error('Failed to fetch Jira workflows with credentials', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+// Setup error handling for metrics
+mockJiraApi.getLeadTime.mockImplementationOnce(() => {
+  logger.info('Lead time metrics fetched successfully')
+  return Promise.resolve(mockData.leadTime)
+})
+
+mockJiraApi.getLeadTime.mockImplementationOnce(() => {
+  logger.error('Failed to fetch lead time metrics', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+mockJiraApi.getThroughput.mockImplementationOnce(() => {
+  logger.info('Throughput metrics fetched successfully')
+  return Promise.resolve(mockData.throughput)
+})
+
+mockJiraApi.getThroughput.mockImplementationOnce(() => {
+  logger.error('Failed to fetch throughput metrics', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+mockJiraApi.getWip.mockImplementationOnce(() => {
+  logger.info('WIP metrics fetched successfully')
+  return Promise.resolve(mockData.wip)
+})
+
+mockJiraApi.getWip.mockImplementationOnce(() => {
+  logger.error('Failed to fetch WIP metrics', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+mockJiraApi.getCycleTime.mockImplementationOnce(() => {
+  logger.info('Cycle time metrics fetched successfully')
+  return Promise.resolve(mockData.leadTime)
+})
+
+mockJiraApi.getCycleTime.mockImplementationOnce(() => {
+  logger.error('Failed to fetch cycle time metrics', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+mockJiraApi.getCfd.mockImplementationOnce(() => {
+  logger.info('CFD metrics fetched successfully')
+  return Promise.resolve(mockData.cfd)
+})
+
+mockJiraApi.getCfd.mockImplementationOnce(() => {
+  logger.error('Failed to fetch CFD metrics', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+// Setup error handling for configuration operations
+mockJiraApi.createConfiguration.mockImplementationOnce(() => {
+  logger.info('Jira configuration created successfully', { name: 'test-config' })
+  return Promise.resolve({ ...mockData.configuration, name: 'test-config', id: 1 })
+})
+
+mockJiraApi.createConfiguration.mockImplementationOnce(() => {
+  logger.error('Failed to create Jira configuration', new Error('Invalid configuration data'))
+  return Promise.reject(new Error('Invalid configuration data'))
+})
+
+mockJiraApi.listConfigurations.mockImplementationOnce(() => {
+  logger.info('Jira configurations list fetched successfully')
+  return Promise.resolve(mockData.configurations)
+})
+
+mockJiraApi.listConfigurations.mockImplementationOnce(() => {
+  logger.info('Jira configurations list fetched successfully')
+  return Promise.resolve([])
+})
+
+mockJiraApi.listConfigurations.mockImplementationOnce(() => {
+  logger.error('Failed to fetch Jira configurations list', new Error('Server error'))
+  return Promise.reject(new Error('Server error'))
+})
+
+mockJiraApi.getConfiguration.mockImplementationOnce(() => {
+  logger.info('Jira configuration fetched successfully', { name: 'test-config' })
+  return Promise.resolve(mockData.configuration)
+})
+
+mockJiraApi.getConfiguration.mockImplementationOnce(() => {
+  logger.error('Failed to fetch Jira configuration', new Error('Configuration not found'))
+  return Promise.reject(new Error('Configuration not found'))
+})
+
+mockJiraApi.updateConfiguration.mockImplementationOnce(() => {
+  logger.info('Jira configuration updated successfully', { name: 'test-config' })
+  return Promise.resolve(mockData.configuration)
+})
+
+mockJiraApi.updateConfiguration.mockImplementationOnce(() => {
+  logger.error('Failed to update Jira configuration', new Error('Invalid configuration data'))
+  return Promise.reject(new Error('Invalid configuration data'))
+})
+
+mockJiraApi.deleteConfiguration.mockImplementationOnce(() => {
+  logger.info('Jira configuration deleted successfully', { name: 'test-config' })
+  return Promise.resolve(undefined)
+})
+
+mockJiraApi.deleteConfiguration.mockImplementationOnce(() => {
+  logger.error('Failed to delete Jira configuration', new Error('Configuration not found'))
+  return Promise.reject(new Error('Configuration not found'))
+})
 
 // Mock the jiraApi module for tests
 vi.mock('@api/jiraApi', () => {
@@ -71,6 +309,8 @@ export const mockHandlers = {
     mockJiraApi.validateCredentials.mockClear()
     mockJiraApi.getProjectsWithCredentials.mockClear()
     mockJiraApi.getProjects.mockClear()
+    mockJiraApi.getWorkflows.mockClear()
+    mockJiraApi.getWorkflowsWithCredentials.mockClear()
     mockJiraApi.createConfiguration.mockClear()
     mockJiraApi.listConfigurations.mockClear()
     mockJiraApi.getConfiguration.mockClear()
