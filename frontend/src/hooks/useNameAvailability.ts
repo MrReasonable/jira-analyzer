@@ -3,6 +3,32 @@ import { jiraApi } from '../api/jiraApi'
 import { logger } from '../utils/logger'
 
 /**
+ * Debounce utility function
+ * Creates a debounced version of the provided function that delays execution
+ * until after the specified wait time has elapsed since the last invocation
+ *
+ * Returns a Promise that resolves when the debounced function has executed
+ */
+function debounce<T extends (name: string) => Promise<void>>(
+  func: T,
+  wait: number
+): (name: string) => Promise<void> {
+  let timeout: number | undefined
+  let resolvePromise: (() => void) | null = null
+
+  return (name: string): Promise<void> => {
+    clearTimeout(timeout)
+    return new Promise<void>(resolve => {
+      resolvePromise = resolve
+      timeout = window.setTimeout(async () => {
+        await func(name)
+        if (resolvePromise) resolvePromise()
+      }, wait)
+    })
+  }
+}
+
+/**
  * Hook for checking if a configuration name is available
  */
 export function useNameAvailability(initialConfig?: { name: string }) {
@@ -12,7 +38,7 @@ export function useNameAvailability(initialConfig?: { name: string }) {
   /**
    * Check if a name is available
    */
-  const checkNameAvailability = async (name: string): Promise<void> => {
+  const checkNameAvailabilityImpl = async (name: string): Promise<void> => {
     if (!name) {
       setIsNameAvailable(false)
       return
@@ -37,6 +63,12 @@ export function useNameAvailability(initialConfig?: { name: string }) {
       setIsCheckingName(false)
     }
   }
+
+  // Determine the debounce delay - 0 for test environment, 500ms for production
+  const debounceDelay = typeof process !== 'undefined' && process.env.NODE_ENV === 'test' ? 0 : 500
+
+  // Debounced version of the check function with appropriate delay
+  const checkNameAvailability = debounce(checkNameAvailabilityImpl, debounceDelay)
 
   return {
     isNameAvailable,
