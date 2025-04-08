@@ -28,14 +28,12 @@ def upgrade() -> None:
         # SQLite doesn't support ALTER COLUMN for NOT NULL constraints
         # We need to use batch_alter_table which handles the table recreation
         with op.batch_alter_table('jira_configurations') as batch_op:
-            batch_op.alter_column('project_key',
-                       existing_type=sa.String(),
-                       nullable=False)
+            batch_op.alter_column('project_key', existing_type=sa.String(), nullable=False)
     else:
         # For PostgreSQL and other databases, use the standard ALTER COLUMN
-        op.alter_column('jira_configurations', 'project_key',
-                   existing_type=sa.String(),
-                   nullable=False)
+        op.alter_column(
+            'jira_configurations', 'project_key', existing_type=sa.String(), nullable=False
+        )
 
 
 def downgrade() -> None:
@@ -47,11 +45,9 @@ def downgrade() -> None:
     if dialect_name == 'sqlite':
         # Use batch_alter_table for SQLite compatibility
         with op.batch_alter_table('jira_configurations') as batch_op:
-            batch_op.alter_column('project_key',
-                       existing_type=sa.String(),
-                       nullable=True)
+            batch_op.alter_column('project_key', existing_type=sa.String(), nullable=True)
     else:
         # For PostgreSQL and other databases, use the standard ALTER COLUMN
-        op.alter_column('jira_configurations', 'project_key',
-                   existing_type=sa.String(),
-                   nullable=True)
+        op.alter_column(
+            'jira_configurations', 'project_key', existing_type=sa.String(), nullable=True
+        )
