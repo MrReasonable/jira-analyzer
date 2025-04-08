@@ -350,7 +350,7 @@ export const jiraApi = {
       logger.info('Jira configurations list fetched successfully')
 
       // Handle the case where the response contains items property
-      if (response.data && response.data.items) {
+      if (response.data?.items) {
         return response.data.items
       }
 
