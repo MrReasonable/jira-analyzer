@@ -20,6 +20,9 @@ interface ConfigurationSectionProps {
   setEditingWorkflow: (editing: boolean) => void
   saveCurrentConfig: () => void
   savingConfig: () => boolean
+  fetchWorkflowStatesFromJira?: (projectKey: string) => Promise<WorkflowState[]>
+  loadingWorkflow?: () => boolean
+  workflowError?: () => string | null
   jql: () => string
   onJqlChange: (jql: string) => void
   onAnalyze: () => void
@@ -57,6 +60,20 @@ export const ConfigurationSection: Component<ConfigurationSectionProps> = props 
                 onCancel={() => props.setEditingWorkflow(false)}
                 onSave={props.saveCurrentConfig}
                 isSaving={props.savingConfig}
+                projectKey={props.activeConfig()?.project_key}
+                onImportFromJira={
+                  props.fetchWorkflowStatesFromJira
+                    ? async projectKey => {
+                        try {
+                          await props.fetchWorkflowStatesFromJira?.(projectKey)
+                        } catch (error) {
+                          console.error('Error importing workflow states:', error)
+                        }
+                      }
+                    : undefined
+                }
+                isImportingFromJira={props.loadingWorkflow}
+                importError={props.workflowError}
               />
             </Match>
             <Match when={!props.editingWorkflow()}>

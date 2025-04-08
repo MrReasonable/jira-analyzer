@@ -52,7 +52,7 @@ coverage/
 
 # IDEs and editors
 .idea/
-.vscode/
+# .vscode/ - Committed for consistent project settings
 *.swp
 *.swo
 *~
@@ -65,6 +65,7 @@ Thumbs.db
 *.log
 tmp/
 .aider*
+backend/pyvenv.cfg
 
 # Testing
 screenshots/

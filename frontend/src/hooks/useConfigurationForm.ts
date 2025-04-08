@@ -189,6 +189,11 @@ export function useConfigurationForm({
     }
   })
 
+  // If in edit mode with initialConfig, name is automatically available
+  if (initialConfig?.name) {
+    setIsNameAvailable(true)
+  }
+
   // Initialize with default values if in edit mode
   if (isEditMode && initialConfig) {
     // Set credentials as valid in edit mode
@@ -213,6 +218,7 @@ export function useConfigurationForm({
     checkingCredentials,
     credentialsValid,
     setCredentialsValid, // Expose this for testing purposes
+    setProjects, // Expose this for testing purposes
     isFirstStep,
     isLastStep,
     goToNextStep,
