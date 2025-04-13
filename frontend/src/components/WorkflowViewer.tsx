@@ -20,6 +20,23 @@ interface WorkflowViewerProps {
  * Component for viewing workflow states and JQL query
  */
 export const WorkflowViewer: Component<WorkflowViewerProps> = props => {
+  // Function to determine the color class based on state properties
+  const getStateColorClass = (state: WorkflowState): string => {
+    if (state.isStartPoint && state.isEndPoint) {
+      return 'bg-purple-100 text-purple-800'
+    }
+
+    if (state.isStartPoint) {
+      return 'bg-green-100 text-green-800'
+    }
+
+    if (state.isEndPoint) {
+      return 'bg-red-100 text-red-800'
+    }
+
+    return 'bg-gray-100 text-gray-800'
+  }
+
   return (
     <div class="space-y-4">
       <div class="flex items-center justify-between">
@@ -43,17 +60,7 @@ export const WorkflowViewer: Component<WorkflowViewerProps> = props => {
         {props.workflowStates().length > 0 ? (
           <For each={props.workflowStates()}>
             {(state: WorkflowState) => (
-              <div
-                class={`rounded-md px-3 py-1 text-sm ${
-                  state.isStartPoint && state.isEndPoint
-                    ? 'bg-purple-100 text-purple-800'
-                    : state.isStartPoint
-                      ? 'bg-green-100 text-green-800'
-                      : state.isEndPoint
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-gray-100 text-gray-800'
-                }`}
-              >
+              <div class={`rounded-md px-3 py-1 text-sm ${getStateColorClass(state)}`}>
                 {state.name}
                 {state.isStartPoint && ' (Start)'}
                 {state.isEndPoint && ' (End)'}

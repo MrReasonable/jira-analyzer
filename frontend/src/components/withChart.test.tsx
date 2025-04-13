@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@solidjs/testing-library'
-import { withChart, ChartData, CanvasContext } from './withChart'
+import { withChart, ChartData } from './withChart'
 import Chart from 'chart.js/auto'
 import { createSignal } from 'solid-js'
 
@@ -30,7 +30,7 @@ describe('withChart', () => {
     canvas: document.createElement('canvas'),
     clearRect: vi.fn(),
     fillRect: vi.fn(),
-  } as unknown as CanvasContext
+  } as unknown as CanvasRenderingContext2D
 
   // Mock chart instance creation function
   const mockCreateChartInstance = vi.fn().mockImplementation(() => {
@@ -66,7 +66,7 @@ describe('withChart', () => {
     render(() => <TestChart data={mockData} loading={true} title="Test Chart" />)
 
     // Check for loading spinner
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole('status', { hidden: true })).toBeInTheDocument()
   })
 
   it('renders chart and metrics when data is provided and not loading', () => {
@@ -106,7 +106,7 @@ describe('withChart', () => {
 
     // Update to loading state
     setLoading(true)
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole('status', { hidden: true })).toBeInTheDocument()
 
     // Update to no data state
     setLoading(false)

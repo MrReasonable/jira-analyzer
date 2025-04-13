@@ -18,6 +18,11 @@ Jira Analyzer is a specialized analytics tool that extracts, processes, and visu
 1. [Active Context](./activeContext.md) for recent changes and current focus
 2. [Progress](./progress.md) for project status updates
 
+**AI Assistant (Cline)?** Start with:
+
+1. [Cline Operating Instructions](./CLINE_OPERATING_INSTRUCTIONS.md) for complete operating protocol
+2. [Custom Rule](./CUSTOM_RULE.md) for simplified custom rule reference
+
 ## Frequently Referenced
 
 - [Custom Hook Patterns](./code-patterns/custom-hook-patterns.md) - React hook implementation patterns
@@ -26,6 +31,7 @@ Jira Analyzer is a specialized analytics tool that extracts, processes, and visu
 - [Memory Bank Updates](./maintenance/memory-bank-updates.md) - When and how to update documentation
 - [Configuration Management](./features/configuration-management.md) - How configurations are managed
 - [CI/CD Pipeline](./deployment/ci-cd-pipeline.md) - Continuous integration and deployment
+- [Cline Operating Instructions](./CLINE_OPERATING_INSTRUCTIONS.md) - How Cline AI assistant operates with the codebase
 
 ## Recently Updated Documents
 
@@ -35,7 +41,6 @@ The following documents have been recently updated with executive summaries and 
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Features**          | [Configuration Management](./features/configuration-management.md), [Metrics Visualization](./features/metrics-visualization.md), [Readme](./features/README.md), [Workflow Editor](./features/workflow-editor.md), [Jql Builder](./features/jql-builder.md) |
 | **API**          | [Readme](./api/README.md), [Jira Integration](./api/jira-integration.md), [Backend Api](./api/backend-api.md), [Error Handling](./api/error-handling.md), [Workflow](./api/schemas/workflow.md), [Configurations](./api/schemas/configurations.md), [Metrics](./api/schemas/metrics.md) |
-
 ## Documentation Map
 
 This index provides a comprehensive guide to all documentation in the Jira Analyzer Memory Bank. Use this as your starting point to navigate the project documentation.
@@ -56,6 +61,8 @@ graph TD
     CORE --> TC[techContext.md]
     CORE --> AC[activeContext.md]
     CORE --> PR[progress.md]
+    CORE --> COI[CLINE_OPERATING_INSTRUCTIONS.md]
+    CORE --> CR[CUSTOM_RULE.md]
 
     PATTERNS --> SOLID[patterns/solid.md]
     PATTERNS --> CQRS[patterns/cqrs.md]
@@ -89,14 +96,16 @@ graph TD
 
 ## Core Documentation
 
-| Document                               | Description                                     | Key Sections                                               |
-| -------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
-| [Project Brief](./projectbrief.md)     | Foundation document defining core requirements  | Project Definition, Core Requirements, Project Scope       |
-| [Product Context](./productContext.md) | Why this project exists and problems it solves  | Problem Statement, User Personas, User Journeys            |
-| [System Patterns](./systemPatterns.md) | System architecture and key technical decisions | SOLID Implementation, CQRS Implementation, Design Patterns |
-| [Tech Context](./techContext.md)       | Technologies used and development setup         | Tech Stack, Development Setup, Technical Constraints       |
-| [Active Context](./activeContext.md)   | Current work focus and recent changes           | Current Focus, Recent Changes, Next Steps                  |
-| [Progress](./progress.md)              | Project status and evolution of decisions       | What Works, What's Left, Current Status, Evolution         |
+| Document                                                          | Description                                       | Key Sections                                                              |
+| ----------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Project Brief](./projectbrief.md)                                | Foundation document defining core requirements    | Project Definition, Core Requirements, Project Scope                      |
+| [Product Context](./productContext.md)                            | Why this project exists and problems it solves    | Problem Statement, User Personas, User Journeys                           |
+| [System Patterns](./systemPatterns.md)                            | System architecture and key technical decisions   | SOLID Implementation, CQRS Implementation, Design Patterns                |
+| [Tech Context](./techContext.md)                                  | Technologies used and development setup           | Tech Stack, Development Setup, Technical Constraints                      |
+| [Active Context](./activeContext.md)                              | Current work focus and recent changes             | Current Focus, Recent Changes, Next Steps                                 |
+| [Progress](./progress.md)                                         | Project status and evolution of decisions         | What Works, What's Left, Current Status, Evolution                        |
+| [Cline Operating Instructions](./CLINE_OPERATING_INSTRUCTIONS.md) | How Cline AI assistant operates with the codebase | Collaborative Principles, Memory Bank Protocol, Implementation Principles |
+| [Custom Rule](./CUSTOM_RULE.md)                                   | Simplified custom rule for Cline AI assistant     | Memory-Driven Development Approach                                        |
 
 ## Design Patterns
 
@@ -156,13 +165,15 @@ graph TD
 
 ```bash
 memory-bank/
-├── INDEX.md                 # This master index
-├── projectbrief.md          # Project definition and requirements
-├── productContext.md        # Product context and user needs
-├── systemPatterns.md        # System architecture and patterns
-├── techContext.md           # Technical context and stack
-├── activeContext.md         # Current work focus and decisions
-└── progress.md              # Project progress and status
+├── INDEX.md                           # This master index
+├── projectbrief.md                    # Project definition and requirements
+├── productContext.md                  # Product context and user needs
+├── systemPatterns.md                  # System architecture and patterns
+├── techContext.md                     # Technical context and stack
+├── activeContext.md                   # Current work focus and decisions
+├── progress.md                        # Project progress and status
+├── CLINE_OPERATING_INSTRUCTIONS.md    # Cline AI assistant operating instructions
+└── CUSTOM_RULE.md                     # Simplified custom rule for Cline
 ```
 
 ### Feature Documentation

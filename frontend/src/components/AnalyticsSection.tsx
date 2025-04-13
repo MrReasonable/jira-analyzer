@@ -5,49 +5,20 @@ import { ThroughputChart } from './ThroughputChart'
 import { WipChart } from './WipChart'
 import { CfdChart } from './CfdChart'
 import { CycleTimeChart } from './CycleTimeChart'
-
-// Define types for the chart data
-interface LeadTimeData {
-  average: number
-  median: number
-  min: number
-  max: number
-  data: number[]
-}
-
-interface ThroughputData {
-  dates: string[]
-  counts: number[]
-  average: number
-}
-
-interface WipData {
-  status: string[]
-  counts: number[]
-  total: number
-}
-
-interface CfdData {
-  statuses: string[]
-  data: Array<{ date: string; [key: string]: string | number }>
-}
-
-interface CycleTimeData {
-  average: number
-  median: number
-  min: number
-  max: number
-  data: number[]
-  start_state: string
-  end_state: string
-}
+import {
+  LeadTimeMetrics,
+  ThroughputMetrics,
+  WipMetrics,
+  CfdMetrics,
+  CycleTimeMetrics,
+} from '@api/jiraApi'
 
 interface AnalyticsSectionProps {
-  leadTimeData: () => LeadTimeData | null
-  throughputData: () => ThroughputData | null
-  wipData: () => WipData | null
-  cfdData: () => CfdData | null
-  cycleTimeData: () => CycleTimeData | null
+  leadTimeData: () => LeadTimeMetrics | null
+  throughputData: () => ThroughputMetrics | null
+  wipData: () => WipMetrics | null
+  cfdData: () => CfdMetrics | null
+  cycleTimeData: () => CycleTimeMetrics | null
   loading: () => boolean
 }
 

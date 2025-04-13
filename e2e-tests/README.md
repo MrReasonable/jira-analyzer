@@ -51,6 +51,10 @@ When running with debug logs (using `make e2e-test-debug`):
 
 ## Screenshot Organization
 
+> **Note:** As part of our test improvements, we're moving away from screenshot dependencies in tests.
+> New tests should use explicit assertions instead of relying on screenshots for verification.
+> See [README-TEST-IMPROVEMENTS.md](./README-TEST-IMPROVEMENTS.md) for details.
+
 The tests use a consistent screenshot organization system:
 
 ### Screenshot Helper Utility
@@ -108,9 +112,12 @@ Each test file should:
 
 1. Have a descriptive name ending with `.spec.ts`
 2. Use a `describe` block to group related tests
-3. Reset the screenshot counter in `beforeEach` with a specific test name
-4. Include detailed test steps with console logs
-5. Use appropriate assertions to verify expected behaviors
+3. Organize test steps using `test.step()` for better readability
+4. Use explicit assertions with descriptive messages
+5. Prefer stable selectors over index-based or position-based selectors
+
+> **Note:** We're moving away from console logs and screenshots for test flow documentation.
+> Instead, use `test.step()` to clearly document test steps and explicit assertions to verify behavior.
 
 ### Error Handling
 
@@ -123,6 +130,34 @@ For better test stability:
 ## Workflow States Testing
 
 For specific information about workflow states drag-and-drop testing, see [WORKFLOW_STATES_TESTING.md](./WORKFLOW_STATES_TESTING.md).
+
+### Test Improvements
+
+We've made significant improvements to the workflow states testing to reduce complexity and improve reliability:
+
+- **Name-based selectors** instead of index-based selectors
+- **Explicit assertions** with descriptive messages
+- **Simplified test structure** using `test.step()`
+- **Improved drag and drop testing** with better verification
+
+For details on these improvements, see [README-TEST-IMPROVEMENTS.md](./README-TEST-IMPROVEMENTS.md).
+
+### Selector Helpers
+
+The new `selector-helper.ts` utility provides stable selectors for workflow states:
+
+```typescript
+// Get a workflow state element by name
+getWorkflowStateByName(page, 'In Progress')
+
+// Get a drag handle for a specific state
+getWorkflowStateDragHandle(page, 'Backlog')
+
+// Get all workflow state names in their current order
+await getAllWorkflowStateNames(page)
+```
+
+These helpers make tests more resilient to UI changes and element reordering.
 
 ## Jira Charts Testing
 

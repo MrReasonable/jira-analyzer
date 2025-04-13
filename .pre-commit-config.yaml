@@ -29,13 +29,14 @@ repos:
         args: ["-c", "backend/pyproject.toml"]
         additional_dependencies: ["bandit[toml]"]
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0-alpha.9-for-vscode
+  - repo: local
     hooks:
       - id: prettier
+        name: prettier
+        entry: make frontend-format-ci
+        language: system
         types_or: [javascript, jsx, ts, tsx, json, css, markdown]
-        additional_dependencies:
-          - prettier@2.8.8
+        pass_filenames: false
 
   - repo: local
     hooks:
@@ -53,4 +54,13 @@ repos:
         language: python
         pass_filenames: false
         files: \.(md)$
+        stages: [pre-commit]
+
+      - id: verify-memory-bank
+        name: Verify memory bank rules
+        entry: python scripts/verify_memory_rules.py
+        args: ["testing"] # Default to testing, can be overridden
+        language: python
+        pass_filenames: false
+        files: ^memory-bank/
         stages: [pre-commit]

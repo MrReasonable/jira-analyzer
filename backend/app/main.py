@@ -27,6 +27,9 @@ from .container import container
 from .logger import get_logger
 from .middleware.rate_limiter import RateLimiter
 from .routers import admin, auth, configurations, health, jira, metrics
+
+# Import admin_test router (will only be registered in test environments)
+from .routers import admin_test as admin_test_router
 from .services.caching import get_cache
 
 # Create module-level logger
@@ -53,8 +56,20 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize application resources
     logger.info('Starting application')
     try:
-        # The database should already be initialized by a separate migration script
-        logger.info('Assuming database is already initialized')
+        # Check if we're using an in-memory database for testing
+        use_in_memory_db = os.environ.get('USE_IN_MEMORY_DB', 'false').lower() == 'true'
+
+        if use_in_memory_db:
+            # For in-memory databases, we need to initialize the database on startup
+            # since the database is destroyed when the application is restarted
+            logger.info('Using in-memory SQLite database for testing, initializing database')
+            from .database import init_db
+
+            await init_db()
+            logger.info('In-memory database initialized successfully')
+        else:
+            # For persistent databases, assume migrations have been run separately
+            logger.info('Using persistent database, assuming migrations are already run')
 
         # Set up the container with the session provider
         # This is needed for the new container structure
@@ -141,6 +156,7 @@ def create_app() -> FastAPI:
 
     # Check if we're running in test mode
     is_test_env = os.environ.get('USE_MOCK_JIRA', 'false').lower() == 'true'
+    use_in_memory_db = os.environ.get('USE_IN_MEMORY_DB', 'false').lower() == 'true'
 
     # Add rate limiting middleware
     app.add_middleware(
@@ -166,6 +182,17 @@ def create_app() -> FastAPI:
     app.include_router(jira.router)
     app.include_router(metrics.router)
     app.include_router(admin.router)
+
+    # Only register test-specific routers in test environments
+    if is_test_env or use_in_memory_db:
+        # Import fixtures to register them - import has side effects (fixture registration)
+        from .fixtures import workflow_fixtures  # noqa: F401
+
+        # Register test-only router
+        app.include_router(admin_test_router.router)
+        logger.info('Test administration endpoints enabled')
+    else:
+        logger.info('Test administration endpoints disabled')
 
     return app
 

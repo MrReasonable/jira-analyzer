@@ -4,8 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createSignal } from 'solid-js'
 import { useConfigSaver } from './useConfigSaver'
-import { JiraConfiguration } from '@api/jiraApi'
-import { jiraApi } from '@api/jiraApi'
+import { JiraConfiguration, jiraApi } from '@api/jiraApi'
 import { logger } from '@utils/logger'
 
 // Mock the jiraApi and logger

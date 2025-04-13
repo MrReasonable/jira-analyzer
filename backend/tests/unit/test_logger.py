@@ -133,9 +133,9 @@ class TestLogger:
 
         try:
             # Set the PYTEST_CURRENT_TEST environment variable
-            os.environ['PYTEST_CURRENT_TEST'] = (
-                'test_logger.py::TestLogger::test_get_logger_pytest_environment'
-            )
+            os.environ[
+                'PYTEST_CURRENT_TEST'
+            ] = 'test_logger.py::TestLogger::test_get_logger_pytest_environment'
 
             # Get a logger
             logger = get_logger('test_logger_pytest')

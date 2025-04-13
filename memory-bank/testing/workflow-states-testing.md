@@ -1,6 +1,22 @@
-# Workflow States Testing Guide
+# Workflow States Testing
 
-This document outlines the testing approach for the workflow states functionality in the Jira Analyzer application.
+> **Executive Summary:** Our workflow states testing approach verifies the drag-and-drop functionality and state management during both configuration creation and editing, with comprehensive screenshot organization and recent improvements to the edit functionality.
+
+<!--
+Last Updated: 11/04/2025
+Related Documents:
+- [E2E Testing](./e2e-testing.md)
+- [Test Environment](./test-environment.md)
+- [Features: Workflow Editor](../features/workflow-editor.md)
+-->
+
+## Table of Contents
+
+- [Current Testing Implementation](#current-testing-implementation)
+- [Screenshot Organization](#screenshot-organization)
+- [Recent Improvements](#recent-improvements)
+- [Test Strategies](#test-strategies)
+- [Common Issues](#common-issues)
 
 ## Current Testing Implementation
 
@@ -60,5 +76,50 @@ The following improvements have been implemented:
    - Added a new test file `workflow-states-edit.spec.ts` to verify edit functionality
    - Test creates a configuration, edits it, verifies the changes, and cleans up
 
-These improvements enhance both the user experience and the testability of the application by
-allowing users to modify configurations after creation.
+## Test Strategies
+
+When testing workflow states, we follow these strategies:
+
+1. **Isolated Testing**
+
+   - Test workflow state functionality in isolation from other features
+   - Create dedicated test configurations for workflow state tests
+   - Clean up test data after each test
+
+2. **Visual Verification**
+
+   - Take screenshots before and after drag operations
+   - Verify the visual order of workflow states
+   - Ensure the UI reflects the expected state
+
+3. **Data Verification**
+
+   - Verify that the workflow state order is saved correctly
+   - Check that lead time and cycle time states are properly set
+   - Ensure the backend receives the correct workflow state data
+
+4. **Error Handling**
+   - Test error scenarios (e.g., duplicate state names)
+   - Verify error messages are displayed correctly
+   - Ensure the form prevents invalid submissions
+
+## Common Issues
+
+When working with workflow state tests, be aware of these common issues:
+
+1. **Drag and Drop Timing**
+
+   - Drag and drop operations can be flaky in headless mode
+   - Use appropriate waits and verification steps
+   - Consider using the `force: true` option for drag operations
+
+2. **State Order Verification**
+
+   - Always verify the order of states after drag operations
+   - Use the `getAllWorkflowStateNames` helper function
+   - Compare arrays of state names rather than individual elements
+
+3. **Form Submission**
+   - Ensure the form is submitted after making changes
+   - Verify that changes are persisted to the backend
+   - Check that the UI reflects the updated state after submission

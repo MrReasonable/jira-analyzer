@@ -3,7 +3,6 @@ import { renderHook } from '@solidjs/testing-library'
 import { useConfigurationForm } from './useConfigurationForm'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
-import type { JiraConfiguration } from '../api/jiraApi'
 import { jiraApi } from '../api/jiraApi'
 
 // Create a mock act function if not available in SolidJS testing library
@@ -70,20 +69,7 @@ const server = setupServer(
   })
 )
 
-// Sample configuration for edit mode tests
-const _sampleConfig: JiraConfiguration = {
-  name: 'Test Config',
-  jira_server: 'https://test.atlassian.net',
-  jira_email: 'test@example.com',
-  jira_api_token: 'test-token',
-  jql_query: 'project = TEST',
-  project_key: 'TEST',
-  workflow_states: ['Todo', 'In Progress', 'Done'],
-  lead_time_start_state: 'Todo',
-  lead_time_end_state: 'Done',
-  cycle_time_start_state: 'In Progress',
-  cycle_time_end_state: 'Done',
-}
+// Note: Edit mode tests use inline configuration objects rather than a shared sample
 
 // Start MSW server before tests
 beforeAll(() => server.listen())

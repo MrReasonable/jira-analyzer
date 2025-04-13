@@ -3,6 +3,13 @@ import { renderHook } from '@solidjs/testing-library'
 import { useJiraMetrics } from './useJiraMetrics'
 import { jiraApi } from '@api/jiraApi'
 
+// Utility function to create a delayed promise resolution
+const delayedResolve = <T>(data: T, delay: number = 100): Promise<T> => {
+  return new Promise(resolve => {
+    global.setTimeout(() => resolve(data), delay)
+  })
+}
+
 // Mock the jiraApi module
 vi.mock('@api/jiraApi', () => ({
   jiraApi: {
@@ -164,10 +171,7 @@ describe('useJiraMetrics', () => {
 
     // Mock a delay in the API call to test loading state
     vi.mocked(jiraApi.getLeadTime).mockImplementationOnce(() => {
-      return new Promise(resolve => {
-        // Use global setTimeout
-        global.setTimeout(() => resolve(mockLeadTimeData), 100)
-      })
+      return delayedResolve(mockLeadTimeData)
     })
 
     // Start fetching metrics

@@ -59,9 +59,9 @@ class TestMetricCalculations:
                 return
 
             # We expect a 200 status code
-            assert response.status_code == 200, (
-                f'Expected status 200 for lead time edge cases, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 200
+            ), f'Expected status 200 for lead time edge cases, got {response.status_code}'
         finally:
             # Reset environment variable
             os.environ.pop('USE_MOCK_JIRA', None)
@@ -102,17 +102,17 @@ class TestMetricCalculations:
             return
 
         # We expect a 200 status code
-        assert response.status_code == 200, (
-            f'Expected status 200 for throughput calculation periods, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for throughput calculation periods, got {response.status_code}'
 
         # Validate the response data
         data = response.json()
         if 'error' in data:
             # If we get an error response, check that it's the expected one
-            assert data['error'] == 'No completed issues found', (
-                f'Unexpected error message: {data["error"]}'
-            )
+            assert (
+                data['error'] == 'No completed issues found'
+            ), f'Unexpected error message: {data["error"]}'
         else:
             # Otherwise, validate the expected data structure
             assert 'dates' in data, "Expected 'dates' in response data"
@@ -136,9 +136,9 @@ class TestMetricCalculations:
         response = test_client.get('/api/metrics/wip?jql=project=TEST&config_name=test_config')
 
         # We expect a 422 status code
-        assert response.status_code == 422, (
-            f'Expected status 422 for WIP status transitions, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for WIP status transitions, got {response.status_code}'
 
         # Skip the data validation since we're getting an error
 
@@ -162,9 +162,9 @@ class TestMetricCalculations:
         response = test_client.get('/api/metrics/cfd?jql=project=TEST&config_name=test_config')
 
         # We expect a 422 status code
-        assert response.status_code == 422, (
-            f'Expected status 422 for CFD data consistency, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for CFD data consistency, got {response.status_code}'
 
         # Skip the data validation since we're getting an error
 
@@ -184,17 +184,17 @@ class TestMetricCalculations:
             return
 
         # We expect a 200 status code
-        assert response.status_code == 200, (
-            f'Expected status 200 for empty data, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for empty data, got {response.status_code}'
 
         # Validate the response data
         data = response.json()
         if 'error' in data:
             # If we get an error response, check that it's the expected one
-            assert data['error'] == 'No completed issues found', (
-                f'Unexpected error message: {data["error"]}'
-            )
+            assert (
+                data['error'] == 'No completed issues found'
+            ), f'Unexpected error message: {data["error"]}'
         else:
             # Otherwise, validate the expected data structure
             assert 'average' in data, "Expected 'average' in response data"
@@ -235,9 +235,9 @@ class TestMetricCalculations:
             return
 
         # We expect a 200 status code
-        assert response.status_code == 200, (
-            f'Expected status 200 for date handling, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for date handling, got {response.status_code}'
 
         # Validate the response data
         data = response.json()
@@ -264,9 +264,9 @@ class TestMetricCalculations:
         response = test_client.get('/api/metrics/wip?jql=project=TEST&config_name=test_config')
 
         # We expect a 422 status code
-        assert response.status_code == 422, (
-            f'Expected status 422 for status normalization, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for status normalization, got {response.status_code}'
 
         # Skip the data validation since we're getting an error
 
@@ -294,17 +294,17 @@ class TestMetricCalculations:
             return
 
         # We expect a 200 status code
-        assert response.status_code == 200, (
-            f'Expected status 200 for data aggregation, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for data aggregation, got {response.status_code}'
 
         # Validate the response data
         data = response.json()
         if 'error' in data:
             # If we get an error response, check that it's the expected one
-            assert data['error'] == 'No completed issues found', (
-                f'Unexpected error message: {data["error"]}'
-            )
+            assert (
+                data['error'] == 'No completed issues found'
+            ), f'Unexpected error message: {data["error"]}'
         else:
             # Otherwise, validate the expected data structure
             assert 'dates' in data, "Expected 'dates' in response data"
@@ -365,9 +365,9 @@ class TestMetricCalculations:
         )
 
         # We expect a 422 status code
-        assert response.status_code == 422, (
-            f'Expected status 422 for cycle time calculation, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for cycle time calculation, got {response.status_code}'
 
         # Skip the data validation since we're getting an error
 
@@ -415,8 +415,8 @@ class TestMetricCalculations:
         )
 
         # We expect a 422 status code
-        assert response.status_code == 422, (
-            f'Expected status 422 for cycle time edge cases, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for cycle time edge cases, got {response.status_code}'
 
         # Skip the data validation since we're getting an error

@@ -5,8 +5,10 @@ and related data. It uses SQLAlchemy's declarative base system for model
 definitions.
 """
 
-from sqlalchemy import JSON, Column, Integer, String
-from sqlalchemy.orm import DeclarativeBase
+from datetime import datetime
+
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import DeclarativeBase, relationship
 
 
 # Create a base class for models
@@ -51,3 +53,41 @@ class JiraConfiguration(Base):
     lead_time_end_state = Column(String, nullable=False)
     cycle_time_start_state = Column(String, nullable=False)
     cycle_time_end_state = Column(String, nullable=False)
+
+    # Relationships
+    metrics_analyses = relationship(
+        'MetricsAnalysis', back_populates='configuration', cascade='all, delete-orphan'
+    )
+
+
+class MetricsAnalysis(Base):
+    """Database model for storing metrics analysis results.
+
+    This model stores the results of metrics calculations for a specific
+    configuration, time period, and JQL query. It includes the raw metrics
+    data as well as metadata about when the analysis was performed.
+
+    Attributes:
+        id (str): Primary key for the analysis (UUID).
+        configuration_id (int): Foreign key to the JiraConfiguration.
+        start_date (datetime): Start date for the analysis period.
+        end_date (datetime): End date for the analysis period.
+        jql_query (str): JQL query used for this analysis.
+        created_at (datetime): When this analysis was created.
+        updated_at (datetime): When this analysis was last updated.
+        metrics_data (JSON): Raw metrics data from the analysis.
+    """
+
+    __tablename__ = 'metrics_analyses'
+
+    id = Column(String, primary_key=True, index=True)
+    configuration_id = Column(Integer, ForeignKey('jira_configurations.id'), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    jql_query = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    metrics_data = Column(JSON, nullable=False)
+
+    # Relationships
+    configuration = relationship('JiraConfiguration', back_populates='metrics_analyses')

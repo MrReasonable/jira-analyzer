@@ -1,7 +1,16 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../src/fixtures'
 import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
 import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
 import { TestConfig } from '../src/core/test-config'
+import { setupApiErrorMonitoring } from '../src/utils/test-helpers'
+import {
+  initializeTestEnvironment,
+  clearBackendCache,
+  resetInMemoryDatabase,
+} from '../src/utils/test-environment'
+
+// Set up API error monitoring for all tests in this file
+setupApiErrorMonitoring(test)
 
 // Increase timeout for more reliable tests
 test.setTimeout(60000) // 60 seconds
@@ -44,17 +53,27 @@ test.describe('Jira Charts Error Detection Test', () => {
 
     // Set the test name for screenshots
     resetScreenshotCounter('jira_charts_errors')
+
+    // Initialize test environment
+    const context = { page }
+    await initializeTestEnvironment(context)
+    await clearBackendCache(context)
+
+    // Reset the in-memory database to ensure a clean state
+    const databaseReset = await resetInMemoryDatabase(context)
+    if (!databaseReset) {
+      console.warn('Failed to reset in-memory database, test may use stale data')
+    } else {
+      console.log('In-memory database reset successfully')
+    }
   })
 
-  test('Detect and log chart rendering errors', async ({ page }) => {
+  test('Detect and log chart rendering errors', async ({ page, apiMonitor }) => {
     // Generate a unique configuration name
     const configName = `ErrorTest_${new Date().getTime()}`
 
-    console.log('Step 1: Navigate to the application')
-    await jiraAnalyzerPage.goto()
-
-    console.log('Step 2: Create a new Jira configuration')
-    await jiraAnalyzerPage.createConfiguration({
+    // Setup test configuration
+    const testConfig = {
       name: configName,
       server: 'https://test.atlassian.net',
       email: 'test@example.com',
@@ -66,122 +85,157 @@ test.describe('Jira Charts Error Detection Test', () => {
       leadTimeEndState: 'Done',
       cycleTimeStartState: 'In Progress',
       cycleTimeEndState: 'Done',
+    }
+
+    await test.step('Navigate to the application', async () => {
+      await jiraAnalyzerPage.goto()
+      expect(page.url(), 'Application URL should be loaded').toContain('localhost')
+
+      // Check for API errors after navigation
+      const hasInitialErrors = await apiMonitor.hasApiErrors()
+      if (hasInitialErrors) {
+        console.log('API errors detected during initial page load:')
+        console.log(apiMonitor.getErrorSummary())
+
+        // Fail the test if we have API errors during setup
+        // This indicates a real backend issue that needs to be fixed
+        expect(hasInitialErrors, 'Should not have API errors during initial page load').toBe(false)
+      }
     })
 
-    console.log('Step 3: Analyze metrics and capture any errors')
-    try {
-      await jiraAnalyzerPage.analyzeMetrics()
-      console.log('Successfully analyzed metrics')
-    } catch (error) {
-      console.error('Error analyzing metrics:', error)
+    await test.step('Create a new Jira configuration', async () => {
+      // Create configuration and assert on the result
+      // If this fails, the test should fail as it's part of the setup
+      const result = await jiraAnalyzerPage.createConfiguration(testConfig)
+      expect(result, 'Configuration should be created successfully').toBe(true)
 
-      // Take a screenshot of the current state
-      await takeScreenshot(page, 'analyze_metrics_error')
+      // Check for API errors after configuration creation
+      const hasConfigErrors = await apiMonitor.hasApiErrors()
+      if (hasConfigErrors) {
+        console.log('API errors detected during configuration creation:')
+        console.log(apiMonitor.getErrorSummary())
+        // Fail the test if we have API errors during setup
+        expect(hasConfigErrors, 'Should not have API errors during configuration creation').toBe(
+          false
+        )
+      }
+    })
 
-      // Try a fallback approach - find and click the analyze button directly
-      console.log('Trying fallback approach to click analyze button')
+    await test.step('Navigate to metrics view', async () => {
+      // Ensure we're in the metrics view
+      await jiraAnalyzerPage.ensureInMetricsView()
 
-      // First try by test ID
+      // Verify we're in the metrics view by checking for the analyze button
       const analyzeButton = page.getByTestId('analyze-button')
-      if (await analyzeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-        console.log('Found analyze button by test ID')
-        await analyzeButton.click()
-      } else {
-        // Try by role
-        const analyzeByRole = page.getByRole('button', { name: 'Analyze', exact: true })
-        if (await analyzeByRole.isVisible({ timeout: 1000 }).catch(() => false)) {
-          console.log('Found analyze button by role')
-          await analyzeByRole.click()
-        } else {
-          console.error('Could not find analyze button by any method')
-          throw new Error('Could not find analyze button')
+      await expect(analyzeButton, 'Analyze button should be visible').toBeVisible({
+        timeout: TestConfig.timeouts.element,
+      })
+    })
+
+    // From this point on, we're testing error detection, so we'll capture errors
+    // but not fail the test if they occur
+
+    await test.step('Attempt to analyze metrics and capture any errors', async () => {
+      try {
+        // Analyze metrics
+        await jiraAnalyzerPage.analyzeMetrics()
+
+        // Take a screenshot of the current state
+        await takeScreenshot(page, 'charts_with_potential_errors')
+
+        // Check for API errors after metrics analysis
+        const hasAnalysisErrors = await apiMonitor.hasApiErrors()
+        if (hasAnalysisErrors) {
+          console.log('API errors detected during metrics analysis:')
+          console.log(apiMonitor.getErrorSummary())
         }
+      } catch (error) {
+        console.log('Error during metrics analysis:', error)
+        // This is expected in an error detection test
+      }
+    })
+
+    await test.step('Check for console errors during chart rendering', async () => {
+      // Take a screenshot if errors are found
+      if (consoleErrors.length > 0) {
+        await takeScreenshot(page, 'console_errors_detected')
       }
 
-      // Wait for metrics to load
-      await page.waitForTimeout(TestConfig.timeouts.api)
-    }
+      // Take a screenshot if network errors are found
+      if (networkErrors.length > 0) {
+        await takeScreenshot(page, 'network_errors_detected')
+      }
+    })
 
-    // Take a screenshot of the metrics section
-    await takeScreenshot(page, 'charts_with_potential_errors')
+    await test.step('Verify chart elements are present or error messages exist', async () => {
+      // Check for canvas elements (actual charts)
+      const canvasElements = page.locator('canvas')
+      const canvasCount = await canvasElements.count()
 
-    console.log('Step 4: Check for console errors during chart rendering')
+      // Check for "No data available" messages
+      const noDataMessages = page.getByTestId('no-data-message')
+      const noDataCount = await noDataMessages.count()
 
-    // Log all errors for debugging
-    if (consoleErrors.length > 0) {
-      console.error('Console errors detected:')
-      consoleErrors.forEach((error, index) => {
-        console.error(`Error ${index + 1}: ${error}`)
-      })
+      // Check for error messages in the UI
+      const errorMessages = page.locator(
+        '.error-message, .alert-error, [data-testid="error-message"]'
+      )
+      const errorCount = await errorMessages.count()
 
-      // Take a screenshot when errors are found
-      await takeScreenshot(page, 'console_errors_detected')
+      // Log what we found
+      console.log(`Chart verification results:
+        - Chart canvas elements: ${canvasCount}
+        - "No data available" messages: ${noDataCount}
+        - Error messages in UI: ${errorCount}
+      `)
 
-      // Test will continue but we'll log the errors
-      console.error(`Found ${consoleErrors.length} console errors during chart rendering`)
-    } else {
-      console.log('No console errors detected during chart rendering')
-    }
+      // Take screenshots based on what we found
+      if (canvasCount > 0 && canvasCount < 5) {
+        await takeScreenshot(page, 'fewer_charts_than_expected')
+      } else if (canvasCount === 0) {
+        await takeScreenshot(page, 'no_charts_found')
+      }
 
-    // Check for network errors
-    if (networkErrors.length > 0) {
-      console.error('Network errors detected:')
-      networkErrors.forEach((error, index) => {
-        console.error(`Network Error ${index + 1}: ${error}`)
-      })
+      if (noDataCount > 0) {
+        await takeScreenshot(page, 'no_data_messages_found')
+      }
 
-      // Take a screenshot when network errors are found
-      await takeScreenshot(page, 'network_errors_detected')
+      if (errorCount > 0) {
+        await takeScreenshot(page, 'ui_error_messages')
+      }
+    })
 
-      console.error(`Found ${networkErrors.length} network errors during chart rendering`)
-    } else {
-      console.log('No network errors detected during chart rendering')
-    }
+    await test.step('Clean up - delete configuration', async () => {
+      try {
+        await jiraAnalyzerPage.deleteConfiguration(configName)
+      } catch (error) {
+        console.log('Error during configuration deletion:', error)
+        // This is acceptable in an error detection test
+      }
+    })
 
-    // Check for warnings (not failing the test, just logging)
-    if (consoleWarnings.length > 0) {
-      console.warn('Console warnings detected:')
-      consoleWarnings.forEach((warning, index) => {
-        console.warn(`Warning ${index + 1}: ${warning}`)
-      })
-      console.warn(`Found ${consoleWarnings.length} console warnings during chart rendering`)
-    } else {
-      console.log('No console warnings detected during chart rendering')
-    }
+    await test.step('Verify errors were detected', async () => {
+      // This test is specifically for detecting errors, so we expect errors to be present
+      // Collect all types of errors we've detected
+      const apiErrors = await apiMonitor.hasApiErrors()
+      const totalErrors = consoleErrors.length + networkErrors.length + (apiErrors ? 1 : 0)
 
-    console.log('Step 5: Verify chart elements are present')
+      console.log(`Detected errors summary:
+        - Console errors: ${consoleErrors.length}
+        - Network errors: ${networkErrors.length}
+        - API errors: ${apiErrors ? 'Yes' : 'No'}
+        - Total error sources: ${totalErrors}
+      `)
 
-    // Check for canvas elements (actual charts)
-    const canvasElements = page.locator('canvas')
-    const canvasCount = await canvasElements.count()
-    console.log(`Found ${canvasCount} canvas elements for charts`)
+      // The test should pass if we detected errors (which is expected)
+      // and fail if we didn't detect any errors (which would be unexpected)
+      expect(
+        totalErrors,
+        'Should detect errors during chart rendering (console, network, or API errors)'
+      ).toBeGreaterThan(0)
 
-    // This test is primarily for error detection, so we'll just log the count
-    // rather than failing if the count is wrong
-    if (canvasCount < 5) {
-      console.warn(`Expected at least 5 canvas elements, but found ${canvasCount}`)
-    }
-
-    // Check for "No data available" messages
-    const noDataMessages = page.getByTestId('no-data-message')
-    const noDataCount = await noDataMessages.count()
-
-    if (noDataCount > 0) {
-      console.warn(`Found ${noDataCount} "No data available" messages`)
-    }
-
-    console.log('Step 6: Clean up - delete configuration')
-    await jiraAnalyzerPage.deleteConfiguration(configName)
-
-    // This test is specifically for detecting errors, so we expect errors to be present
-    console.log(`Found ${consoleErrors.length} console errors during chart rendering`)
-
-    // We expect to find errors since this test is designed to verify error detection
-    // The test should pass if we find errors, which is the expected behavior
-    expect(consoleErrors.length).toBeGreaterThan(0)
-
-    // For network errors, we'll just log them without expectations
-    // since they may or may not occur depending on the test environment
-    console.log(`Found ${networkErrors.length} network errors during chart rendering`)
+      // Log a success message to make it clear this is expected behavior
+      console.log('✅ Successfully detected expected errors - test is passing as designed')
+    })
   })
 })

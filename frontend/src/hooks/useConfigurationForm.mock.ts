@@ -67,78 +67,80 @@ export function useConfigurationForm({
   // Create a mock for selectProject
   const mockSelectProject = vi.fn()
 
+  // Helper functions to reduce cognitive complexity
+  const validateNameField = (): boolean => {
+    if (!formDataValue.name) {
+      stepErrorsValue.credentials = 'Configuration name is required'
+      return false
+    }
+
+    // Clear any previous errors
+    stepErrorsValue.credentials = null
+    return true
+  }
+
+  const getCredentialsPayload = () => ({
+    name: formDataValue.name,
+    jira_server: formDataValue.jira_server,
+    jira_email: formDataValue.jira_email,
+    jira_api_token: formDataValue.jira_api_token,
+  })
+
+  const fetchProjectsAndSelectDefault = async () => {
+    await jiraApi.getProjectsWithCredentials(getCredentialsPayload())
+
+    // Select first project if none selected
+    if (!formDataValue.project_key && projectsValue.length > 0) {
+      formDataValue.project_key = 'TEST'
+    }
+  }
+
+  const validateCredentials = async (): Promise<boolean> => {
+    try {
+      const response = await jiraApi.validateCredentials(getCredentialsPayload())
+
+      if (response.status === 'error') {
+        stepErrorsValue.credentials = 'Invalid credentials'
+        return false
+      }
+
+      return true
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      stepErrorsValue.credentials = `API Error: Failed to validate credentials - ${errorMessage}`
+      return false
+    }
+  }
+
+  const moveToProjectStep = async () => {
+    currentStepValue = 'project'
+    await fetchProjectsAndSelectDefault()
+  }
+
   // Mock actions
   const goToNextStep = vi.fn(async () => {
-    // Check if we're on the credentials step
-    if (currentStepValue === 'credentials') {
-      // Validate the form fields
-      if (!formDataValue.name) {
-        stepErrorsValue.credentials = 'Configuration name is required'
-        return Promise.resolve()
-      }
-
-      // Clear any previous errors
-      stepErrorsValue.credentials = null
-
-      // For the skips credentials validation test
-      // Skip validation if credentials are already valid
-      if (credentialsValidValue) {
-        // Skip validation and move to the next step
-        currentStepValue = 'project'
-
-        // Fetch projects when moving to project step
-        await jiraApi.getProjectsWithCredentials({
-          name: formDataValue.name,
-          jira_server: formDataValue.jira_server,
-          jira_email: formDataValue.jira_email,
-          jira_api_token: formDataValue.jira_api_token,
-        })
-
-        // Select first project if none selected
-        if (!formDataValue.project_key && projectsValue.length > 0) {
-          formDataValue.project_key = 'TEST'
-        }
-      } else {
-        try {
-          // Call validateCredentials internally
-          const response = await jiraApi.validateCredentials({
-            name: formDataValue.name,
-            jira_server: formDataValue.jira_server,
-            jira_email: formDataValue.jira_email,
-            jira_api_token: formDataValue.jira_api_token,
-          })
-
-          // Check if the response indicates an error
-          if (response.status === 'error') {
-            // Set error and stay on credentials step
-            stepErrorsValue.credentials = 'Invalid credentials'
-            return Promise.resolve()
-          }
-
-          // If we get here, validation succeeded, so we can move to the next step
-          currentStepValue = 'project'
-
-          // Fetch projects when moving to project step
-          await jiraApi.getProjectsWithCredentials({
-            name: formDataValue.name,
-            jira_server: formDataValue.jira_server,
-            jira_email: formDataValue.jira_email,
-            jira_api_token: formDataValue.jira_api_token,
-          })
-
-          // Select first project if none selected
-          if (!formDataValue.project_key && projectsValue.length > 0) {
-            formDataValue.project_key = 'TEST'
-          }
-        } catch (err) {
-          // Handle API errors - stay on credentials step
-          const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-          stepErrorsValue.credentials = `API Error: Failed to validate credentials - ${errorMessage}`
-          // Do not change the current step
-          return Promise.resolve()
-        }
-      }
+    // Only handle the credentials step (implicit else is project step, which does nothing)
+    if (currentStepValue !== 'credentials') {
+      return Promise.resolve()
     }
+
+    // Validate name field first
+    if (!validateNameField()) {
+      return Promise.resolve()
+    }
+
+    // Skip validation if credentials are already valid
+    if (credentialsValidValue) {
+      await moveToProjectStep()
+      return Promise.resolve()
+    }
+
+    // Validate credentials and move to next step if valid
+    const isValid = await validateCredentials()
+    if (isValid) {
+      await moveToProjectStep()
+    }
+
     return Promise.resolve()
   })
 

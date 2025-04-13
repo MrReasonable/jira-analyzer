@@ -75,7 +75,7 @@ export function withChart<T extends ChartData>(config: ChartConfig<T>) {
 
       try {
         // Use the native CanvasRenderingContext2D
-        chartInstance = config.createChartInstance(ctx, data as T)
+        chartInstance = config.createChartInstance(ctx, data)
 
         // Chart created successfully
       } catch (error) {
@@ -115,26 +115,39 @@ export function withChart<T extends ChartData>(config: ChartConfig<T>) {
       }
     })
 
+    // Render content based on component state
+    const renderContent = () => {
+      if (isLoading()) {
+        return (
+          <output class="flex justify-center py-4" aria-label="Loading">
+            <div class="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          </output>
+        )
+      }
+
+      if (hasError() || !getData()) {
+        return (
+          <div data-testid="no-data-message">
+            <p class="py-4 text-center text-gray-500">
+              No data available. Configure Jira and run analysis to see results.
+            </p>
+          </div>
+        )
+      }
+
+      return (
+        <>
+          <canvas ref={el => (chartRef = el)} />
+          <div class="metrics-container">{config.renderMetrics(getData() as T)}</div>
+        </>
+      )
+    }
+
     return (
       <div class="card">
         <div class="space-y-4">
           <h2 class="text-xl font-bold">{props.title}</h2>
-          {isLoading() ? (
-            <div class="flex justify-center py-4" role="status" aria-label="Loading">
-              <div class="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-            </div>
-          ) : hasError() || !getData() ? (
-            <div data-testid="no-data-message">
-              <p class="py-4 text-center text-gray-500">
-                No data available. Configure Jira and run analysis to see results.
-              </p>
-            </div>
-          ) : (
-            <>
-              <canvas ref={el => (chartRef = el)} />
-              <div class="metrics-container">{config.renderMetrics(getData() as T)}</div>
-            </>
-          )}
+          {renderContent()}
         </div>
       </div>
     )

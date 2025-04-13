@@ -5,8 +5,17 @@ usage() {
   echo "Usage: $0 [options] [playwright-args]"
   echo ""
   echo "Options:"
-  echo "  --no-debug    Disable debug logs (useful for CI environments)"
-  echo "  -h, --help    Show this help message"
+  echo "  --no-debug       Disable debug logs (useful for CI environments)"
+  echo "  --full-debug     Enable full debug logs (very verbose)"
+  echo "  --playwright-api Enable Playwright API debug logs"
+  echo "  -t, --test       Run a single test by title (e.g. --test \"Full application workflow\")"
+  echo "  --testcase       Same as --test but runs a specific test case (sub-test) by title"
+  echo "  -h, --help       Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "  $0 --test \"Full application workflow\"     # Run a specific test"
+  echo "  $0 --testcase \"Modify JQL query\"         # Run a specific test case"
+  echo "  $0 --full-debug tests/jira-analyzer.spec.ts # Run all tests in a file with debug"
   echo ""
   echo "Any additional arguments are passed directly to Playwright"
   exit 1
@@ -14,6 +23,10 @@ usage() {
 
 # Parse command line arguments
 DEBUG_ENABLED=true
+FULL_DEBUG=false
+PLAYWRIGHT_API_DEBUG=false
+TEST_NAME=""
+TEST_CASE=""
 PLAYWRIGHT_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -21,6 +34,30 @@ while [[ $# -gt 0 ]]; do
     --no-debug)
       DEBUG_ENABLED=false
       shift
+      ;;
+    --full-debug)
+      FULL_DEBUG=true
+      shift
+      ;;
+    --playwright-api)
+      PLAYWRIGHT_API_DEBUG=true
+      shift
+      ;;
+    -t|--test)
+      if [[ -z "$2" || "$2" == --* ]]; then
+        echo "Error: --test requires a test name argument"
+        usage
+      fi
+      TEST_NAME="$2"
+      shift 2
+      ;;
+    --testcase)
+      if [[ -z "$2" || "$2" == --* ]]; then
+        echo "Error: --testcase requires a test case name argument"
+        usage
+      fi
+      TEST_CASE="$2"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -81,12 +118,23 @@ echo "Clearing old log files and screenshots..."
 rm -f "$LOGS_DIR"/*.log
 rm -f "$SCREENSHOTS_DIR"/*.png
 
-# Set debug environment variables based on debug flag
+# Set debug environment variables based on debug flags
 if [ "$DEBUG_ENABLED" = true ]; then
-  echo "Debug logs enabled"
-  export DEBUG=pw:api
-  # Enable verbose frontend logging
-  export VITE_DEBUG_LEVEL=verbose
+  if [ "$FULL_DEBUG" = true ]; then
+    echo "Full debug logs enabled (very verbose)"
+    export VITE_DEBUG_LEVEL=verbose
+  else
+    echo "Standard debug logs enabled"
+    export VITE_DEBUG_LEVEL=info
+  fi
+
+  if [ "$PLAYWRIGHT_API_DEBUG" = true ]; then
+    echo "Playwright API debug logs enabled"
+    export DEBUG=pw:api
+  else
+    # Unset DEBUG if it was previously set
+    unset DEBUG
+  fi
 else
   echo "Debug logs disabled (quiet mode)"
   # Unset DEBUG if it was previously set
@@ -98,7 +146,7 @@ fi
 # Start the backend with Docker Compose, using in-memory database for tests
 echo "Starting backend with Docker Compose (using in-memory database)..."
 cd "$PROJECT_ROOT" && docker-compose -f docker-compose.dev.yml build --quiet
-cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true VITE_DEBUG_LEVEL=$VITE_DEBUG_LEVEL docker-compose -f docker-compose.dev.yml up -d
+cd "$PROJECT_ROOT" && USE_IN_MEMORY_DB=true USE_PG_FOR_TESTING=true USE_MOCK_JIRA=true VITE_DEBUG_LEVEL=$VITE_DEBUG_LEVEL docker-compose -f docker-compose.dev.yml up -d
 
 # Start capturing logs in the background
 echo "Capturing backend logs to $LOGS_DIR/backend.log..."
@@ -189,24 +237,28 @@ export PLAYWRIGHT_WORKERS=4            # Control parallel test execution
 echo "Using base URL for tests: http://localhost:$TEST_PORT"
 echo "Using API URL for tests: http://localhost:8000"
 
+# Add test name and test case filtering if provided
+if [ -n "$TEST_NAME" ]; then
+  echo "Running test: \"$TEST_NAME\""
+  PLAYWRIGHT_ARGS+=("--grep" "$TEST_NAME")
+fi
+
+if [ -n "$TEST_CASE" ]; then
+  echo "Running test case: \"$TEST_CASE\""
+  PLAYWRIGHT_ARGS+=("--grep-invert") # Invert the previous test name grep if any
+  PLAYWRIGHT_ARGS+=("--grep" "$TEST_CASE")
+fi
+
 # Run the tests, using a cross-platform approach for timeout
 echo "Starting tests with a 180-second safety timeout..."
 (
   # Start the tests in background with type stripping disabled
   if [ "$DEBUG_ENABLED" = true ]; then
     # Run with normal output
-    if [ ${#PLAYWRIGHT_ARGS[@]} -eq 0 ]; then
-      pnpm exec playwright test &
-    else
-      pnpm exec playwright test "${PLAYWRIGHT_ARGS[@]}" &
-    fi
+    pnpm exec playwright test "${PLAYWRIGHT_ARGS[@]}" &
   else
     # Run with quiet output
-    if [ ${#PLAYWRIGHT_ARGS[@]} -eq 0 ]; then
-      pnpm exec playwright test --quiet &
-    else
-      pnpm exec playwright test --quiet "${PLAYWRIGHT_ARGS[@]}" &
-    fi
+    pnpm exec playwright test --quiet "${PLAYWRIGHT_ARGS[@]}" &
   fi
   TEST_PID=$!
 

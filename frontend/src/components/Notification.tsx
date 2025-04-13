@@ -20,7 +20,7 @@ export const Notification: Component<NotificationProps> = props => {
     timeout = setTimeout(() => {
       setVisible(false)
       if (props.onClose) props.onClose()
-    }, props.duration || 3000) as unknown as number
+    }, props.duration ?? 3000) as unknown as number
   })
 
   // Clean up timeout on component unmount

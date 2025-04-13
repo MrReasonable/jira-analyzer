@@ -1,6 +1,24 @@
 # Test Performance Guidelines
 
-This document provides guidelines for managing test performance in the Jira Analyzer e2e test suite.
+> **Executive Summary:** Our E2E test suite includes performance optimizations to ensure reliable and efficient test execution, with tests categorized by speed and specific techniques applied to handle common issues like timeouts and 422 errors.
+
+<!--
+Last Updated: 11/04/2025
+Related Documents:
+- [E2E Testing](./e2e-testing.md)
+- [Test Environment](./test-environment.md)
+- [API Error Monitoring](./api-error-monitoring.md)
+-->
+
+## Table of Contents
+
+- [Understanding Test Performance](#understanding-test-performance)
+- [Running Tests Efficiently](#running-tests-efficiently)
+  - [Filtering Tests by Tag](#filtering-tests-by-tag)
+  - [Optimizing Test Runs](#optimizing-test-runs-during-development)
+- [Performance Optimization Techniques](#performance-optimization-techniques)
+- [Adding New Tests](#adding-new-tests)
+- [Troubleshooting Slow Tests](#troubleshooting-slow-tests)
 
 ## Understanding Test Performance
 

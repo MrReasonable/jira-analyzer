@@ -89,33 +89,36 @@ vi.mock('./form/ProjectStep', () => {
 
 vi.mock('./form/FormNavigation', () => {
   return {
-    FormNavigation: (props: any) => (
-      <div data-testid="form-navigation" data-disabled={props.disabled ? 'true' : undefined}>
-        {!props.isFirstStep() && (
-          <button onClick={props.onPrevious} data-testid="previous-button">
-            Previous
+    FormNavigation: (props: any) => {
+      // Helper function to determine the button test ID
+      const getButtonTestId = () => {
+        if (props.isLastStep()) {
+          return props.isEditMode ? 'update-button' : 'create-button'
+        }
+        return 'next-button'
+      }
+
+      // Helper function to determine the button text
+      const getButtonText = () => {
+        if (props.isLastStep()) {
+          return props.isEditMode ? 'Update Configuration' : 'Create Configuration'
+        }
+        return 'Next'
+      }
+
+      return (
+        <div data-testid="form-navigation" data-disabled={props.disabled ? 'true' : undefined}>
+          {!props.isFirstStep() && (
+            <button onClick={props.onPrevious} data-testid="previous-button">
+              Previous
+            </button>
+          )}
+          <button type="submit" disabled={props.disabled} data-testid={getButtonTestId()}>
+            {getButtonText()}
           </button>
-        )}
-        <button
-          type="submit"
-          role="button"
-          disabled={props.disabled}
-          data-testid={
-            props.isLastStep()
-              ? props.isEditMode
-                ? 'update-button'
-                : 'create-button'
-              : 'next-button'
-          }
-        >
-          {props.isLastStep()
-            ? props.isEditMode
-              ? 'Update Configuration'
-              : 'Create Configuration'
-            : 'Next'}
-        </button>
-      </div>
-    ),
+        </div>
+      )
+    },
   }
 })
 
@@ -155,16 +158,16 @@ describe('ConfigurationForm', () => {
     const config = isEdit ? sampleConfig : undefined
 
     const mockFormData = {
-      name: config?.name || '',
-      jira_server: config?.jira_server || '',
-      jira_email: config?.jira_email || '',
-      jira_api_token: config?.jira_api_token || '',
-      jql_query: config?.jql_query || '',
-      project_key: config?.project_key || '',
-      lead_time_start_state: config?.lead_time_start_state || '',
-      lead_time_end_state: config?.lead_time_end_state || '',
-      cycle_time_start_state: config?.cycle_time_start_state || '',
-      cycle_time_end_state: config?.cycle_time_end_state || '',
+      name: config?.name ?? '',
+      jira_server: config?.jira_server ?? '',
+      jira_email: config?.jira_email ?? '',
+      jira_api_token: config?.jira_api_token ?? '',
+      jql_query: config?.jql_query ?? '',
+      project_key: config?.project_key ?? '',
+      lead_time_start_state: config?.lead_time_start_state ?? '',
+      lead_time_end_state: config?.lead_time_end_state ?? '',
+      cycle_time_start_state: config?.cycle_time_start_state ?? '',
+      cycle_time_end_state: config?.cycle_time_end_state ?? '',
     }
 
     const mockStepErrors = {
@@ -198,6 +201,7 @@ describe('ConfigurationForm', () => {
         return Promise.resolve()
       }),
       isEditMode: vi.fn(() => isEdit),
+      setProjects: vi.fn(), // Add missing function to fix TypeScript errors
     }
   }
 

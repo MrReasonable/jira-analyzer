@@ -19,7 +19,7 @@ export const ProjectStep: Component<ProjectStepProps> = props => {
   return (
     <div class="space-y-4">
       {/* Project dropdown */}
-      <div role="group" class="space-y-1">
+      <fieldset class="space-y-1">
         <div class="flex items-center justify-between">
           <label for="project_key" class="block text-sm font-medium text-gray-700">
             Jira Project
@@ -93,10 +93,10 @@ export const ProjectStep: Component<ProjectStepProps> = props => {
             </select>
           </Show>
         </Show>
-      </div>
+      </fieldset>
 
       {/* JQL Query field */}
-      <div role="group" class="space-y-1">
+      <fieldset class="space-y-1">
         <label for="jql_query" class="block text-sm font-medium text-gray-700">
           Default JQL Query
         </label>
@@ -109,7 +109,7 @@ export const ProjectStep: Component<ProjectStepProps> = props => {
           placeholder="project = PROJ AND type = Story"
           data-testid="jql_query"
         />
-      </div>
+      </fieldset>
 
       {props.error() && (
         <p class="text-red-500" data-testid="step-error">

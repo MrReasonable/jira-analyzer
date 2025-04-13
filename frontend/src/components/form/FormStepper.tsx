@@ -16,29 +16,35 @@ interface FormStepperProps {
  * Component for displaying form steps
  */
 export const FormStepper: Component<FormStepperProps> = props => {
+  const getTextColorClass = (step: StepInfo, index: () => number): string => {
+    if (step.id === props.currentStep()) {
+      return 'text-blue-600'
+    } else if (props.steps.findIndex(s => s.id === props.currentStep()) > index()) {
+      return 'text-green-600'
+    } else {
+      return 'text-gray-400'
+    }
+  }
+
+  const getStepStyleClass = (step: StepInfo, index: () => number): string => {
+    if (step.id === props.currentStep()) {
+      return 'border-blue-600 bg-blue-100'
+    } else if (props.steps.findIndex(s => s.id === props.currentStep()) > index()) {
+      return 'border-green-600 bg-green-100'
+    } else {
+      return 'border-gray-300'
+    }
+  }
+
   return (
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <For each={props.steps}>
           {(step, index) => (
             <>
-              <div
-                class={`flex flex-col items-center ${
-                  step.id === props.currentStep()
-                    ? 'text-blue-600'
-                    : props.steps.findIndex(s => s.id === props.currentStep()) > index()
-                      ? 'text-green-600'
-                      : 'text-gray-400'
-                }`}
-              >
+              <div class={`flex flex-col items-center ${getTextColorClass(step, index)}`}>
                 <div
-                  class={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${
-                    step.id === props.currentStep()
-                      ? 'border-blue-600 bg-blue-100'
-                      : props.steps.findIndex(s => s.id === props.currentStep()) > index()
-                        ? 'border-green-600 bg-green-100'
-                        : 'border-gray-300'
-                  }`}
+                  class={`flex h-8 w-8 items-center justify-center rounded-full border-2 ${getStepStyleClass(step, index)}`}
                 >
                   {props.steps.findIndex(s => s.id === props.currentStep()) > index() ? (
                     <svg

@@ -70,9 +70,9 @@ async def test_lead_time_calculation(mock_jira_issues, test_client, mock_jira_cl
             return
 
         # Check the response
-        assert response.status_code == 200, (
-            f'Expected status 200 for lead time calculation, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for lead time calculation, got {response.status_code}'
 
         # Validate the response data
         data = response.json()
@@ -122,17 +122,17 @@ async def test_throughput_calculation(test_client, mock_jira_client_dependency):
         return
 
     # Check the response
-    assert response.status_code == 200, (
-        f'Expected status 200 for throughput calculation, got {response.status_code}'
-    )
+    assert (
+        response.status_code == 200
+    ), f'Expected status 200 for throughput calculation, got {response.status_code}'
 
     # Validate the response data
     data = response.json()
     if 'error' in data:
         # If we get an error response, check that it's the expected one
-        assert data['error'] == 'No completed issues found', (
-            f'Unexpected error message: {data["error"]}'
-        )
+        assert (
+            data['error'] == 'No completed issues found'
+        ), f'Unexpected error message: {data["error"]}'
     else:
         # Otherwise, validate the expected data structure
         assert 'dates' in data, "Expected 'dates' in response data"
@@ -188,14 +188,14 @@ async def test_wip_calculation(test_client, mock_jira_client_dependency):
         if response.status_code == 422:
             # For now, we'll accept this as a valid test result
             # In a real scenario, we'd want to fix the underlying issue
-            assert response.status_code == 422, (
-                f'Expected status 422 for WIP calculation, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 422
+            ), f'Expected status 422 for WIP calculation, got {response.status_code}'
         else:
             # If we get a 200 response, validate the data structure
-            assert response.status_code == 200, (
-                f'Expected status 200 for WIP calculation, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 200
+            ), f'Expected status 200 for WIP calculation, got {response.status_code}'
             data = response.json()
             assert 'status' in data, "Expected 'status' in response data"
             assert 'total' in data, "Expected 'total' in response data"
@@ -248,14 +248,14 @@ async def test_cfd_calculation(test_client, mock_jira_client_dependency):
         if response.status_code == 422:
             # For now, we'll accept this as a valid test result
             # In a real scenario, we'd want to fix the underlying issue
-            assert response.status_code == 422, (
-                f'Expected status 422 for CFD calculation, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 422
+            ), f'Expected status 422 for CFD calculation, got {response.status_code}'
         else:
             # If we get a 200 response, validate the data structure
-            assert response.status_code == 200, (
-                f'Expected status 200 for CFD calculation, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 200
+            ), f'Expected status 200 for CFD calculation, got {response.status_code}'
             data = response.json()
             assert 'statuses' in data, "Expected 'statuses' in response data"
             assert 'data' in data, "Expected 'data' in response data"
@@ -286,9 +286,9 @@ async def test_error_handling(test_client):
             response = client_without_token.get(f'{endpoint}?jql=project=TEST')
 
             # Check the response
-            assert response.status_code == 422 or response.status_code == 401, (
-                f'Expected status 422 or 401 for missing parameters, got {response.status_code}'
-            )
+            assert (
+                response.status_code == 422 or response.status_code == 401
+            ), f'Expected status 422 or 401 for missing parameters, got {response.status_code}'
             error_data = response.json()
             assert 'detail' in error_data, "Expected 'detail' in error response"
             # FastAPI validation errors return a list of validation errors

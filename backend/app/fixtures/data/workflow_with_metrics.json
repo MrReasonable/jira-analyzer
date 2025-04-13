@@ -1,0 +1,149 @@
+{
+  "configuration": {
+    "name": "Test Project",
+    "jira_url": "https://testjira.example.com",
+    "project_key": "TEST",
+    "username": "test_user",
+    "api_token": "test_token_encrypted",
+    "is_cloud": true
+  },
+  "workflow_states": [
+    {
+      "name": "Backlog",
+      "position": 0,
+      "is_time_point": false
+    },
+    {
+      "name": "In Progress",
+      "position": 1,
+      "is_time_point": true
+    },
+    {
+      "name": "Review",
+      "position": 2,
+      "is_time_point": false
+    },
+    {
+      "name": "Done",
+      "position": 3,
+      "is_time_point": true
+    }
+  ],
+  "metrics_analysis": {
+    "start_date": "2025-01-01",
+    "end_date": "2025-03-31",
+    "jql": "project = TEST",
+    "metrics_data": {
+      "issue_count": 50,
+      "lead_time_days": 15.3,
+      "cycle_time_days": 8.7,
+      "throughput_per_week": 4.2,
+      "charts": {
+        "lead_time": {
+          "data": [
+            {"date": "2025-01-01", "value": 12.5},
+            {"date": "2025-01-08", "value": 14.2},
+            {"date": "2025-01-15", "value": 16.8},
+            {"date": "2025-01-22", "value": 15.1},
+            {"date": "2025-01-29", "value": 13.7},
+            {"date": "2025-02-05", "value": 14.9},
+            {"date": "2025-02-12", "value": 16.2},
+            {"date": "2025-02-19", "value": 15.8},
+            {"date": "2025-02-26", "value": 14.3},
+            {"date": "2025-03-05", "value": 15.5},
+            {"date": "2025-03-12", "value": 16.7},
+            {"date": "2025-03-19", "value": 15.9},
+            {"date": "2025-03-26", "value": 14.8}
+          ]
+        },
+        "cycle_time": {
+          "data": [
+            {"date": "2025-01-01", "value": 7.2},
+            {"date": "2025-01-08", "value": 8.1},
+            {"date": "2025-01-15", "value": 9.3},
+            {"date": "2025-01-22", "value": 8.5},
+            {"date": "2025-01-29", "value": 7.8},
+            {"date": "2025-02-05", "value": 8.4},
+            {"date": "2025-02-12", "value": 9.1},
+            {"date": "2025-02-19", "value": 8.9},
+            {"date": "2025-02-26", "value": 8.2},
+            {"date": "2025-03-05", "value": 8.7},
+            {"date": "2025-03-12", "value": 9.4},
+            {"date": "2025-03-19", "value": 8.8},
+            {"date": "2025-03-26", "value": 8.3}
+          ]
+        },
+        "throughput": {
+          "data": [
+            {"date": "2025-01-01", "value": 3.5},
+            {"date": "2025-01-08", "value": 4.0},
+            {"date": "2025-01-15", "value": 4.8},
+            {"date": "2025-01-22", "value": 4.2},
+            {"date": "2025-01-29", "value": 3.9},
+            {"date": "2025-02-05", "value": 4.1},
+            {"date": "2025-02-12", "value": 4.5},
+            {"date": "2025-02-19", "value": 4.3},
+            {"date": "2025-02-26", "value": 4.0},
+            {"date": "2025-03-05", "value": 4.2},
+            {"date": "2025-03-12", "value": 4.6},
+            {"date": "2025-03-19", "value": 4.4},
+            {"date": "2025-03-26", "value": 4.1}
+          ]
+        },
+        "cumulative_flow": {
+          "data": [
+            {
+              "date": "2025-01-01",
+              "Backlog": 25,
+              "In Progress": 10,
+              "Review": 5,
+              "Done": 10
+            },
+            {
+              "date": "2025-01-15",
+              "Backlog": 20,
+              "In Progress": 12,
+              "Review": 8,
+              "Done": 15
+            },
+            {
+              "date": "2025-02-01",
+              "Backlog": 15,
+              "In Progress": 10,
+              "Review": 10,
+              "Done": 20
+            },
+            {
+              "date": "2025-02-15",
+              "Backlog": 12,
+              "In Progress": 8,
+              "Review": 8,
+              "Done": 27
+            },
+            {
+              "date": "2025-03-01",
+              "Backlog": 10,
+              "In Progress": 7,
+              "Review": 5,
+              "Done": 33
+            },
+            {
+              "date": "2025-03-15",
+              "Backlog": 8,
+              "In Progress": 5,
+              "Review": 3,
+              "Done": 39
+            },
+            {
+              "date": "2025-03-31",
+              "Backlog": 5,
+              "In Progress": 3,
+              "Review": 2,
+              "Done": 45
+            }
+          ]
+        }
+      }
+    }
+  }
+}

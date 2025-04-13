@@ -29,6 +29,7 @@ describe('ConfigurationsHeader', () => {
         loading={loading}
         selectedConfig={selectedConfig}
         onSelect={vi.fn()}
+        onEdit={vi.fn()}
         onDelete={vi.fn().mockResolvedValue(true)}
         onAddClick={vi.fn()}
       />
@@ -51,6 +52,7 @@ describe('ConfigurationsHeader', () => {
         loading={loading}
         selectedConfig={selectedConfig}
         onSelect={vi.fn()}
+        onEdit={vi.fn()}
         onDelete={vi.fn()}
         onAddClick={onAddClick}
       />
@@ -76,6 +78,7 @@ describe('ConfigurationsHeader', () => {
         loading={loading}
         selectedConfig={selectedConfig}
         onSelect={vi.fn()}
+        onEdit={vi.fn()}
         onDelete={vi.fn()}
         onAddClick={vi.fn()}
       />

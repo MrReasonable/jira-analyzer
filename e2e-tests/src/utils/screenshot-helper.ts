@@ -60,7 +60,7 @@ const createFilename = (counter: string, name: string): string => {
  */
 export async function takeScreenshot(page: Page, name: string, testName?: string): Promise<string> {
   // Use provided test name or fallback to current test name
-  const testFolder = testName || screenshotState.getCurrentTestName()
+  const testFolder = testName ?? screenshotState.getCurrentTestName()
 
   if (!testFolder) {
     console.warn('Warning: No test name provided for screenshot organization')

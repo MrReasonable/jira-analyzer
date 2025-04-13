@@ -1,4 +1,4 @@
-import { Component, Show, createEffect } from 'solid-js'
+import { Component, Show } from 'solid-js'
 import { JiraConfiguration } from '@api/jiraApi'
 import { FormStepper } from './form/FormStepper'
 import { CredentialsStep } from './form/CredentialsStep'
@@ -23,12 +23,6 @@ export const ConfigurationForm: Component<Props> = props => {
     },
   })
 
-  // This effect ensures the reactive props are tracked properly
-  createEffect(() => {
-    // Just access the prop to track it
-    props.onConfigurationSaved
-  })
-
   // Define the steps information
   const FORM_STEPS = [
     {
@@ -45,11 +39,11 @@ export const ConfigurationForm: Component<Props> = props => {
 
   // Get the current step description
   const getCurrentStepDescription = () => {
-    return FORM_STEPS.find(step => step.id === form.currentStep())?.description || ''
+    return FORM_STEPS.find(step => step.id === form.currentStep())?.description ?? ''
   }
 
   return (
-    <form role="form" class="space-y-4" onSubmit={form.handleSubmit}>
+    <form class="space-y-4" role="form" onSubmit={form.handleSubmit}>
       {/* Stepper UI */}
       <FormStepper
         steps={FORM_STEPS}

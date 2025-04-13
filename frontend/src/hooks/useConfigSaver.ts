@@ -1,6 +1,5 @@
 import { createSignal } from 'solid-js'
-import { JiraConfiguration } from '@api/jiraApi'
-import { jiraApi } from '@api/jiraApi'
+import { JiraConfiguration, jiraApi } from '@api/jiraApi'
 import { logger } from '@utils/logger'
 import { showNotification } from '@components/NotificationManager'
 

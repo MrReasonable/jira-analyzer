@@ -331,9 +331,9 @@ class TestWipCalculation:
 
         # Verify each status count
         for status, count in expected_counts.items():
-            assert result['status'][status] == count, (
-                f'Expected {count} issues in {status}, got {result["status"][status]}'
-            )
+            assert (
+                result['status'][status] == count
+            ), f'Expected {count} issues in {status}, got {result["status"][status]}'
 
         # Verify the total
         assert result['total'] == 6
@@ -362,9 +362,9 @@ class TestWipCalculation:
 
         # Verify each status count
         for status, count in expected_counts.items():
-            assert result['status'][status] == count, (
-                f'Expected {count} issues in {status}, got {result["status"][status]}'
-            )
+            assert (
+                result['status'][status] == count
+            ), f'Expected {count} issues in {status}, got {result["status"][status]}'
 
         # Verify the total
         assert result['total'] == 5

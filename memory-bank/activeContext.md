@@ -1,160 +1,69 @@
-# Jira Analyzer Active Context
-
-> **Executive Summary:** Current development focuses on workflow management functionality, configuration form enhancement, and backend API optimization. Recent work includes implementing the WorkflowEditor component, enhancing configuration management hooks, and refining the dependency injection container. Next steps include completing workflow state validation, finalizing the configuration form submission process, and improving error messaging.
+# Active Development Context
 
 <!--
-Last Updated: 08/04/2025
+Last Updated: 12/04/2025
 Related Documents:
-- [Memory Bank Index](./INDEX.md)
-- [Project Brief](./projectbrief.md)
-- [Product Context](./productContext.md)
+- [Test Selector Strategy](./testing/test-selector-strategy.md)
+- [E2E Testing](./testing/e2e-testing.md)
+- [Test Reliability](./testing/test-reliability.md)
 - [System Patterns](./systemPatterns.md)
-- [Tech Context](./techContext.md)
-- [Progress](./progress.md)
-- [SOLID Principles](./patterns/solid.md)
-- [CQRS Pattern](./patterns/cqrs.md)
-- [Functional Programming](./patterns/functional-programming.md)
 -->
 
-## Table of Contents
+> **Current Focus**: Improving end-to-end test reliability with strict selector strategy and fail-fast approach
 
-- [Current Work Focus](#current-work-focus)
-- [Recent Changes](#recent-changes)
-- [Next Steps](#next-steps)
-- [Active Decisions and Considerations](#active-decisions-and-considerations)
-- [Important Patterns and Preferences](#important-patterns-and-preferences)
-- [Learnings and Project Insights](#learnings-and-project-insights)
+## Current Sprint Goals
 
-## Current Work Focus
+- Enhance end-to-end test reliability
+- Eliminate silent failures in tests
+- Standardize selector strategy across all tests
+- Ensure tests fail immediately when elements aren't found
+- Remove all fallback mechanisms and retry loops
 
-The development is currently focused on:
+## Key Development Activities
 
-1. **Workflow Management Functionality**
+### End-to-End Test Reliability Enhancement
 
-   - Implementing the workflow state management system
-   - Enhancing the workflow editor component for intuitive state configuration
-   - Improving integration between workflow definitions and metrics calculations
+- Created a new document defining [test selector strategy](./testing/test-selector-strategy.md)
+- Updated [test reliability guidelines](./testing/test-reliability.md) to prohibit fallback selectors
+- Updated [e2e testing documentation](./testing/e2e-testing.md) to enforce single selector approach
+- Refactored core test utilities to follow the single reliable selector approach:
+  - Eliminated fallback selectors in `src/utils/selector-helper.ts`
+  - Removed silent retries from `src/core/workflow-states.ts`
+  - Standardized configuration operations in `src/core/configuration.ts`
+  - Improved state management in `src/core/state-management.ts`
 
-2. **Configuration Form Enhancement**
+### Key Technical Decisions
 
-   - Refining the configuration saving process
-   - Implementing name availability checking for configurations
-   - Streamlining the credentials management workflow
+1. **Single Reliable Selector**: Each element must be accessed using exactly one consistent, reliable selector.
+2. **No Fallbacks**: Never implement multiple selector strategies with fallbacks.
+3. **Fail Fast**: Tests must fail immediately when elements cannot be found.
+4. **Explicit Assertions**: All assertions must include descriptive messages.
+5. **Clear Error Messages**: Error messages should help diagnose the real issue.
 
-3. **Backend API Optimization**
-   - Improving the Jira API integration performance
-   - Enhancing error handling and validation in the configuration routes
-   - Implementing caching strategies for better performance
+### Implementation Strategy
 
-## Recent Changes
+- Use `data-testid` as the primary selector method
+- Add explicit assertions with clear error messages
+- Remove all try/catch blocks that mask failures
+- Replace fallback mechanisms with direct assertions
+- Ensure tests fail appropriately when elements aren't found
 
-1. **Frontend Improvements**
+## Active Collaborators
 
-   - Implemented the WorkflowEditor component with drag-and-drop functionality
-   - Added configuration management hooks (useConfigSaver, useNameAvailability)
-   - Enhanced form validation and submission process
+- QA Engineering Team
+- Frontend Development Team
+- DevOps (for CI/CD pipeline integration)
 
-2. **Backend Enhancements**
+## Related Documentation
 
-   - Refined the dependency injection container implementation
-   - Improved error handling in the Jira API integration
-   - Added rate limiting middleware to protect against API abuse
+- [Test Selector Strategy](./testing/test-selector-strategy.md) (NEW)
+- [E2E Testing](./testing/e2e-testing.md)
+- [Test Reliability](./testing/test-reliability.md)
+- [System Patterns](./systemPatterns.md)
 
-3. **Documentation and Quality**
+## Recent Design Decisions
 
-   - Implemented documentation anchor verification system for code-doc synchronization
-   - Added pre-commit hooks to verify documentation anchors and update INDEX.md
-   - Created bidirectional links between code and documentation
-   - Added comprehensive test coverage for workflow management
-   - Implemented end-to-end tests for configuration workflows
-   - Enhanced chart rendering tests for metrics visualization
-   - Improved API client tests to focus on behavior rather than implementation details
-   - Updated unit testing documentation with best practices for maintainable tests
-
-## Next Steps
-
-1. **Short-term Priorities**
-
-   - Complete workflow state validation and error handling
-   - Finalize the configuration form submission process
-   - Improve error messaging for failed Jira API connections
-
-2. **Medium-term Goals**
-
-   - Enhance chart visualizations with additional options
-   - Implement data export functionality for metrics
-   - Add user preferences for default views and settings
-
-3. **Technical Improvements**
-   - Optimize the data processing pipeline for large datasets
-   - Enhance caching strategies for repeated queries
-   - Improve test performance for the end-to-end test suite
-
-## Active Decisions and Considerations
-
-1. **Architecture Decisions**
-
-   - Using custom hooks for state management instead of a global state library
-   - Maintaining separate routes for different API concerns
-   - Implementing server-side validation to complement client-side validation
-   - Adopting SOLID principles and CQRS pattern for all new code (Added)
-   - Enforcing functional decomposition where appropriate (Added)
-   - Implementing comprehensive testing standards (Added)
-
-2. **Performance Considerations**
-
-   - Balancing between realtime calculations and precomputed metrics
-   - Managing memory usage for large Jira datasets
-   - Optimizing chart rendering for responsive display
-
-3. **User Experience Trade-offs**
-   - Finding the right balance between simplicity and configurability
-   - Determining the appropriate level of workflow customization
-   - Deciding on automatic vs. manual workflow state detection
-
-## Important Patterns and Preferences
-
-1. **Code Organization**
-
-   - Custom hooks for specific functional domains
-   - Component composition with clear separation of concerns
-   - Service-oriented backend with dependency injection
-
-2. **Testing Approach**
-
-   - Component tests focusing on behavior rather than implementation
-   - Comprehensive test coverage for critical paths
-   - Dedicated test files for complex scenarios (empty data, error states)
-
-3. **Development Workflow**
-   - Docker-based development environment
-   - Comprehensive CI/CD pipeline
-   - Pre-commit hooks and automated formatting
-
-## Learnings and Project Insights
-
-1. **Technical Insights**
-
-   - SolidJS provides excellent performance for reactive UI updates
-   - FastAPI's dependency injection system pairs well with SQLAlchemy
-   - Docker Compose streamlines the development experience significantly
-
-2. **Process Improvements**
-
-   - End-to-end testing required specific optimizations for reliability
-   - Chart rendering tests benefit from specific testing utilities
-   - Workflow state management requires careful consideration of edge cases
-
-3. **User Feedback**
-
-   - Configuration saving needs clearer success/failure indicators
-   - Workflow state editing is more intuitive with visual representations
-   - JQL input benefits from validation and suggestions
-
-4. **Collaborative Development Approach**
-
-   - Critical thinking and questioning improves code quality
-   - Technical decisions should be challenged when they appear to contradict best practices
-   - Constructive disagreement leads to better solutions than automatic agreement
-   - Team members should function as collaborative partners rather than order-takers
-   - All suggestions, regardless of source, should be evaluated on technical merit
+- Standardized on a single, reliable selector approach for all element interactions
+- Adopted fail-fast pattern for all test operations
+- Implemented explicit assertions with descriptive messages
+- Eliminated all silent retries and fallback mechanisms

@@ -63,9 +63,9 @@ class TestInputValidation:
                 response = test_client.get(f'/api/metrics/lead-time?jql={query}')
 
                 # Check the response
-                assert response.status_code in expected_statuses, (
-                    f"Expected status in {expected_statuses} for query '{query}', got {response.status_code}"
-                )
+                assert (
+                    response.status_code in expected_statuses
+                ), f"Expected status in {expected_statuses} for query '{query}', got {response.status_code}"
         finally:
             # Reset environment variable
             os.environ.pop('USE_MOCK_JIRA', None)
@@ -74,9 +74,9 @@ class TestInputValidation:
             if (
                 expected_message and response.status_code != 500
             ):  # Skip message check for 500 errors
-                assert expected_message in response.json()['detail'].lower(), (
-                    f"Expected message containing '{expected_message}' for query '{query}'"
-                )
+                assert (
+                    expected_message in response.json()['detail'].lower()
+                ), f"Expected message containing '{expected_message}' for query '{query}'"
 
     def test_jql_injection_prevention(self, test_client, mock_jira_client_dependency):
         """Test prevention of JQL injection attempts."""
@@ -105,16 +105,16 @@ class TestInputValidation:
                 continue
 
             # All injection attempts should return 400
-            assert response.status_code == 400, (
-                f"Expected status 400 for query '{query}', got {response.status_code}"
-            )
+            assert (
+                response.status_code == 400
+            ), f"Expected status 400 for query '{query}', got {response.status_code}"
             assert 'detail' in response.json(), f"Expected 'detail' in response for query '{query}'"
 
             # Check for the expected error message
             error_detail = response.json()['detail']
-            assert expected_message in error_detail, (
-                f"Expected message containing '{expected_message}' for query '{query}'"
-            )
+            assert (
+                expected_message in error_detail
+            ), f"Expected message containing '{expected_message}' for query '{query}'"
 
     def test_authentication_errors(self, test_client, mock_jira_client_dependency):
         """Test handling of Jira authentication errors."""
@@ -135,9 +135,9 @@ class TestInputValidation:
 
         # Check the response - we expect a 200 status code since the application
         # is handling the error gracefully
-        assert response.status_code == 200, (
-            f'Expected status 200 for authentication error, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for authentication error, got {response.status_code}'
 
     def test_rate_limiting(self, test_client, mock_jira_client_dependency):
         """Test handling of rate limiting responses."""
@@ -168,9 +168,9 @@ class TestInputValidation:
 
         # Check the response - we expect a 200 status code since the application
         # is handling the error gracefully
-        assert response.status_code == 200, (
-            f'Expected status 200 for rate limiting, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for rate limiting, got {response.status_code}'
 
     def test_invalid_date_formats(self, test_client, mock_jira_client_dependency):
         """Test handling of invalid date formats in responses."""
@@ -198,9 +198,9 @@ class TestInputValidation:
 
         # Check the response
         # The application is handling invalid dates gracefully, returning 200
-        assert response.status_code == 200, (
-            f'Expected status 200 for invalid date format, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for invalid date format, got {response.status_code}'
 
         # Since the application is now handling invalid dates differently,
         # we need to adjust our expectations
@@ -227,9 +227,9 @@ class TestInputValidation:
 
         # Check the response
         # The application is handling missing fields gracefully, returning 200
-        assert response.status_code == 200, (
-            f'Expected status 200 for missing required fields, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for missing required fields, got {response.status_code}'
 
         # Since the application is now handling missing fields differently,
         # we need to adjust our expectations
@@ -255,9 +255,9 @@ class TestInputValidation:
         response = test_client.get('/api/metrics/wip?jql=project=TEST')
 
         # Check the response
-        assert response.status_code == 422, (
-            f'Expected status 422 for invalid status transitions, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 422
+        ), f'Expected status 422 for invalid status transitions, got {response.status_code}'
 
     def test_large_dataset_handling(self, test_client, mock_jira_client_dependency):
         """Test handling of large datasets."""
@@ -286,9 +286,9 @@ class TestInputValidation:
 
         # Check the response
         # The application is handling large datasets gracefully, returning 200 with the data
-        assert response.status_code == 200, (
-            f'Expected status 200 for large dataset handling, got {response.status_code}'
-        )
+        assert (
+            response.status_code == 200
+        ), f'Expected status 200 for large dataset handling, got {response.status_code}'
         # Check that the response contains the expected data
         data = response.json()
         assert 'average' in data, "Expected 'average' in response data"
@@ -330,9 +330,9 @@ class TestInputValidation:
                 return
 
             # All requests should complete with the same status code
-            assert all(r.status_code == 200 for r in responses), (
-                'Expected all concurrent requests to return status 200'
-            )
+            assert all(
+                r.status_code == 200 for r in responses
+            ), 'Expected all concurrent requests to return status 200'
             # Check that all responses contain the expected data
             for r in responses:
                 data = r.json()

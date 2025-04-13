@@ -13,42 +13,80 @@ interface Props {
 }
 
 export const ConfigurationList: Component<Props> = props => {
+  const isConfigSelected = (configName: string) => {
+    return props.selectedName ? props.selectedName() === configName : false
+  }
+
+  const getConfigClass = (configName: string) => {
+    const baseClass =
+      'rounded-lg border p-4 cursor-pointer transition-all duration-200 hover:shadow-md'
+    const selectedClass = 'border-blue-500 bg-blue-50 ring-2 ring-blue-300'
+    const unselectedClass = 'border-gray-200'
+
+    return `${baseClass} ${isConfigSelected(configName) ? selectedClass : unselectedClass}`
+  }
+
+  // Separate handlers for success and failure cases
+  const handleDeleteSuccess = (configName: string) => {
+    logger.info('Configuration deleted successfully', {
+      name: configName,
+    })
+  }
+
+  const handleDeleteFailure = (configName: string) => {
+    logger.error('Failed to delete configuration', {
+      name: configName,
+    })
+  }
+
   return (
     <div class="space-y-4">
       <h2 class="text-xl font-bold">Saved Configurations</h2>
 
-      <Show when={props.error && props.error()}>
+      <Show when={props.error?.()}>
         <p class="text-red-500">{props.error?.()?.message}</p>
       </Show>
 
       <Show
         when={!props.loading()}
         fallback={
-          <div class="flex justify-center" role="status" aria-label="Loading configurations">
+          <output class="flex justify-center" aria-label="Loading configurations">
             <div class="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
-          </div>
+          </output>
         }
       >
         <Show
-          when={props.configurations().length > 0}
+          when={props.configurations() && props.configurations().length > 0}
           fallback={<p class="text-gray-500">No configurations saved yet</p>}
         >
           <div class="space-y-2">
             <For each={props.configurations()}>
               {config => (
-                <div
+                <button
                   data-testid={`config-${config.name}`}
-                  class={`rounded-lg border p-4 ${props.selectedName && props.selectedName() === config.name ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300' : 'border-gray-200'} cursor-pointer transition-all duration-200 hover:shadow-md`}
+                  aria-pressed={isConfigSelected(config.name) ? 'true' : 'false'}
+                  role="button"
+                  tabIndex={0}
+                  class={getConfigClass(config.name)}
                   onClick={() => {
                     logger.info('User clicked on configuration card', { name: config.name })
                     props.onSelect(config.name)
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      logger.info('User pressed key on configuration card', {
+                        name: config.name,
+                        key: e.key,
+                      })
+                      props.onSelect(config.name)
+                    }
                   }}
                 >
                   <div class="flex items-center justify-between">
                     <div>
                       <h3 class="font-semibold">
                         {config.name}
-                        {props.selectedName && props.selectedName() === config.name && (
+                        {isConfigSelected(config.name) && (
                           <span class="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                             Active
                           </span>
@@ -67,6 +105,7 @@ export const ConfigurationList: Component<Props> = props => {
                           props.onSelect(config.name)
                         }}
                         data-testid={`select-${config.name}`}
+                        type="button"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -92,6 +131,7 @@ export const ConfigurationList: Component<Props> = props => {
                           props.onEdit(config.name)
                         }}
                         data-testid={`edit-${config.name}`}
+                        type="button"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -122,18 +162,21 @@ export const ConfigurationList: Component<Props> = props => {
                             logger.info('User confirmed configuration deletion', {
                               name: config.name,
                             })
-                            // Handle the result of the delete operation
-                            props.onDelete(config.name).then(success => {
-                              if (success) {
-                                logger.info('Configuration deleted successfully', {
-                                  name: config.name,
-                                })
-                              } else {
-                                logger.error('Failed to delete configuration', {
-                                  name: config.name,
-                                })
-                              }
-                            })
+                            // Handle the result of the delete operation using Promise chaining
+                            props
+                              .onDelete(config.name)
+                              .then(result => {
+                                if (!result) {
+                                  // If the result is false, reject the promise to trigger the catch handler
+                                  return Promise.reject(new Error('Delete operation failed'))
+                                }
+                                // Only handle success case here
+                                handleDeleteSuccess(config.name)
+                              })
+                              .catch(() => {
+                                // Handle failure case in the catch handler
+                                handleDeleteFailure(config.name)
+                              })
                           } else {
                             logger.debug('User cancelled configuration deletion', {
                               name: config.name,
@@ -141,6 +184,7 @@ export const ConfigurationList: Component<Props> = props => {
                           }
                         }}
                         data-testid={`delete-${config.name}`}
+                        type="button"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -160,7 +204,7 @@ export const ConfigurationList: Component<Props> = props => {
                       </button>
                     </div>
                   </div>
-                </div>
+                </button>
               )}
             </For>
           </div>

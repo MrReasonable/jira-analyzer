@@ -15,14 +15,21 @@ function debounce<T extends (name: string) => Promise<void>>(
 ): (name: string) => Promise<void> {
   let timeout: number | undefined
   let resolvePromise: (() => void) | null = null
+  let lastCallName: string | null = null
 
   return (name: string): Promise<void> => {
-    clearTimeout(timeout)
+    // Only clear timeout if we have a new call
+    if (timeout !== undefined) {
+      clearTimeout(timeout)
+    }
+
+    lastCallName = name
     return new Promise<void>(resolve => {
       resolvePromise = resolve
       timeout = window.setTimeout(async () => {
-        await func(name)
+        await func(lastCallName!)
         if (resolvePromise) resolvePromise()
+        timeout = undefined
       }, wait)
     })
   }
@@ -68,7 +75,18 @@ export function useNameAvailability(initialConfig?: { name: string }) {
   const debounceDelay = typeof process !== 'undefined' && process.env.NODE_ENV === 'test' ? 0 : 500
 
   // Debounced version of the check function with appropriate delay
-  const checkNameAvailability = debounce(checkNameAvailabilityImpl, debounceDelay)
+  const debouncedCheck = debounce(checkNameAvailabilityImpl, debounceDelay)
+
+  // Wrapper function that sets isCheckingName to true before calling the debounced function
+  const checkNameAvailability = (name: string): Promise<void> => {
+    if (!name) {
+      setIsNameAvailable(false)
+      setIsCheckingName(false)
+      return Promise.resolve()
+    }
+    setIsCheckingName(true)
+    return debouncedCheck(name)
+  }
 
   return {
     isNameAvailable,

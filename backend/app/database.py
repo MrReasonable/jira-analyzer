@@ -23,7 +23,6 @@ from .db_config import get_database_url
 from .logger import get_logger
 from .models import Base
 
-# Create module-level logger
 logger = get_logger(__name__)
 
 # Get database URL from db_config
@@ -61,7 +60,6 @@ async def init_in_memory_db(db_engine: Optional[AsyncEngine] = None) -> None:
         engine_to_use = db_engine or engine
 
         async with engine_to_use.begin() as conn:
-            # Create all tables defined in the models
             await conn.run_sync(Base.metadata.create_all)
 
         logger.info('In-memory database tables created successfully')
@@ -147,7 +145,12 @@ async def init_db() -> None:
     """
     try:
         # Check if we're using in-memory database
-        if ':memory:' in DATABASE_URL:
+        if ':memory:' in DATABASE_URL or os.getenv('USE_IN_MEMORY_DB', '').lower() in (
+            'true',
+            '1',
+            'yes',
+        ):
+            # For SQLite in-memory, create tables directly
             await init_in_memory_db()
         else:
             try:

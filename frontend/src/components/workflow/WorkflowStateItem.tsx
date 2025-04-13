@@ -20,10 +20,11 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
   return (
     <div
       ref={sortable.ref}
-      class={`border-b border-gray-200 last:border-b-0 ${
+      class={`workflow-state-item border-b border-gray-200 last:border-b-0 ${
         sortable.isActiveDraggable ? 'opacity-50' : 'bg-white hover:bg-gray-50'
       }`}
       style={transformStyle(sortable.transform)}
+      data-testid={`workflow-state-${props.item.name.toLowerCase().replace(/\s+/g, '-')}`}
     >
       {/* Hidden span for reactivity tracking */}
       <span style={{ display: 'none' }}>{props.item.id}</span>
@@ -31,14 +32,13 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
       <div class="flex items-center justify-between p-3">
         <div class="flex items-center space-x-3">
           {/* Drag handle icon - this makes the handle activate dragging */}
-          <div
+          <button
+            type="button"
             class="cursor-grab rounded bg-gray-100 p-2 hover:bg-gray-200 active:cursor-grabbing"
             data-dnd-handle
             data-no-dnd-click
-            data-testid="workflow-state-drag-handle"
+            data-testid={`workflow-state-${props.item.name.toLowerCase().replace(/\s+/g, '-')}-drag-handle`}
             aria-label={`Drag handle for ${props.item.name}`}
-            role="button"
-            tabindex="0"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -59,8 +59,8 @@ const WorkflowStateItem: Component<WorkflowStateItemProps> = props => {
               <line x1="15" y1="6" x2="21" y2="6" />
               <line x1="15" y1="18" x2="21" y2="18" />
             </svg>
-          </div>
-          <span class="text-sm font-medium text-gray-900">{props.item.name}</span>
+          </button>
+          <span class="state-name text-sm font-medium text-gray-900">{props.item.name}</span>
         </div>
         <div class="flex items-center space-x-2">
           <button

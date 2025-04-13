@@ -27,6 +27,7 @@ describe('ConfigurationList', () => {
 
   const mockOnSelect = vi.fn()
   const mockOnDelete = vi.fn().mockResolvedValue(true)
+  const mockOnEdit = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,10 +44,13 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
-    expect(screen.getByRole('status')).toBeInTheDocument()
+    const outputElement = screen.getByLabelText('Loading configurations')
+    expect(outputElement).toBeInTheDocument()
+    expect(outputElement.tagName.toLowerCase()).toBe('output')
   })
 
   it('displays configurations after loading', async () => {
@@ -59,6 +63,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -80,6 +85,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -96,6 +102,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -115,6 +122,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -124,7 +132,47 @@ describe('ConfigurationList', () => {
     expect(mockOnSelect).toHaveBeenCalledWith('Config 1')
   })
 
-  it('highlights selected configuration', async () => {
+  it('calls onSelect when Enter key is pressed on configuration card', async () => {
+    const [configurations] = createSignal(mockConfigs)
+    const [loading] = createSignal(false)
+
+    render(() => (
+      <ConfigurationList
+        configurations={configurations}
+        loading={loading}
+        onSelect={mockOnSelect}
+        onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
+      />
+    ))
+
+    const configCard = screen.getByTestId('config-Config 1')
+    fireEvent.keyDown(configCard, { key: 'Enter' })
+
+    expect(mockOnSelect).toHaveBeenCalledWith('Config 1')
+  })
+
+  it('calls onSelect when Space key is pressed on configuration card', async () => {
+    const [configurations] = createSignal(mockConfigs)
+    const [loading] = createSignal(false)
+
+    render(() => (
+      <ConfigurationList
+        configurations={configurations}
+        loading={loading}
+        onSelect={mockOnSelect}
+        onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
+      />
+    ))
+
+    const configCard = screen.getByTestId('config-Config 1')
+    fireEvent.keyDown(configCard, { key: ' ' })
+
+    expect(mockOnSelect).toHaveBeenCalledWith('Config 1')
+  })
+
+  it('highlights selected configuration and sets aria-pressed', async () => {
     const [configurations] = createSignal(mockConfigs)
     const [loading] = createSignal(false)
     const [selectedName] = createSignal('Config 1')
@@ -135,17 +183,18 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
         selectedName={selectedName}
       />
     ))
 
-    const config1 = screen.getByText('Config 1')
-    const config1Container = config1.closest('div[class*="border"]')
-    expect(config1Container).toHaveClass('border-blue-500')
+    const config1 = screen.getByTestId('config-Config 1')
+    expect(config1).toHaveClass('border-blue-500')
+    expect(config1).toHaveAttribute('aria-pressed', 'true')
 
-    const config2 = screen.getByText('Config 2')
-    const config2Container = config2.closest('div[class*="border"]')
-    expect(config2Container).not.toHaveClass('border-primary')
+    const config2 = screen.getByTestId('config-Config 2')
+    expect(config2).not.toHaveClass('border-blue-500')
+    expect(config2).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('prompts for confirmation before deleting', async () => {
@@ -161,6 +210,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -192,6 +242,7 @@ describe('ConfigurationList', () => {
         loading={loading}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -221,6 +272,7 @@ describe('ConfigurationList', () => {
         error={error}
         onSelect={mockOnSelect}
         onDelete={mockOnDelete}
+        onEdit={mockOnEdit}
       />
     ))
 
@@ -250,6 +302,7 @@ describe('ConfigurationList', () => {
         error={errorState}
         onSelect={mockOnSelect}
         onDelete={mockOnDeleteWithError}
+        onEdit={mockOnEdit}
       />
     ))
 

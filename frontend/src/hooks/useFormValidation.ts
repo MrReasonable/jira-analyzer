@@ -41,7 +41,7 @@ export function useFormValidation(
 
     if (!validation.isValid) {
       // Set a default error message if none is provided
-      const errorMessage = validation.errorMessage || 'Validation failed'
+      const errorMessage = validation.errorMessage ?? 'Validation failed'
       setStepErrors(prev => ({ ...prev, [step]: errorMessage }))
       return false
     } else {

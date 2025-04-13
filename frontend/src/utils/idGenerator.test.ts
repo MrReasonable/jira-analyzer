@@ -17,22 +17,22 @@ describe('idGenerator', () => {
   })
 
   it('should use window.crypto.randomUUID in browser environment', () => {
-    // Mock window.crypto.randomUUID
-    vi.stubGlobal('crypto', {
+    // Create a proper mock of window.crypto with the randomUUID property
+    // This ensures the 'randomUUID' in window.crypto check passes without modifying Object.prototype
+    const cryptoMock = {
       randomUUID: mockRandomUUID,
+      // Using a custom property descriptor to properly handle 'in' operator checks
+      hasOwnProperty: (prop: string) => prop === 'randomUUID',
+    }
+
+    // Make the mock properly handle the 'in' operator check
+    Object.defineProperty(cryptoMock, Symbol.hasInstance, {
+      value: () => true,
     })
 
-    // Also mock the 'in' check to pass
-    // This is a workaround for the idGenerator's check: 'randomUUID' in window.crypto
-    Object.defineProperty(Object.prototype, 'randomUUID', {
-      configurable: true,
-      get: () => true,
-    })
+    vi.stubGlobal('crypto', cryptoMock)
 
     const id = generateId()
-
-    // Clean up the prototype modification
-    delete (Object.prototype as any).randomUUID
 
     expect(mockRandomUUID).toHaveBeenCalledTimes(1)
     expect(id).toBe('mocked-uuid-value')

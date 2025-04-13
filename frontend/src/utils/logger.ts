@@ -33,16 +33,27 @@ const parseLogLevel = (level: string | undefined): LogLevel => {
   }
 }
 
-// Default log level based on environment
-const DEFAULT_LOG_LEVEL =
-  // First check for explicit debug level in env vars
-  import.meta.env.VITE_DEBUG_LEVEL
-    ? parseLogLevel(import.meta.env.VITE_DEBUG_LEVEL as string)
-    : import.meta.env.MODE === 'test'
-      ? LogLevel.NONE
-      : import.meta.env.DEV
-        ? LogLevel.DEBUG
-        : LogLevel.ERROR
+// Helper function to determine environment-based log level
+const getEnvironmentLogLevel = (): LogLevel => {
+  if (import.meta.env.MODE === 'test') {
+    return LogLevel.NONE
+  }
+
+  if (import.meta.env.DEV) {
+    return LogLevel.DEBUG
+  }
+
+  return LogLevel.ERROR
+}
+
+// Determine the default log level based on environment
+let DEFAULT_LOG_LEVEL: LogLevel
+
+if (import.meta.env.VITE_DEBUG_LEVEL) {
+  DEFAULT_LOG_LEVEL = parseLogLevel(import.meta.env.VITE_DEBUG_LEVEL as string)
+} else {
+  DEFAULT_LOG_LEVEL = getEnvironmentLogLevel()
+}
 
 // Current log level
 let currentLogLevel = DEFAULT_LOG_LEVEL

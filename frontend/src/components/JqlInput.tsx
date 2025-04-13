@@ -36,7 +36,6 @@ export const JqlInput: Component<JqlInputProps> = props => {
           value={props.jql()}
           onInput={e => handleJqlChange(e.currentTarget.value)}
           data-testid="jql_input"
-          aria-labelledby="jql_query_heading"
           disabled={!props.configSelected()}
         />
       </div>

@@ -41,9 +41,9 @@ class TestModels:
             'cycle_time_end_state',
         ]
         for column_name in expected_columns:
-            assert column_name in columns, (
-                f'Column {column_name} not found in JiraConfiguration model'
-            )
+            assert (
+                column_name in columns
+            ), f'Column {column_name} not found in JiraConfiguration model'
 
         # Verify primary key
         assert columns['id'].primary_key

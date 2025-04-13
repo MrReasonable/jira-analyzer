@@ -1,18 +1,15 @@
-import { test } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { JiraAnalyzerPage } from '@pages/jira-analyzer-page'
-import { takeScreenshot, resetScreenshotCounter } from '@utils/screenshot-helper'
+import { TestConfig } from '@core/test-config'
 
 // Set a reasonable timeout
-test.setTimeout(60000) // Increased for reliability
+test.setTimeout(60000)
 
 test.describe('Workflow States Drag and Drop Functionality', () => {
   let jiraAnalyzerPage: JiraAnalyzerPage
 
   test.beforeEach(async ({ page }) => {
     jiraAnalyzerPage = new JiraAnalyzerPage(page)
-    // Reset screenshot counter and set the test name for screenshots folder
-    resetScreenshotCounter('workflow_drag_drop')
-    jiraAnalyzerPage.setTestName('workflow_drag_drop')
   })
 
   test('Should allow reordering workflow states via drag and drop', async ({ page }) => {
@@ -20,14 +17,12 @@ test.describe('Workflow States Drag and Drop Functionality', () => {
     const configName = `DragTest_${new Date().getTime()}`
 
     await test.step('Navigate to the application', async () => {
-      console.log('Step 1: Navigate to the application')
       await jiraAnalyzerPage.goto()
-      test.expect(page.url()).toContain('localhost')
+      expect(page.url()).toContain('localhost')
     })
 
     await test.step('Create a new Jira configuration', async () => {
-      console.log('Step 2: Create a new Jira configuration')
-      await jiraAnalyzerPage.createConfiguration({
+      const result = await jiraAnalyzerPage.createConfiguration({
         name: configName,
         server: 'https://test.atlassian.net',
         email: 'test@example.com',
@@ -40,50 +35,59 @@ test.describe('Workflow States Drag and Drop Functionality', () => {
         cycleTimeStartState: 'In Progress',
         cycleTimeEndState: 'Done',
       })
-      // We're implicitly expecting this to succeed by not throwing an error
-      test.expect(true).toBeTruthy()
+
+      // Explicit assertion instead of implicit expectation
+      expect(result, 'Configuration should be created successfully').toBe(true)
     })
 
     // Verify the configuration was created and navigate to edit view
-    console.log('Step 3: Edit the configuration to access workflow states')
-    await jiraAnalyzerPage.editConfiguration(configName)
-    await takeScreenshot(page, 'edit_configuration_form')
+    await test.step('Edit the configuration to access workflow states', async () => {
+      const result = await jiraAnalyzerPage.editConfiguration(configName)
+      expect(result, 'Should be able to edit the configuration').toBe(true)
+    })
 
-    // Attempt drag operation - try to move "In Progress" (index 1) to the position of "Review" (index 2)
-    console.log('Step 4: Attempting to drag workflow states')
-    const dragResult = await jiraAnalyzerPage.dragWorkflowState(1, 2)
+    // Attempt drag operation using state names instead of indices
+    await test.step('Drag "In Progress" state to the position of "Review"', async () => {
+      // Get all workflow state names before drag
+      const statesBefore = await page.locator('.workflow-state-item').allTextContents()
 
-    // We don't need to force an expectation here - the drag might not always work in the test environment
-    // Just log the result and take screenshots for analysis
-    if (dragResult) {
-      console.log('✅ Drag operation successfully reordered states')
-    } else {
-      console.log(
-        '⚠️ Drag operation did not reorder states - this may be expected in the test environment'
-      )
-    }
+      // Perform the drag operation using state names
+      const dragResult = await jiraAnalyzerPage.dragWorkflowStateByName('In Progress', 'Review')
 
-    // Save the changes to the configuration (if edit form is still open)
-    console.log('Step 5: Save configuration changes')
-    try {
+      // Verify the drag operation was successful
+      expect(dragResult, 'Drag operation should change the order of states').toBe(true)
+
+      // Get all workflow state names after drag
+      const statesAfter = await page.locator('.workflow-state-item').allTextContents()
+
+      // Verify the states are in a different order
+      expect(
+        JSON.stringify(statesBefore),
+        'State order should be different after drag operation'
+      ).not.toEqual(JSON.stringify(statesAfter))
+    })
+
+    // Save the changes to the configuration
+    await test.step('Save configuration changes', async () => {
       const updateButton = page.getByRole('button', { name: 'Update Configuration' })
-      if (await updateButton.isVisible({ timeout: 5000 })) {
-        await updateButton.click()
-        await page.waitForLoadState('domcontentloaded', { timeout: 10000 })
-      } else {
-        console.log('Update button not visible - may have already been submitted or dialog closed')
-      }
-    } catch (error) {
-      console.log('Error saving configuration:', error)
-      // Continue with the test - failure to save is not a test failure
-    }
+      await updateButton.click()
+
+      // Wait for the update to complete
+      await page.waitForLoadState('domcontentloaded', { timeout: TestConfig.timeouts.pageLoad })
+    })
 
     // Clean up - delete the test configuration
-    console.log('Step 6: Clean up - deleting test configuration')
-    await jiraAnalyzerPage.deleteConfiguration(configName)
+    await test.step('Clean up - delete test configuration', async () => {
+      const deleteResult = await jiraAnalyzerPage.deleteConfiguration(configName)
+      expect(deleteResult, 'Configuration should be deleted successfully').toBe(true)
 
-    // Take a final screenshot
-    await takeScreenshot(page, 'test_completed')
-    console.log('Test completed')
+      // Verify the configuration is no longer visible
+      const configExists = await page
+        .getByTestId(`config-${configName}`)
+        .isVisible()
+        .catch(() => false)
+
+      expect(configExists, 'Configuration should no longer be visible').toBe(false)
+    })
   })
 })

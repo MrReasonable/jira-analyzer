@@ -4,12 +4,12 @@ import { defineConfig, devices } from '@playwright/test'
  * Read environment variables for test configuration
  */
 // Default to localhost:80 for local development with Caddy
-const TEST_HOST = process.env.TEST_HOST || 'localhost'
-const TEST_PORT = process.env.TEST_PORT || '80'
+const TEST_HOST = process.env.TEST_HOST ?? 'localhost'
+const TEST_PORT = process.env.TEST_PORT ?? '80'
 const BASE_URL = `http://${TEST_HOST}:${TEST_PORT}`
 
 // Get API URL from environment or default to localhost
-const API_URL = process.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = process.env.VITE_API_URL ?? 'http://localhost:8000'
 
 console.log(`Using base URL for tests: ${BASE_URL}`)
 console.log(`Using API URL for tests: ${API_URL}`)
@@ -41,8 +41,7 @@ export default defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],
-    ['list'], // Add list reporter for console output
-    ['line'], // Add line reporter for more detailed console output
+    ['list'], // Single console reporter for cleaner output
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

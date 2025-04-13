@@ -235,8 +235,8 @@ describe('App', () => {
     const configItem = await screen.findByTestId('config-Test Config')
     expect(configItem).toBeInTheDocument()
 
-    // Find and click the select button within that config item
-    const selectButton = screen.getByRole('button', { name: /Select/i })
+    // Find and click the select button within that config item using the specific test ID
+    const selectButton = screen.getByTestId('select-Test Config')
     fireEvent.click(selectButton)
 
     // Add a mock JQL input to verify it would be updated

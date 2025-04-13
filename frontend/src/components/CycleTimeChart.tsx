@@ -70,7 +70,9 @@ const CycleTimeChartBase = withChart<CycleTimeMetrics>({
         Range: {data.min}-{data.max} days
       </p>
       <p class="text-sm text-gray-600">
-        From {data.start_state} to {data.end_state}
+        {data.start_state && data.end_state
+          ? `From ${data.start_state} to ${data.end_state}`
+          : 'Workflow states not specified'}
       </p>
     </div>
   ),

@@ -4,6 +4,7 @@ node = "23"
 python = "latest"
 ruff = "latest"
 uv = "latest"
+pnpm = "latest"
 
 [settings]
 python.uv_venv_auto = true

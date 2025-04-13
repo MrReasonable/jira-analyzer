@@ -34,7 +34,16 @@ api.interceptors.response.use(
   },
   error => {
     logger.error('API Error:', error.response?.data || error.message)
-    return Promise.reject(error)
+
+    // Ensure we're rejecting with an Error object
+    if (error instanceof Error) {
+      return Promise.reject(error)
+    } else {
+      // If it's not an Error, wrap it in one
+      return Promise.reject(
+        new Error(error.response?.data?.message || error.message || 'Unknown API error')
+      )
+    }
   }
 )
 
@@ -68,8 +77,8 @@ export interface CycleTimeMetrics extends MetricResponse {
   min: number
   max: number
   data: number[]
-  start_state?: string
-  end_state?: string
+  start_state: string
+  end_state: string
 }
 
 export interface CfdMetrics extends MetricResponse {
@@ -149,15 +158,45 @@ export const jiraApi = {
    * Fetches a list of Jira projects using direct credentials.
    */
   getProjectsWithCredentials: async (credentials: JiraCredentials): Promise<JiraProject[]> => {
+    // Create a unique ID for this API call to track it in logs
+    const apiCallId = Date.now().toString(36) + Math.random().toString(36).substring(2, 7)
+    logger.debug(`[${apiCallId}] jiraApi.getProjectsWithCredentials called with credentials:`, {
+      name: credentials.name,
+      server: credentials.jira_server,
+      // Don't log sensitive data like email and API token
+    })
+
     try {
-      logger.debug('Fetching Jira projects with credentials', { name: credentials.name })
+      logger.debug(`[${apiCallId}] Making API request to /jira/projects-with-credentials`)
+
+      // Add a stack trace to help identify where this is being called from
+      logger.debug(`[${apiCallId}] Call stack:`, new Error().stack)
 
       const response = await api.post<JiraProject[]>('/jira/projects-with-credentials', credentials)
 
-      logger.info('Jira projects fetched successfully with credentials')
+      logger.debug(
+        `[${apiCallId}] API request successful, received ${response.data.length} projects`
+      )
       return response.data
     } catch (err) {
-      logger.error('Failed to fetch projects with credentials - API error', err)
+      logger.error(`[${apiCallId}] API request failed:`, err)
+
+      // Log more details about the error
+      if (err && typeof err === 'object') {
+        if ('response' in err) {
+          const response = (err as Record<string, unknown>).response
+          logger.error(`[${apiCallId}] Error response:`, {
+            status: (response as Record<string, unknown>)?.status,
+            statusText: (response as Record<string, unknown>)?.statusText,
+            data: (response as Record<string, unknown>)?.data,
+          })
+        }
+
+        if ('message' in err) {
+          logger.error(`[${apiCallId}] Error message:`, (err as Record<string, unknown>).message)
+        }
+      }
+
       throw err
     }
   },

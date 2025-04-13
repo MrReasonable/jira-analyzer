@@ -39,13 +39,11 @@ export const WorkflowStatesList: Component<WorkflowStatesListProps> = props => {
         const fromIndex = stateManager.ids().indexOf(String(event.draggable.id))
         const toIndex = stateManager.ids().indexOf(String(event.droppable.id))
 
+        // Move the item - this already updates the state and calls the onChange callback
         stateManager.moveItem(fromIndex, toIndex)
 
-        // Ensure UI updates immediately
-        setTimeout(() => {
-          // Trigger UI update by accessing the items to notify reactive system
-          stateManager.items().length // Access length to maintain reactivity
-        }, 50)
+        // No need for setTimeout - the reactive system should update automatically
+        // when stateManager.moveItem changes the underlying state
       }
     } catch (error) {
       console.error('Error during drag operation:', error)

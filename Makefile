@@ -52,7 +52,7 @@ DOCKER_IMAGES_TO_REMOVE := \
 	$(YAMLFMT_IMAGE) \
 	$(MARKDOWN_LINT_IMAGE)
 
-.PHONY: help install dev test lint format clean build docker-build setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci caddy-format test-github-actions test-github-actions-ci test-github-actions-e2e logs logs-follow logs-frontend logs-backend
+.PHONY: help install dev test lint format clean build docker-build setup-pre-commit update-versions node-base node-base-ci frontend-dev-image frontend-ci-image e2e-dev-image e2e-ci-image frontend-test frontend-test-ci frontend-test-watch backend-test backend-unit-test backend-unit-test-ci backend-integration-test backend-fast-test frontend-lint frontend-lint-ci backend-lint backend-lint-ci frontend-format frontend-format-ci frontend-lint-fix frontend-lint-fix-ci frontend-type-check frontend-type-check-ci backend-format backend-format-ci backend-lint-fix backend-lint-fix-ci lint-fix pre-commit-run e2e-test e2e-test-ui e2e-test-headed e2e-test-debug e2e-test-quiet e2e-test-ci e2e-stack e2e-stack-down e2e-lint e2e-lint-ci e2e-lint-fix e2e-lint-fix-ci e2e-format e2e-format-ci e2e-format-check e2e-format-check-ci e2e-type-check e2e-type-check-ci yaml-lint yamlfmt-image yaml-format yaml-format-check yaml-format-ci yaml-format-check-ci markdown-lint markdown-lint-ci markdown-format markdown-format-ci caddy-format test-github-actions test-github-actions-ci test-github-actions-e2e logs logs-follow logs-frontend logs-backend
 
 # Show help message for all make commands
 help:
@@ -63,17 +63,17 @@ install: ## Install all dependencies for frontend, backend, and e2e-tests
 	@echo "Installing frontend dependencies..."
 	cd $(FRONTEND_DIR) && $(PNPM) install
 	@echo "Upgrading pip..."
-	uv pip install --upgrade pip
+	cd $(BACKEND_DIR) && python -m pip install --upgrade pip
 	@echo "Installing backend dependencies..."
 	cd $(BACKEND_DIR) && PATH="$$(brew --prefix libpq)/bin:$$PATH" LDFLAGS="-L$$(brew --prefix libpq)/lib" CPPFLAGS="-I$$(brew --prefix libpq)/include" uv pip install -r requirements.txt
 	@echo "Installing e2e-tests dependencies and browsers..."
 	cd $(E2E_DIR) && $(PNPM) install && $(PNPM) run install:browsers
 	@echo "Installing pre-commit..."
-	uv pip install pre-commit
+	cd $(BACKEND_DIR) && python -m pip install pre-commit
 
 setup-pre-commit: ## Install pre-commit hooks
 	@echo "Setting up pre-commit hooks..."
-	pre-commit install
+	cd $(BACKEND_DIR) && pre-commit install
 
 update-versions: ## Update language versions across all configuration files
 	@echo "Updating language versions across configuration files..."
@@ -346,7 +346,7 @@ lint-fix: ## Auto-fix linting issues in frontend, backend, e2e-tests, YAML and M
 
 pre-commit-run: ## Run pre-commit hooks on all files
 	@echo "Running pre-commit hooks on all files..."
-	@pre-commit run --all-files
+	@cd $(BACKEND_DIR) && pre-commit run --all-files
 
 e2e-test: ## Run end-to-end tests (without debug logs by default)
 	@echo "Running end-to-end tests..."
@@ -367,6 +367,19 @@ e2e-test-headed: ## Run end-to-end tests in headed mode (visible browser)
 e2e-test-ci: ## Run end-to-end tests in CI mode (non-interactive)
 	@echo "Running end-to-end tests in CI mode..."
 	@cd $(E2E_DIR) && CI=true ./run-tests.sh --no-debug
+
+e2e-stack: ## Launch the end-to-end test stack without running tests
+	@echo "Starting end-to-end test stack (without running tests)..."
+	@mkdir -p $(E2E_DIR)/logs $(E2E_DIR)/screenshots
+	@USE_IN_MEMORY_DB=true USE_PG_FOR_TESTING=true USE_MOCK_JIRA=true $(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) up -d
+	@echo "Waiting for services to be ready..."
+	@sleep 15  # Initial wait time
+	@echo "Services should now be available at http://localhost"
+	@echo "To shut down the test stack: make e2e-stack-down"
+
+e2e-stack-down: ## Shut down the end-to-end test stack
+	@echo "Shutting down end-to-end test stack..."
+	@$(DOCKER_COMPOSE) -f $(DEV_COMPOSE_FILE) down
 
 e2e-lint: e2e-dev-image ## Run linting for e2e-tests
 	@echo "Running e2e-tests linting..."

@@ -1,50 +1,53 @@
 {
-    "[yaml]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml",
-        "editor.formatOnSave": true,
-        "editor.tabSize": 2,
-        "editor.insertSpaces": true,
-        "editor.rulers": [100]
-    },
-    "[markdown]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
-        "editor.wordWrap": "on",
-        "editor.rulers": [100]
-    },
-    "yaml.format.enable": true,
-    "yaml.validate": true,
-    "yaml.format.singleQuote": false,
-    "yaml.format.bracketSpacing": true,
-    "yaml.format.printWidth": 100,
-    "yaml.format.proseWrap": "always",
-    "markdownlint.config": {
-        "MD013": { "line_length": 100 },
-        "MD024": false,
-        "MD033": false
-    },
-    "sonarlint.connectedMode.project": {
-        "connectionId": "mrreasonable",
-        "projectKey": "MrReasonable_jira-analyzer"
-    },
-    "python.analysis.extraPaths": [
-        "./backend/.venv/lib/python3.12/site-packages"
-    ],
-    "python.autoComplete.extraPaths": [
-      "./backend/.venv/lib/python3.12/site-packages"
-    ],
-    "python.testing.pytestArgs": [
-        "backend"
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python-envs.pythonProjects": [
-        {
-            "path": "backend",
-            "envManager": "ms-python.python:venv",
-            "packageManager": "ms-python.python:pip"
-        }
-    ],
-    "cline.modelSettings.o3Mini.reasoningEffort": "high",
-    "terminal.integrated.defaultProfile.osx": "bash"
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.rulers": [100]
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.wordWrap": "on",
+    "editor.rulers": [100]
+  },
+  "yaml.format.enable": true,
+  "yaml.validate": true,
+  "yaml.format.singleQuote": false,
+  "yaml.format.bracketSpacing": true,
+  "yaml.format.printWidth": 100,
+  "yaml.format.proseWrap": "always",
+  "markdownlint.config": {
+    "MD013": { "line_length": 100 },
+    "MD024": false,
+    "MD033": false
+  },
+  "sonarlint.connectedMode.project": {
+    "connectionId": "mrreasonable",
+    "projectKey": "MrReasonable_jira-analyzer"
+  },
+  "python.analysis.extraPaths": ["./backend/.venv/lib/python3.12/site-packages"],
+  "python.autoComplete.extraPaths": ["./backend/.venv/lib/python3.12/site-packages"],
+  "python.testing.pytestArgs": ["backend"],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python-envs.pythonProjects": [
+    {
+      "path": "backend",
+      "envManager": "ms-python.python:venv",
+      "packageManager": "ms-python.python:pip"
+    }
+  ],
+  "cline.modelSettings.o3Mini.reasoningEffort": "high",
+  "terminal.integrated.defaultProfile.osx": "bash",
+  "debug.javascript.defaultRuntimeExecutable": {
+    "pwa-node": "/Users/ian.dominey/.local/share/mise/shims/node"
+  },
+  "ruff.path": ["/Users/ian.dominey/.local/share/mise/shims/ruff"],
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv",
+  "ruff.interpreter": ["/Users/ian.dominey/.local/share/mise/shims/python"],
+  "playwright.env": {
+    "NODE_OPTIONS": "--no-experimental-strip-types"
+  }
 }

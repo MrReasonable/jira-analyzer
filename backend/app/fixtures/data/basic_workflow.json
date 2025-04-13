@@ -1,0 +1,32 @@
+{
+  "configuration": {
+    "name": "Test Project",
+    "jira_url": "https://testjira.example.com",
+    "project_key": "TEST",
+    "username": "test_user",
+    "api_token": "test_token_encrypted",
+    "is_cloud": true
+  },
+  "workflow_states": [
+    {
+      "name": "Backlog",
+      "position": 0,
+      "is_time_point": false
+    },
+    {
+      "name": "In Progress",
+      "position": 1,
+      "is_time_point": true
+    },
+    {
+      "name": "Review",
+      "position": 2,
+      "is_time_point": false
+    },
+    {
+      "name": "Done",
+      "position": 3,
+      "is_time_point": true
+    }
+  ]
+}

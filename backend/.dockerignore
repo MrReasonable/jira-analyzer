@@ -21,6 +21,9 @@ coverage.xml
 *.cover
 *.log
 .pytest_cache
+.mypy_cache
+.ruff_cache
+.bandit_cache
 .env
 .venv
 venv/

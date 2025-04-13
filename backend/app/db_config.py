@@ -15,6 +15,7 @@ def get_database_url() -> str:
     """
     # Check if we should use in-memory database (for testing)
     if os.getenv('USE_IN_MEMORY_DB', '').lower() in ('true', '1', 'yes'):
+        # Use SQLite in-memory for testing
         return 'sqlite+aiosqlite:///:memory:'
 
     # Check if we should use SQLite (mainly for development without Docker)
