@@ -4,7 +4,7 @@ python-dotenv==1.1.0
 jira==3.8.0
 atlassian-python-api==4.0.3
 pandas==2.2.3
-pyarrow==19.0.1
+pyarrow==20.0.0
 pydantic==2.11.3
 pydantic-settings==2.9.1
 python-multipart==0.0.20
@@ -18,7 +18,7 @@ psycopg-c==3.2.6  # C implementation for psycopg (will be built from source)
 # psycopg-binary==3.1.18  # Binary implementation - No wheels available for Python 3.13
 aiosqlite==0.21.0  # Keep SQLite for testing
 httpx==0.28.1
-greenlet==3.2.0
+greenlet==3.2.1
 python-jose[cryptography]==3.4.0
 dependency-injector==4.46.0
 
